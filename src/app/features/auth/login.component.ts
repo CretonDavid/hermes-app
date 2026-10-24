@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -31,10 +31,10 @@ import { errorMessage } from '../../core/notify.service';
       <h1>Connexion</h1>
       <p class="intro">Saisissez votre numéro de compte à 30 chiffres.</p>
 
-      <form (ngSubmit)="submit()">
+      <form [formGroup]="form" (ngSubmit)="submit()">
         <mat-form-field class="number-input">
           <mat-label>Numéro de compte</mat-label>
-          <input matInput [formControl]="number" autocomplete="off" inputmode="numeric" autofocus />
+          <input matInput formControlName="number" autocomplete="off" inputmode="numeric" autofocus />
           <mat-hint align="end">{{ digits().length }} / 30</mat-hint>
           @if (number.hasError('pattern')) {
             <mat-error>Le numéro doit contenir exactement 30 chiffres</mat-error>
@@ -71,6 +71,8 @@ export class LoginComponent {
     nonNullable: true,
     validators: [Validators.required],
   });
+  // Le formGroup rattache le <form> à Angular : sans lui, la soumission recharge la page
+  protected readonly form = new FormGroup({ number: this.number });
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly disabled = signal(false);

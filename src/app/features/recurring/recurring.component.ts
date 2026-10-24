@@ -1,5 +1,13 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,108 +21,169 @@ import { RecurringTransaction, UpcomingOccurrence } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { NoAccountComponent } from '../../shared/no-account.component';
 import { RecurringDialogComponent } from './recurring-dialog.component';
 
 @Component({
   selector: 'app-recurring',
-  imports: [DatePipe, MatButtonModule, MatIconModule, MatTableModule, MatTooltipModule, MoneyPipe],
+  imports: [
+    DatePipe,
+    MatButtonModule,
+    MatIconModule,
+    MatTableModule,
+    MatTooltipModule,
+    MoneyPipe,
+    NoAccountComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
       <div class="page-header">
         <div>
           <h1>Opérations récurrentes</h1>
-          <div class="subtitle">Loyer, salaire, abonnements, épargne automatique… générés automatiquement à échéance</div>
+          <div class="subtitle">
+            Loyer, salaire, abonnements, épargne automatique… générés automatiquement à échéance
+          </div>
         </div>
-        <button matButton="filled" (click)="create()" [disabled]="store.openAccounts().length === 0">
-          <mat-icon>add</mat-icon> Nouvelle récurrence
-        </button>
+        @if (store.openAccounts().length > 0) {
+          <button matButton="filled" (click)="create()">
+            <mat-icon>add</mat-icon> Nouvelle récurrence
+          </button>
+        }
       </div>
 
-      <div class="grid grid-3" style="margin-bottom: 16px">
-        <div class="card kpi">
-          <div class="label">Dépenses récurrentes / mois</div>
-          <div class="value amount negative">{{ monthly().expenses | money: store.referenceCurrency() }}</div>
-          <div class="delta muted">Estimation, dans la devise des comptes</div>
-        </div>
-        <div class="card kpi">
-          <div class="label">Revenus récurrents / mois</div>
-          <div class="value amount positive">{{ monthly().income | money: store.referenceCurrency() }}</div>
-        </div>
-        <div class="card kpi">
-          <div class="label">Épargne programmée / mois</div>
-          <div class="value amount">{{ monthly().transfers | money: store.referenceCurrency() }}</div>
-        </div>
-      </div>
-
-      <div class="grid" style="grid-template-columns: 2fr 1fr">
-        <div class="card">
-          <table mat-table [dataSource]="items()">
-            <ng-container matColumnDef="label">
-              <th mat-header-cell *matHeaderCellDef>Libellé</th>
-              <td mat-cell *matCellDef="let r">
-                <div class="label">
-                  <mat-icon class="muted">{{ r.transfer ? 'swap_horiz' : r.direction === 'CREDIT' ? 'add_circle' : 'remove_circle' }}</mat-icon>
-                  {{ r.label }}
-                </div>
-                <div class="muted small">
-                  {{ r.accountName }}{{ r.transfer ? ' → ' + r.targetAccountName : r.category ? ' · ' + r.category.name : '' }}
-                </div>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="frequency">
-              <th mat-header-cell *matHeaderCellDef>Fréquence</th>
-              <td mat-cell *matCellDef="let r">{{ label(r) }}</td>
-            </ng-container>
-            <ng-container matColumnDef="next">
-              <th mat-header-cell *matHeaderCellDef>Prochaine</th>
-              <td mat-cell *matCellDef="let r">
-                @if (r.active && r.nextDate) {
-                  {{ r.nextDate | date: 'dd/MM/yyyy' }}
-                } @else {
-                  <span class="chip">{{ r.nextDate ? 'En pause' : 'Terminée' }}</span>
-                }
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="amount">
-              <th mat-header-cell *matHeaderCellDef>Montant</th>
-              <td mat-cell *matCellDef="let r" class="amount" [class.positive]="!r.transfer && r.direction === 'CREDIT'">
-                {{ (r.direction === 'DEBIT' ? -r.amount : r.amount) | money: r.currencyCode : true }}
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let r" style="text-align: right; white-space: nowrap">
-                <button matIconButton matTooltip="Modifier" (click)="edit(r)"><mat-icon>edit</mat-icon></button>
-                <button matIconButton matTooltip="Supprimer" (click)="remove(r)"><mat-icon>delete</mat-icon></button>
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="columns"></tr>
-            <tr mat-row *matRowDef="let row; columns: columns" [class.inactive]="!row.active"></tr>
-          </table>
-          @if (items().length === 0) {
-            <div class="empty">
-              <mat-icon>event_repeat</mat-icon>
-              <p>Aucune opération récurrente</p>
+      @if (store.loaded() && store.accounts().length === 0) {
+        <app-no-account
+          message="Les opérations récurrentes (loyer, salaire, abonnements…) sont rattachées à un compte."
+        />
+      } @else {
+        <div class="grid grid-3" style="margin-bottom: 16px">
+          <div class="card kpi">
+            <div class="label">Dépenses récurrentes / mois</div>
+            <div class="value amount negative">
+              {{ monthly().expenses | money: store.referenceCurrency() }}
             </div>
-          }
+            <div class="delta muted">Estimation, dans la devise des comptes</div>
+          </div>
+          <div class="card kpi">
+            <div class="label">Revenus récurrents / mois</div>
+            <div class="value amount positive">
+              {{ monthly().income | money: store.referenceCurrency() }}
+            </div>
+          </div>
+          <div class="card kpi">
+            <div class="label">Épargne programmée / mois</div>
+            <div class="value amount">
+              {{ monthly().transfers | money: store.referenceCurrency() }}
+            </div>
+          </div>
         </div>
 
-        <div class="card">
-          <h2><mat-icon>event_upcoming</mat-icon> Prochains 60 jours</h2>
-          @for (o of upcoming(); track o.recurringTransactionId + o.date) {
-            <div class="upcoming">
-              <span class="date">{{ o.date | date: 'dd MMM' }}</span>
-              <span class="flex">{{ o.label }}</span>
-              <span class="amount" [class.positive]="o.direction === 'CREDIT'">
-                {{ (o.direction === 'DEBIT' ? -o.amount : o.amount) | money: o.currencyCode : true }}
-              </span>
-            </div>
-          } @empty {
-            <p class="muted">Rien de prévu</p>
-          }
+        <div class="grid" style="grid-template-columns: 2fr 1fr">
+          <div class="card">
+            <table mat-table [dataSource]="items()">
+              <ng-container matColumnDef="label">
+                <th mat-header-cell *matHeaderCellDef>Libellé</th>
+                <td mat-cell *matCellDef="let r">
+                  <div class="label">
+                    <mat-icon class="muted">{{
+                      r.transfer
+                        ? 'swap_horiz'
+                        : r.direction === 'CREDIT'
+                          ? 'add_circle'
+                          : 'remove_circle'
+                    }}</mat-icon>
+                    {{ r.label }}
+                  </div>
+                  <div class="muted small">
+                    {{ r.accountName
+                    }}{{
+                      r.transfer
+                        ? ' → ' + r.targetAccountName
+                        : r.category
+                          ? ' · ' + r.category.name
+                          : ''
+                    }}
+                  </div>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="frequency">
+                <th mat-header-cell *matHeaderCellDef>Fréquence</th>
+                <td mat-cell *matCellDef="let r">{{ label(r) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="next">
+                <th mat-header-cell *matHeaderCellDef>Prochaine</th>
+                <td mat-cell *matCellDef="let r">
+                  @if (r.active && r.nextDate) {
+                    {{ r.nextDate | date: 'dd/MM/yyyy' }}
+                  } @else {
+                    <span class="chip">{{ r.nextDate ? 'En pause' : 'Terminée' }}</span>
+                  }
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>Montant</th>
+                <td
+                  mat-cell
+                  *matCellDef="let r"
+                  class="amount"
+                  [class.positive]="!r.transfer && r.direction === 'CREDIT'"
+                >
+                  {{
+                    (r.direction === 'DEBIT' ? -r.amount : r.amount) | money: r.currencyCode : true
+                  }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let r" style="text-align: right; white-space: nowrap">
+                  <button matIconButton matTooltip="Modifier" (click)="edit(r)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button matIconButton matTooltip="Supprimer" (click)="remove(r)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="columns"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: columns"
+                [class.inactive]="!row.active"
+              ></tr>
+            </table>
+            @if (items().length === 0) {
+              <div class="empty">
+                <mat-icon>event_repeat</mat-icon>
+                <p>
+                  Aucune opération récurrente.<br />Ajoutez votre loyer, votre salaire ou vos
+                  abonnements : ils seront créés automatiquement à chaque échéance.
+                </p>
+                <button matButton="filled" (click)="create()">
+                  <mat-icon>add</mat-icon> Nouvelle récurrence
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="card">
+            <h2><mat-icon>event_upcoming</mat-icon> Prochains 60 jours</h2>
+            @for (o of upcoming(); track o.recurringTransactionId + o.date) {
+              <div class="upcoming">
+                <span class="date">{{ o.date | date: 'dd MMM' }}</span>
+                <span class="flex">{{ o.label }}</span>
+                <span class="amount" [class.positive]="o.direction === 'CREDIT'">
+                  {{
+                    (o.direction === 'DEBIT' ? -o.amount : o.amount) | money: o.currencyCode : true
+                  }}
+                </span>
+              </div>
+            } @empty {
+              <p class="muted">Rien de prévu</p>
+            }
+          </div>
         </div>
-      </div>
+      }
     </div>
   `,
   styles: `

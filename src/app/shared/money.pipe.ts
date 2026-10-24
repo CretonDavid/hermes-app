@@ -2,7 +2,11 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
-export function formatMoney(amount: number | null | undefined, currency = 'EUR', signed = false): string {
+export function formatMoney(
+  amount: number | null | undefined,
+  currency = 'EUR',
+  signed = false,
+): string {
   if (amount === null || amount === undefined) {
     return '—';
   }
@@ -17,7 +21,10 @@ export function formatMoney(amount: number | null | undefined, currency = 'EUR',
       });
     } catch {
       // Code devise non reconnu par le navigateur : affichage numérique suivi du code
-      const number = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const number = new Intl.NumberFormat('fr-FR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
       return `${signed && amount > 0 ? '+' : ''}${number.format(amount)} ${currency}`;
     }
     formatters.set(key, formatter);

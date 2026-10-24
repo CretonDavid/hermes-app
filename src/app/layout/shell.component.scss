@@ -30,6 +30,11 @@
   }
 }
 
+.new-button-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
 .new-button {
   margin: 8px 16px 12px;
 }

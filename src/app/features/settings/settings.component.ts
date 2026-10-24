@@ -1,5 +1,13 @@
-import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -32,6 +40,7 @@ const TABS = ['profile', 'types', 'currencies', 'rates'];
   imports: [
     FormsModule,
     DatePipe,
+    DecimalPipe,
     MatTabsModule,
     MatButtonModule,
     MatIconModule,
@@ -56,7 +65,9 @@ export class SettingsComponent {
   private readonly notify = inject(NotifyService);
   private readonly dialog = inject(MatDialog);
 
-  protected readonly tabIndex = signal(Math.max(0, TABS.indexOf(inject(ActivatedRoute).snapshot.queryParamMap.get('tab') ?? '')));
+  protected readonly tabIndex = signal(
+    Math.max(0, TABS.indexOf(inject(ActivatedRoute).snapshot.queryParamMap.get('tab') ?? '')),
+  );
   protected readonly rates = signal<ExchangeRate[]>([]);
   protected readonly allRates = signal(false);
   protected readonly syncing = signal(false);
@@ -67,12 +78,18 @@ export class SettingsComponent {
     return this.deleteNumber.replace(/\D/g, '').length;
   }
 
-  protected readonly customCurrencies = computed(() => this.store.currencies().filter((c) => c.custom));
-  protected readonly defaultCurrencies = computed(() => this.store.currencies().filter((c) => !c.custom));
+  protected readonly customCurrencies = computed(() =>
+    this.store.currencies().filter((c) => c.custom),
+  );
+  protected readonly defaultCurrencies = computed(() =>
+    this.store.currencies().filter((c) => !c.custom),
+  );
   // Devises utilisées par les comptes et différentes de la devise de référence : il leur faut un taux
   protected readonly foreignCurrencies = computed(() => {
     const reference = this.store.referenceCurrency();
-    return [...new Set(this.store.accounts().map((a) => a.currency.code))].filter((c) => c !== reference);
+    return [...new Set(this.store.accounts().map((a) => a.currency.code))].filter(
+      (c) => c !== reference,
+    );
   });
 
   constructor() {
@@ -120,7 +137,8 @@ export class SettingsComponent {
     const number = this.deleteNumber.replace(/\D/g, '');
     confirm(this.dialog, {
       title: 'Supprimer définitivement',
-      message: 'Toutes vos données (comptes, opérations, catégories, statistiques) seront effacées. Cette action est irréversible.',
+      message:
+        'Toutes vos données (comptes, opérations, catégories, statistiques) seront effacées. Cette action est irréversible.',
       confirmLabel: 'Tout supprimer',
       danger: true,
     }).subscribe((ok) => {
@@ -147,10 +165,24 @@ export class SettingsComponent {
   }
 
   protected deleteType(type: AccountType): void {
-    this.accountApi.deleteType(type.id).subscribe({
-      next: () => this.store.reloadAccountTypes(),
-      error: (error) => this.notify.error(error),
-    });
+    this.confirmDelete(`le type « ${type.name} »`, () =>
+      this.accountApi.deleteType(type.id).subscribe({
+        next: () => {
+          this.notify.success('Type de compte supprimé');
+          this.store.reloadAccountTypes();
+        },
+        error: (error) => this.notify.error(error),
+      }),
+    );
+  }
+
+  private confirmDelete(what: string, action: () => void): void {
+    confirm(this.dialog, {
+      title: 'Confirmer la suppression',
+      message: `Supprimer ${what} ?`,
+      confirmLabel: 'Supprimer',
+      danger: true,
+    }).subscribe((ok) => ok && action());
   }
 
   // ---------- Devises ----------
@@ -164,30 +196,37 @@ export class SettingsComponent {
   }
 
   protected deleteCurrency(currency: Currency): void {
-    this.currencyApi.delete(currency.id).subscribe({
-      next: () => this.store.reloadCurrencies(),
-      error: (error) => this.notify.error(error),
-    });
+    this.confirmDelete(`la devise ${currency.code} et ses taux de change`, () =>
+      this.currencyApi.delete(currency.id).subscribe({
+        next: () => {
+          this.notify.success('Devise supprimée');
+          this.store.reloadCurrencies();
+        },
+        error: (error) => this.notify.error(error),
+      }),
+    );
   }
 
   // ---------- Taux de change ----------
 
   protected sync(history: boolean): void {
     this.syncing.set(true);
-    this.currencyApi.syncRates(history ? (toIsoDate(this.syncFrom) ?? undefined) : undefined).subscribe({
-      next: (result) => {
-        this.syncing.set(false);
-        const unsupported = result.unsupportedCurrencies.length
-          ? ` · non couvertes par la BCE : ${result.unsupportedCurrencies.join(', ')}`
-          : '';
-        this.notify.success(`${result.imported} taux importé(s)${unsupported}`);
-        this.store.transactionsChanged();
-      },
-      error: (error) => {
-        this.syncing.set(false);
-        this.notify.error(error);
-      },
-    });
+    this.currencyApi
+      .syncRates(history ? (toIsoDate(this.syncFrom) ?? undefined) : undefined)
+      .subscribe({
+        next: (result) => {
+          this.syncing.set(false);
+          const unsupported = result.unsupportedCurrencies.length
+            ? ` · non couvertes par la BCE : ${result.unsupportedCurrencies.join(', ')}`
+            : '';
+          this.notify.success(`${result.imported} taux importé(s)${unsupported}`);
+          this.store.transactionsChanged();
+        },
+        error: (error) => {
+          this.syncing.set(false);
+          this.notify.error(error);
+        },
+      });
   }
 
   protected createRate(): void {
@@ -199,10 +238,17 @@ export class SettingsComponent {
   }
 
   protected deleteRate(rate: ExchangeRate): void {
-    this.currencyApi.deleteRate(rate.id).subscribe({
-      next: () => this.loadRates(),
-      error: (error) => this.notify.error(error),
-    });
+    this.confirmDelete(
+      `le taux ${rate.baseCurrency.code}/${rate.quoteCurrency.code} du ${rate.date.split('-').reverse().join('/')}`,
+      () =>
+        this.currencyApi.deleteRate(rate.id).subscribe({
+          next: () => {
+            this.notify.success('Taux supprimé');
+            this.store.transactionsChanged();
+          },
+          error: (error) => this.notify.error(error),
+        }),
+    );
   }
 
   private loadRates(): void {

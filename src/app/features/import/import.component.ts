@@ -1,5 +1,13 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -16,6 +24,7 @@ import { DataStore } from '../../core/data.store';
 import { CsvImportOptions, CsvInspection, ImportPreview, ImportRow } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { NoAccountComponent } from '../../shared/no-account.component';
 
 type Step = 'file' | 'mapping' | 'preview' | 'done';
 
@@ -25,7 +34,14 @@ interface PreviewRow extends ImportRow {
 
 const MAPPING_KEY = 'hermes.csv-mapping.';
 
-const DATE_FORMATS = ['dd/MM/yyyy', 'dd/MM/yy', 'yyyy-MM-dd', 'dd-MM-yyyy', 'dd.MM.yyyy', 'MM/dd/yyyy'];
+const DATE_FORMATS = [
+  'dd/MM/yyyy',
+  'dd/MM/yy',
+  'yyyy-MM-dd',
+  'dd-MM-yyyy',
+  'dd.MM.yyyy',
+  'MM/dd/yyyy',
+];
 
 @Component({
   selector: 'app-import',
@@ -43,6 +59,7 @@ const DATE_FORMATS = ['dd/MM/yyyy', 'dd/MM/yy', 'yyyy-MM-dd', 'dd-MM-yyyy', 'dd.
     MatSelectModule,
     MatTooltipModule,
     MoneyPipe,
+    NoAccountComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './import.component.html',
@@ -85,6 +102,13 @@ export class ImportComponent {
     if (accountId) {
       this.accountId.set(Number(accountId));
     }
+    // Un seul compte : il est présélectionné
+    effect(() => {
+      const accounts = this.store.openAccounts();
+      if (accounts.length === 1 && untracked(() => this.accountId()) === null) {
+        this.accountId.set(accounts[0].id);
+      }
+    });
   }
 
   protected selectFile(event: Event): void {
@@ -138,7 +162,10 @@ export class ImportComponent {
       this.notify.error('Choisissez au moins une colonne de libellé');
       return;
     }
-    localStorage.setItem(MAPPING_KEY + this.accountId(), JSON.stringify({ options, amountMode: this.amountMode }));
+    localStorage.setItem(
+      MAPPING_KEY + this.accountId(),
+      JSON.stringify({ options, amountMode: this.amountMode }),
+    );
     this.loading.set(true);
     this.api.previewCsv(this.file()!, this.accountId()!, options).subscribe({
       next: (preview) => this.showPreview(preview),
@@ -187,7 +214,9 @@ export class ImportComponent {
 
   protected columnLabel(index: number): string {
     const inspection = this.inspection();
-    const header = this.options.hasHeader ? inspection?.rows[this.options.skipLines]?.[index] : null;
+    const header = this.options.hasHeader
+      ? inspection?.rows[this.options.skipLines]?.[index]
+      : null;
     return header ? `${index + 1} · ${header}` : `Colonne ${index + 1}`;
   }
 

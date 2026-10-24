@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -19,15 +24,51 @@ export interface CategoryDialogData {
 }
 
 const ICONS = [
-  'restaurant', 'shopping_cart', 'home', 'directions_car', 'train', 'flight', 'favorite', 'local_hospital',
-  'wifi', 'smartphone', 'sports_esports', 'fitness_center', 'theaters', 'shopping_bag', 'checkroom', 'school',
-  'child_care', 'pets', 'account_balance', 'credit_card', 'savings', 'work', 'payments', 'redeem', 'volunteer_activism',
-  'local_gas_station', 'local_cafe', 'celebration', 'build', 'bolt', 'water_drop', 'category',
+  'restaurant',
+  'shopping_cart',
+  'home',
+  'directions_car',
+  'train',
+  'flight',
+  'favorite',
+  'local_hospital',
+  'wifi',
+  'smartphone',
+  'sports_esports',
+  'fitness_center',
+  'theaters',
+  'shopping_bag',
+  'checkroom',
+  'school',
+  'child_care',
+  'pets',
+  'account_balance',
+  'credit_card',
+  'savings',
+  'work',
+  'payments',
+  'redeem',
+  'volunteer_activism',
+  'local_gas_station',
+  'local_cafe',
+  'celebration',
+  'build',
+  'bolt',
+  'water_drop',
+  'category',
 ];
 
 @Component({
   selector: 'app-category-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatIconModule],
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ data.category ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}</h2>
@@ -66,7 +107,9 @@ const ICONS = [
           <label>Couleur</label>
           <input type="color" formControlName="color" />
           @if (parentId()) {
-            <button matButton type="button" (click)="form.controls.color.setValue(null)">Hériter du parent</button>
+            <button matButton type="button" (click)="form.controls.color.setValue(null)">
+              Hériter du parent
+            </button>
           }
         </div>
 
@@ -74,11 +117,18 @@ const ICONS = [
           <mat-label>Icône</mat-label>
           <mat-select formControlName="icon">
             <mat-select-trigger>
-              <span class="icon-option"><mat-icon>{{ form.controls.icon.value }}</mat-icon> {{ form.controls.icon.value }}</span>
+              <span class="icon-option"
+                ><mat-icon>{{ form.controls.icon.value }}</mat-icon>
+                {{ form.controls.icon.value }}</span
+              >
             </mat-select-trigger>
             <mat-option [value]="null">— Aucune —</mat-option>
             @for (icon of icons; track icon) {
-              <mat-option [value]="icon"><span class="icon-option"><mat-icon>{{ icon }}</mat-icon> {{ icon }}</span></mat-option>
+              <mat-option [value]="icon"
+                ><span class="icon-option"
+                  ><mat-icon>{{ icon }}</mat-icon> {{ icon }}</span
+                ></mat-option
+              >
             }
           </mat-select>
         </mat-form-field>
@@ -114,7 +164,10 @@ const ICONS = [
   `,
 })
 export class CategoryDialogComponent {
-  static open(dialog: MatDialog, data: CategoryDialogData): MatDialogRef<CategoryDialogComponent, Category> {
+  static open(
+    dialog: MatDialog,
+    data: CategoryDialogData,
+  ): MatDialogRef<CategoryDialogComponent, Category> {
     return dialog.open(CategoryDialogComponent, { data, width: '560px' });
   }
 
@@ -129,10 +182,19 @@ export class CategoryDialogComponent {
   private readonly category = this.data.category;
 
   protected readonly form = new FormGroup({
-    name: new FormControl(this.category?.name ?? '', { nonNullable: true, validators: Validators.required }),
-    parentId: new FormControl<number | null>(this.category ? this.category.parentId : (this.data.parentId ?? null)),
-    type: new FormControl<CategoryType>(this.category?.type ?? this.data.type ?? 'EXPENSE', { nonNullable: true }),
-    color: new FormControl<string | null>(this.category ? this.category.color : this.data.parentId ? null : '#5c6bc0'),
+    name: new FormControl(this.category?.name ?? '', {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
+    parentId: new FormControl<number | null>(
+      this.category ? this.category.parentId : (this.data.parentId ?? null),
+    ),
+    type: new FormControl<CategoryType>(this.category?.type ?? this.data.type ?? 'EXPENSE', {
+      nonNullable: true,
+    }),
+    color: new FormControl<string | null>(
+      this.category ? this.category.color : this.data.parentId ? null : '#5c6bc0',
+    ),
     icon: new FormControl<string | null>(this.category?.icon ?? null),
   });
 
@@ -189,7 +251,9 @@ export class CategoryDialogComponent {
       icon: v.icon,
     };
     this.saving.set(true);
-    const request$ = this.category ? this.api.update(this.category.id, request) : this.api.create(request);
+    const request$ = this.category
+      ? this.api.update(this.category.id, request)
+      : this.api.create(request);
     request$.subscribe({
       next: (category) => {
         this.store.reloadCategories();

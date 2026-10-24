@@ -6,35 +6,74 @@
     </div>
   </div>
 
-  @if (store.loaded() && store.accounts().length === 0) {
+  @if (showOnboarding()) {
     <div class="card onboarding">
       <h2><mat-icon>waving_hand</mat-icon> Bienvenue dans Hermès</h2>
-      <ol>
-        <li>Créez vos comptes bancaires (compte courant, livrets…).</li>
-        <li>Saisissez vos opérations ou importez un relevé bancaire (CSV ou OFX).</li>
-        <li>Ajustez les catégories si besoin, puis suivez vos dépenses dans les statistiques.</li>
-      </ol>
-      <button matButton="filled" (click)="createAccount()"><mat-icon>add</mat-icon> Créer mon premier compte</button>
+      <p class="muted">Trois étapes pour commencer à suivre votre budget :</p>
+
+      <div class="step" [class.done]="hasAccount()">
+        <mat-icon class="state">{{ hasAccount() ? 'check_circle' : 'looks_one' }}</mat-icon>
+        <div class="text">
+          <strong>Créer vos comptes</strong>
+          <span class="muted">Compte courant, livrets… avec leur solde actuel.</span>
+        </div>
+        @if (hasAccount()) {
+          <button matButton (click)="createAccount()">Ajouter un autre compte</button>
+        } @else {
+          <button matButton="filled" (click)="createAccount()">Créer un compte</button>
+        }
+      </div>
+
+      <div class="step" [class.done]="hasTransactions()" [class.locked]="!hasAccount()">
+        <mat-icon class="state">{{ hasTransactions() ? 'check_circle' : 'looks_two' }}</mat-icon>
+        <div class="text">
+          <strong>Ajouter vos opérations</strong>
+          <span class="muted"
+            >Saisissez-les une par une ou importez le relevé téléchargé depuis votre banque.</span
+          >
+        </div>
+        @if (hasAccount() && !hasTransactions()) {
+          <button matButton="tonal" routerLink="/import">Importer un relevé</button>
+          <button matButton="filled" (click)="newTransaction()">Saisir une opération</button>
+        }
+      </div>
+
+      <div class="step" [class.locked]="!hasTransactions()">
+        <mat-icon class="state">looks_3</mat-icon>
+        <div class="text">
+          <strong>Suivre vos dépenses</strong>
+          <span class="muted">
+            Classez vos opérations par catégorie (une liste standard est déjà prête) et consultez
+            vos statistiques.
+          </span>
+        </div>
+        <a matButton routerLink="/categories">Voir les catégories</a>
+      </div>
     </div>
   } @else {
     @if (summary(); as s) {
       @if (s.missingRates.length > 0) {
         <div class="card warning-card">
           <mat-icon>currency_exchange</mat-icon>
-          Taux de change manquants pour {{ s.missingRates.join(', ') }} : ces montants ne sont pas comptés.
+          Taux de change manquants pour {{ s.missingRates.join(', ') }} : ces montants ne sont pas
+          comptés.
           <a routerLink="/settings" [queryParams]="{ tab: 'rates' }">Ajouter des taux</a>
         </div>
       }
       <div class="grid grid-4 kpis">
         <div class="card kpi">
           <div class="label">Patrimoine total</div>
-          <div class="value amount" [class.negative]="s.netWorth < 0">{{ s.netWorth | money: s.currencyCode }}</div>
+          <div class="value amount" [class.negative]="s.netWorth < 0">
+            {{ s.netWorth | money: s.currencyCode }}
+          </div>
           <div class="delta muted">Tous comptes, en {{ s.currencyCode }}</div>
         </div>
         <div class="card kpi">
           <div class="label">Revenus du mois</div>
           <div class="value amount positive">{{ s.income | money: s.currencyCode }}</div>
-          <div class="delta muted">Mois précédent : {{ s.previousIncome | money: s.currencyCode }}</div>
+          <div class="delta muted">
+            Mois précédent : {{ s.previousIncome | money: s.currencyCode }}
+          </div>
         </div>
         <div class="card kpi">
           <div class="label">Dépenses du mois</div>
@@ -44,7 +83,9 @@
               {{ delta > 0 ? '+' : '' }}{{ delta | percent: '1.0-0' }} vs mois précédent
             </div>
           } @else {
-            <div class="delta muted">Mois précédent : {{ s.previousExpenses | money: s.currencyCode }}</div>
+            <div class="delta muted">
+              Mois précédent : {{ s.previousExpenses | money: s.currencyCode }}
+            </div>
           }
         </div>
         <div class="card kpi">
@@ -61,7 +102,13 @@
       <div class="card">
         <h2><mat-icon>donut_large</mat-icon> Dépenses du mois par catégorie</h2>
         @if (donut(); as config) {
-          <app-chart [config]="config" [height]="260" (elementClick)="openCategory($event)" />
+          <app-chart
+            [config]="config"
+            [height]="260"
+            [clickable]="true"
+            (elementClick)="openCategory($event)"
+          />
+          <p class="muted hint">Cliquez sur une catégorie pour voir ses opérations du mois.</p>
         } @else {
           <div class="empty"><p>Aucune dépense ce mois-ci</p></div>
         }
@@ -81,7 +128,11 @@
           <span class="spacer"></span>
           <a matButton routerLink="/transactions">Tout voir</a>
         </h2>
-        <app-transaction-table [transactions]="recent()" [showStatus]="false" [showAccount]="false" />
+        <app-transaction-table
+          [transactions]="recent()"
+          [showStatus]="false"
+          [showAccount]="false"
+        />
       </div>
       <div class="card">
         <h2>

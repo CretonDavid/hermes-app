@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AccountApi } from '../../core/api';
@@ -12,7 +17,14 @@ import { NotifyService } from '../../core/notify.service';
 
 @Component({
   selector: 'app-account-type-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatCheckboxModule, MatButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCheckboxModule,
+    MatButtonModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ data ? 'Modifier le type de compte' : 'Nouveau type de compte' }}</h2>
@@ -36,7 +48,10 @@ import { NotifyService } from '../../core/notify.service';
   `,
 })
 export class AccountTypeDialogComponent {
-  static open(dialog: MatDialog, type?: AccountType): MatDialogRef<AccountTypeDialogComponent, AccountType> {
+  static open(
+    dialog: MatDialog,
+    type?: AccountType,
+  ): MatDialogRef<AccountTypeDialogComponent, AccountType> {
     return dialog.open(AccountTypeDialogComponent, { data: type ?? null, width: '440px' });
   }
 
@@ -48,7 +63,10 @@ export class AccountTypeDialogComponent {
 
   protected readonly saving = signal(false);
   protected readonly form = new FormGroup({
-    name: new FormControl(this.data?.name ?? '', { nonNullable: true, validators: Validators.required }),
+    name: new FormControl(this.data?.name ?? '', {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
     savings: new FormControl(this.data?.savings ?? false, { nonNullable: true }),
   });
 
@@ -59,7 +77,9 @@ export class AccountTypeDialogComponent {
     }
     this.saving.set(true);
     const request = this.form.getRawValue();
-    const request$ = this.data ? this.api.updateType(this.data.id, request) : this.api.createType(request);
+    const request$ = this.data
+      ? this.api.updateType(this.data.id, request)
+      : this.api.createType(request);
     request$.subscribe({
       next: (type) => {
         this.store.reloadAccountTypes();

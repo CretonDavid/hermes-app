@@ -32,7 +32,9 @@ interface AccountGroup {
             Afficher les comptes clôturés
           </mat-slide-toggle>
         }
-        <button matButton="filled" (click)="create()"><mat-icon>add</mat-icon> Nouveau compte</button>
+        <button matButton="filled" (click)="create()">
+          <mat-icon>add</mat-icon> Nouveau compte
+        </button>
       </div>
 
       @if (store.loaded() && store.accounts().length === 0) {
@@ -58,7 +60,11 @@ interface AccountGroup {
           </div>
           <div class="grid grid-3">
             @for (account of group.accounts; track account.id) {
-              <a class="card account-card" [class.closed]="account.closed" [routerLink]="['/accounts', account.id]">
+              <a
+                class="card account-card"
+                [class.closed]="account.closed"
+                [routerLink]="['/accounts', account.id]"
+              >
                 <div class="top">
                   <div>
                     <div class="name">{{ account.name }}</div>
@@ -69,15 +75,19 @@ interface AccountGroup {
                       }
                     </div>
                   </div>
-                  <button matIconButton (click)="edit(account, $event)"><mat-icon>edit</mat-icon></button>
+                  <button matIconButton (click)="edit(account, $event)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
                 </div>
                 <div class="balance amount" [class.negative]="account.balance < 0">
                   {{ account.balance | money: account.currency.code }}
                 </div>
                 @if (account.forecastBalance !== account.balance) {
-                  <div class="muted small">Prévisionnel : {{ account.forecastBalance | money: account.currency.code }}</div>
+                  <div class="muted small">
+                    Avec les opérations à venir :
+                    {{ account.forecastBalance | money: account.currency.code }}
+                  </div>
                 }
-                <div class="muted small">Pointé : {{ account.clearedBalance | money: account.currency.code }}</div>
               </a>
             }
           </div>
@@ -149,17 +159,26 @@ export class AccountsComponent {
     const groups = new Map<string, AccountGroup>();
     for (const account of accounts) {
       const key = account.accountType.name;
-      const group = groups.get(key) ?? { name: key, savings: account.accountType.savings, accounts: [], totals: [] };
+      const group = groups.get(key) ?? {
+        name: key,
+        savings: account.accountType.savings,
+        accounts: [],
+        totals: [],
+      };
       group.accounts.push(account);
       groups.set(key, group);
     }
     for (const group of groups.values()) {
       const totals = new Map<string, number>();
-      group.accounts.forEach((a) => totals.set(a.currency.code, (totals.get(a.currency.code) ?? 0) + a.balance));
+      group.accounts.forEach((a) =>
+        totals.set(a.currency.code, (totals.get(a.currency.code) ?? 0) + a.balance),
+      );
       group.totals = [...totals.entries()].map(([currency, amount]) => ({ currency, amount }));
     }
     // Comptes courants d'abord, épargne ensuite
-    return [...groups.values()].sort((a, b) => Number(a.savings) - Number(b.savings) || a.name.localeCompare(b.name));
+    return [...groups.values()].sort(
+      (a, b) => Number(a.savings) - Number(b.savings) || a.name.localeCompare(b.name),
+    );
   });
 
   protected create(): void {

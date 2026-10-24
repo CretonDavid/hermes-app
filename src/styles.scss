@@ -117,6 +117,7 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 16px;
+  align-items: start;
   row-gap: 14px;
 
   .full {
@@ -255,4 +256,14 @@ th.mat-column-balance {
 
 .danger-zone {
   border-color: var(--mat-sys-error);
+}
+
+// Petite icône d'aide à côté d'un libellé
+mat-icon.info {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  vertical-align: text-bottom;
+  color: var(--hermes-muted);
+  cursor: help;
 }

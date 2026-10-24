@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { CategoryApi } from '../../core/api';
@@ -34,14 +39,22 @@ import { NotifyService } from '../../core/notify.service';
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button matButton mat-dialog-close>Annuler</button>
-      <button matButton="filled" (click)="delete()" [disabled]="saving()" style="--mat-button-filled-container-color: var(--mat-sys-error)">
+      <button
+        matButton="filled"
+        (click)="delete()"
+        [disabled]="saving()"
+        style="--mat-button-filled-container-color: var(--mat-sys-error)"
+      >
         Supprimer
       </button>
     </mat-dialog-actions>
   `,
 })
 export class CategoryDeleteDialogComponent {
-  static open(dialog: MatDialog, category: Category): MatDialogRef<CategoryDeleteDialogComponent, boolean> {
+  static open(
+    dialog: MatDialog,
+    category: Category,
+  ): MatDialogRef<CategoryDeleteDialogComponent, boolean> {
     return dialog.open(CategoryDeleteDialogComponent, { data: category, width: '480px' });
   }
 
@@ -53,9 +66,13 @@ export class CategoryDeleteDialogComponent {
 
   protected replacementId: number | null = this.category.parentId;
   protected readonly saving = signal(false);
-  protected readonly hasChildren = computed(() => this.store.categories().some((c) => c.parentId === this.category.id));
+  protected readonly hasChildren = computed(() =>
+    this.store.categories().some((c) => c.parentId === this.category.id),
+  );
   protected readonly options = computed(() =>
-    this.store.categoryOptions(this.category.type).filter((o) => o.category.id !== this.category.id),
+    this.store
+      .categoryOptions(this.category.type)
+      .filter((o) => o.category.id !== this.category.id),
   );
 
   protected delete(): void {

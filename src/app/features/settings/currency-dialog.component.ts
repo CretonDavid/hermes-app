@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { CurrencyApi } from '../../core/api';
@@ -11,7 +16,13 @@ import { NotifyService } from '../../core/notify.service';
 
 @Component({
   selector: 'app-currency-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ data ? 'Modifier la devise' : 'Nouvelle devise' }}</h2>
@@ -56,8 +67,14 @@ export class CurrencyDialogComponent {
       nonNullable: true,
       validators: [Validators.required, Validators.pattern(/^[A-Za-z]{3}$/)],
     }),
-    symbol: new FormControl(this.data?.symbol ?? '', { nonNullable: true, validators: Validators.required }),
-    name: new FormControl(this.data?.name ?? '', { nonNullable: true, validators: Validators.required }),
+    symbol: new FormControl(this.data?.symbol ?? '', {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
+    name: new FormControl(this.data?.name ?? '', {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
   });
 
   protected save(): void {

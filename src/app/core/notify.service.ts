@@ -32,6 +32,8 @@ export class NotifyService {
   }
 
   error(error: unknown): void {
-    this.snackBar.open(typeof error === 'string' ? error : errorMessage(error), 'Fermer', { duration: 7000 });
+    this.snackBar.open(typeof error === 'string' ? error : errorMessage(error), 'Fermer', {
+      duration: 7000,
+    });
   }
 }

@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -14,7 +19,15 @@ import { NotifyService } from '../../core/notify.service';
 
 @Component({
   selector: 'app-rate-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatDatepickerModule, MatButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatDatepickerModule,
+    MatButtonModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ data ? 'Modifier le taux' : 'Nouveau taux de change' }}</h2>
@@ -73,9 +86,18 @@ export class RateDialogComponent {
       this.data?.baseCurrency.id ?? this.store.user()?.referenceCurrency?.id ?? null,
       Validators.required,
     ),
-    quoteCurrencyId: new FormControl<number | null>(this.data?.quoteCurrency.id ?? null, Validators.required),
-    rate: new FormControl<number | null>(this.data?.rate ?? null, [Validators.required, Validators.min(0.00000001)]),
-    date: new FormControl<Date | null>(fromIsoDate(this.data?.date) ?? new Date(), Validators.required),
+    quoteCurrencyId: new FormControl<number | null>(
+      this.data?.quoteCurrency.id ?? null,
+      Validators.required,
+    ),
+    rate: new FormControl<number | null>(this.data?.rate ?? null, [
+      Validators.required,
+      Validators.min(0.00000001),
+    ]),
+    date: new FormControl<Date | null>(
+      fromIsoDate(this.data?.date) ?? new Date(),
+      Validators.required,
+    ),
   });
 
   protected save(): void {
@@ -91,7 +113,9 @@ export class RateDialogComponent {
       date: toIsoDate(v.date)!,
     };
     this.saving.set(true);
-    const request$ = this.data ? this.api.updateRate(this.data.id, request) : this.api.createRate(request);
+    const request$ = this.data
+      ? this.api.updateRate(this.data.id, request)
+      : this.api.createRate(request);
     request$.subscribe({
       next: () => {
         this.store.transactionsChanged();

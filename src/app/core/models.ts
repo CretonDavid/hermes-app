@@ -373,7 +373,13 @@ export interface BalanceHistory {
   currencyCode: string;
   missingRates: string[];
   points: BalancePoint[];
-  accounts: { accountId: number; name: string; currencyCode: string; savings: boolean; points: BalancePoint[] }[];
+  accounts: {
+    accountId: number;
+    name: string;
+    currencyCode: string;
+    savings: boolean;
+    points: BalancePoint[];
+  }[];
 }
 
 export interface SavingsStats {

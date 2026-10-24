@@ -1,5 +1,13 @@
 import { DatePipe, PercentPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,17 +17,33 @@ import { forkJoin } from 'rxjs';
 import { RecurringApi, StatsApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { toIsoDate } from '../../core/format';
-import { CategoryStat, MonthlyStat, StatsSummary, Transaction, UpcomingOccurrence } from '../../core/models';
+import {
+  CategoryStat,
+  MonthlyStat,
+  StatsSummary,
+  Transaction,
+  UpcomingOccurrence,
+} from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { ChartComponent } from '../../shared/chart.component';
 import { donutChart, incomeExpenseChart } from '../../shared/charts';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { AccountFormDialogComponent } from '../accounts/account-form-dialog.component';
+import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
 import { TransactionTableComponent } from '../transactions/transaction-table.component';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, DatePipe, PercentPipe, MatButtonModule, MatIconModule, MoneyPipe, ChartComponent, TransactionTableComponent],
+  imports: [
+    RouterLink,
+    DatePipe,
+    PercentPipe,
+    MatButtonModule,
+    MatIconModule,
+    MoneyPipe,
+    ChartComponent,
+    TransactionTableComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -39,8 +63,19 @@ export class DashboardComponent {
   protected readonly recent = signal<Transaction[]>([]);
   protected readonly upcoming = signal<UpcomingOccurrence[]>([]);
   protected readonly now = new Date();
+  private readonly dataLoaded = signal(false);
 
-  protected readonly currency = computed(() => this.summary()?.currencyCode ?? this.store.referenceCurrency());
+  protected readonly hasAccount = computed(() => this.store.accounts().length > 0);
+  protected readonly hasTransactions = computed(() => this.recent().length > 0);
+  // Guide de démarrage tant qu'il n'y a ni compte ni opération
+  protected readonly showOnboarding = computed(
+    () =>
+      this.store.loaded() && this.dataLoaded() && (!this.hasAccount() || !this.hasTransactions()),
+  );
+
+  protected readonly currency = computed(
+    () => this.summary()?.currencyCode ?? this.store.referenceCurrency(),
+  );
   protected readonly donut = computed(() =>
     this.categories().length ? donutChart(this.categories(), this.currency()) : null,
   );
@@ -66,15 +101,27 @@ export class DashboardComponent {
     AccountFormDialogComponent.open(this.dialog);
   }
 
+  protected newTransaction(): void {
+    TransactionFormDialogComponent.open(this.dialog, {});
+  }
+
+  // Ouvre les dépenses du mois de la catégorie cliquée
   protected openCategory(index: number): void {
     const item = this.categories()[index];
-    if (item?.categoryId) {
-      this.router.navigate(['/transactions'], { queryParams: { categoryId: item.categoryId } });
-    }
+    const queryParams = {
+      from: toIsoDate(startOfMonth(this.now)),
+      to: toIsoDate(endOfMonth(this.now)),
+      kind: 'EXPENSE',
+      categoryId: item?.categoryId ?? -1,
+    };
+    this.router.navigate(['/transactions'], { queryParams });
   }
 
   private load(): void {
-    const month = { from: toIsoDate(startOfMonth(this.now))!, to: toIsoDate(endOfMonth(this.now))! };
+    const month = {
+      from: toIsoDate(startOfMonth(this.now))!,
+      to: toIsoDate(endOfMonth(this.now))!,
+    };
     const sixMonths = { from: toIsoDate(startOfMonth(subMonths(this.now, 5)))!, to: month.to };
     forkJoin({
       summary: this.statsApi.summary(month),
@@ -84,6 +131,7 @@ export class DashboardComponent {
       upcoming: this.recurringApi.upcoming(30),
     }).subscribe({
       next: (r) => {
+        this.dataLoaded.set(true);
         this.summary.set(r.summary);
         this.categories.set(r.categories.items);
         this.months.set(r.months.items);

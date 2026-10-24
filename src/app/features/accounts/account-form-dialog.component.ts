@@ -1,20 +1,41 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { Observable, map, of, switchMap } from 'rxjs';
 import { AccountApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
 import { Account, AccountRequest } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
-import { AccountTypeDialogComponent } from './account-type-dialog.component';
+
+// Types proposés tant que l'utilisateur ne les a pas encore créés
+const SUGGESTED_TYPES: { name: string; savings: boolean }[] = [
+  { name: 'Compte courant', savings: false },
+  { name: 'Compte joint', savings: false },
+  { name: 'Livret A', savings: true },
+  { name: "Livret d'épargne", savings: true },
+  { name: 'Assurance vie', savings: true },
+  { name: 'PEA', savings: true },
+  { name: 'Compte titres', savings: true },
+  { name: 'Espèces', savings: false },
+];
+
+const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placement|ldd/i;
 
 @Component({
   selector: 'app-account-form-dialog',
@@ -24,11 +45,12 @@ import { AccountTypeDialogComponent } from './account-type-dialog.component';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatAutocompleteModule,
     MatDatepickerModule,
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule,
+    MatProgressBarModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -37,106 +59,176 @@ import { AccountTypeDialogComponent } from './account-type-dialog.component';
       <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
         <mat-form-field class="full">
           <mat-label>Nom du compte</mat-label>
-          <input matInput formControlName="name" placeholder="Ex. Compte joint" />
-          <mat-error>Nom obligatoire</mat-error>
+          <input
+            matInput
+            formControlName="name"
+            placeholder="Ex. Compte courant BNP"
+            cdkFocusInitial
+          />
+          <mat-error>Donnez un nom à ce compte</mat-error>
         </mat-form-field>
 
-        <div class="type-field">
-          <mat-form-field>
-            <mat-label>Type de compte</mat-label>
-            <mat-select formControlName="accountTypeId">
-              @for (type of store.accountTypes(); track type.id) {
-                <mat-option [value]="type.id">{{ type.name }}{{ type.savings ? ' (épargne)' : '' }}</mat-option>
-              }
-            </mat-select>
-            @if (store.accountTypes().length === 0) {
-              <mat-hint>Créez d'abord un type de compte →</mat-hint>
+        <mat-form-field>
+          <mat-label>Type de compte</mat-label>
+          <input
+            matInput
+            formControlName="typeName"
+            [matAutocomplete]="types"
+            placeholder="Choisir ou saisir un type"
+          />
+          <mat-autocomplete
+            #types="matAutocomplete"
+            (optionSelected)="onTypeSelected($event.option.value)"
+          >
+            @for (t of typeOptions(); track t.name) {
+              <mat-option [value]="t.name">
+                {{ t.name }}
+                @if (t.savings) {
+                  <span class="muted"> · épargne</span>
+                }
+              </mat-option>
             }
-            <mat-error>Type obligatoire</mat-error>
-          </mat-form-field>
-          <button matIconButton type="button" matTooltip="Nouveau type de compte" (click)="newType()">
-            <mat-icon>add</mat-icon>
-          </button>
-        </div>
+          </mat-autocomplete>
+          @if (isNewType()) {
+            <mat-hint>Nouveau type : il sera créé avec le compte</mat-hint>
+          }
+          <mat-error>Choisissez ou saisissez un type</mat-error>
+        </mat-form-field>
 
         <mat-form-field>
           <mat-label>Devise</mat-label>
           <mat-select formControlName="currencyId">
             @for (currency of store.currencies(); track currency.id) {
-              <mat-option [value]="currency.id">{{ currency.code }} — {{ currency.name }}</mat-option>
+              <mat-option [value]="currency.id"
+                >{{ currency.code }} — {{ currency.name }}</mat-option
+              >
             }
           </mat-select>
         </mat-form-field>
 
+        @if (isNewType()) {
+          <div class="full savings">
+            <mat-checkbox formControlName="savings">C'est un compte d'épargne</mat-checkbox>
+            <span class="muted"
+              >Les virements vers ce compte seront comptés comme de l'épargne dans les
+              statistiques.</span
+            >
+          </div>
+        }
+
         <mat-form-field>
-          <mat-label>Banque</mat-label>
-          <input matInput formControlName="bankName" />
+          <mat-label>Solde de départ</mat-label>
+          <input matInput type="number" step="0.01" formControlName="initialBalance" />
+          <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Date d'ouverture</mat-label>
+          <mat-label>Au</mat-label>
           <input matInput [matDatepicker]="picker" formControlName="openingDate" />
           <mat-datepicker-toggle matIconSuffix [for]="picker" />
           <mat-datepicker #picker />
         </mat-form-field>
+        <p class="full help">
+          <mat-icon inline>info</mat-icon>
+          Indiquez le solde de votre compte à cette date : inutile de saisir les opérations plus
+          anciennes. Le solde affiché ensuite est calculé automatiquement à partir de vos
+          opérations.
+        </p>
 
         <mat-form-field>
-          <mat-label>Solde initial</mat-label>
-          <input matInput type="number" step="0.01" formControlName="initialBalance" />
-          <mat-hint>Solde à la date d'ouverture</mat-hint>
+          <mat-label>Banque (facultatif)</mat-label>
+          <input matInput formControlName="bankName" />
         </mat-form-field>
 
-        <mat-form-field class="full">
-          <mat-label>Description</mat-label>
+        <mat-form-field>
+          <mat-label>Description (facultatif)</mat-label>
           <input matInput formControlName="description" />
         </mat-form-field>
 
         @if (data) {
-          <mat-checkbox formControlName="closed" class="full">Compte clôturé</mat-checkbox>
+          <div class="full savings">
+            <mat-checkbox formControlName="closed">Compte clôturé</mat-checkbox>
+            <span class="muted"
+              >Il reste visible dans l'historique et les statistiques, mais on ne peut plus y
+              ajouter d'opérations.</span
+            >
+          </div>
         }
         <button type="submit" hidden></button>
       </form>
     </mat-dialog-content>
+    @if (saving()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
     <mat-dialog-actions align="end">
       <button matButton mat-dialog-close>Annuler</button>
-      <button matButton="filled" (click)="save()" [disabled]="saving()">Enregistrer</button>
+      <button matButton="filled" (click)="save()" [disabled]="saving()">
+        {{ data ? 'Enregistrer' : 'Créer le compte' }}
+      </button>
     </mat-dialog-actions>
   `,
   styles: `
-    .type-field {
+    .savings {
       display: flex;
-      align-items: flex-start;
-      gap: 4px;
-      button {
-        margin-top: 8px;
+      flex-direction: column;
+      gap: 0;
+      .muted {
+        font: var(--mat-sys-body-small);
+        margin-left: 40px;
       }
+    }
+    .help {
+      font: var(--mat-sys-body-small);
+      color: var(--hermes-muted);
+      margin: -6px 0 4px;
+    }
+    .chip.new {
+      margin-left: 8px;
     }
   `,
 })
 export class AccountFormDialogComponent {
-  static open(dialog: MatDialog, account?: Account): MatDialogRef<AccountFormDialogComponent, Account> {
-    return dialog.open(AccountFormDialogComponent, { data: account ?? null, width: '620px' });
+  static open(
+    dialog: MatDialog,
+    account?: Account,
+  ): MatDialogRef<AccountFormDialogComponent, Account> {
+    return dialog.open(AccountFormDialogComponent, {
+      data: account ?? null,
+      width: '640px',
+      maxHeight: '92vh',
+    });
   }
 
   protected readonly data = inject<Account | null>(MAT_DIALOG_DATA);
   protected readonly store = inject(DataStore);
   private readonly api = inject(AccountApi);
   private readonly notify = inject(NotifyService);
-  private readonly dialog = inject(MatDialog);
   private readonly dialogRef = inject(MatDialogRef<AccountFormDialogComponent, Account>);
 
   protected readonly saving = signal(false);
 
   private readonly defaultCurrencyId =
-    this.store.user()?.referenceCurrency?.id ?? this.store.currencies().find((c) => c.code === 'EUR')?.id ?? null;
+    this.store.user()?.referenceCurrency?.id ??
+    this.store.currencies().find((c) => c.code === 'EUR')?.id ??
+    null;
 
   protected readonly form = new FormGroup({
-    name: new FormControl(this.data?.name ?? '', { nonNullable: true, validators: Validators.required }),
-    accountTypeId: new FormControl<number | null>(
-      this.data?.accountType.id ?? this.store.accountTypes()[0]?.id ?? null,
+    name: new FormControl(this.data?.name ?? '', {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
+    typeName: new FormControl(
+      this.data?.accountType.name ?? this.store.accountTypes()[0]?.name ?? '',
+      {
+        nonNullable: true,
+        validators: Validators.required,
+      },
+    ),
+    savings: new FormControl(false, { nonNullable: true }),
+    currencyId: new FormControl<number | null>(
+      this.data?.currency.id ?? this.defaultCurrencyId,
       Validators.required,
     ),
-    currencyId: new FormControl<number | null>(this.data?.currency.id ?? this.defaultCurrencyId, Validators.required),
     bankName: new FormControl(this.data?.bankName ?? '', { nonNullable: true }),
     openingDate: new FormControl<Date | null>(fromIsoDate(this.data?.openingDate) ?? new Date()),
     initialBalance: new FormControl<number | null>(this.data?.initialBalance ?? 0),
@@ -144,10 +236,55 @@ export class AccountFormDialogComponent {
     closed: new FormControl(this.data?.closed ?? false, { nonNullable: true }),
   });
 
-  protected newType(): void {
-    AccountTypeDialogComponent.open(this.dialog)
-      .afterClosed()
-      .subscribe((type) => type && this.form.controls.accountTypeId.setValue(type.id));
+  private readonly typeName = toSignal(this.form.controls.typeName.valueChanges, {
+    initialValue: this.form.controls.typeName.value,
+  });
+  private readonly currencyId = toSignal(this.form.controls.currencyId.valueChanges, {
+    initialValue: this.form.controls.currencyId.value,
+  });
+
+  protected readonly currencyCode = computed(
+    () => this.store.currencies().find((c) => c.id === this.currencyId())?.code ?? '',
+  );
+
+  private readonly existingType = computed(() => {
+    const name = this.typeName().trim().toLowerCase();
+    return this.store.accountTypes().find((t) => t.name.toLowerCase() === name);
+  });
+
+  protected readonly isNewType = computed(
+    () => this.typeName().trim() !== '' && !this.existingType(),
+  );
+
+  // Types existants puis suggestions, filtrés sur le texte saisi
+  protected readonly typeOptions = computed(() => {
+    const query = this.typeName().trim().toLowerCase();
+    const existing = this.store
+      .accountTypes()
+      .map((t) => ({ name: t.name, savings: t.savings, existing: true }));
+    const names = new Set(existing.map((t) => t.name.toLowerCase()));
+    const suggestions = SUGGESTED_TYPES.filter((s) => !names.has(s.name.toLowerCase())).map(
+      (s) => ({ ...s, existing: false }),
+    );
+    const all = [...existing, ...suggestions];
+    const exact = all.some((t) => t.name.toLowerCase() === query);
+    return exact || !query ? all : all.filter((t) => t.name.toLowerCase().includes(query));
+  });
+
+  constructor() {
+    // Pré-coche « épargne » quand le nom du nouveau type l'évoque
+    this.form.controls.typeName.valueChanges.subscribe((name) => {
+      if (!this.existingType()) {
+        const suggestion = SUGGESTED_TYPES.find(
+          (s) => s.name.toLowerCase() === name.trim().toLowerCase(),
+        );
+        this.form.controls.savings.setValue(suggestion?.savings ?? SAVINGS_PATTERN.test(name));
+      }
+    });
+  }
+
+  protected onTypeSelected(name: string): void {
+    this.form.controls.typeName.setValue(name);
   }
 
   protected save(): void {
@@ -156,28 +293,40 @@ export class AccountFormDialogComponent {
       return;
     }
     const v = this.form.getRawValue();
-    const request: AccountRequest = {
-      name: v.name.trim(),
-      description: v.description.trim() || null,
-      bankName: v.bankName.trim() || null,
-      accountTypeId: v.accountTypeId!,
-      currencyId: v.currencyId!,
-      initialBalance: v.initialBalance ?? 0,
-      openingDate: toIsoDate(v.openingDate) ?? toIsoDate(new Date())!,
-      closed: v.closed,
-    };
+    const existing = this.existingType();
+    const typeId$: Observable<number> = existing
+      ? of(existing.id)
+      : this.api.createType({ name: v.typeName.trim(), savings: v.savings }).pipe(map((t) => t.id));
+
     this.saving.set(true);
-    const request$ = this.data ? this.api.update(this.data.id, request) : this.api.create(request);
-    request$.subscribe({
-      next: (account) => {
-        this.notify.success(this.data ? 'Compte modifié' : 'Compte créé');
-        this.store.transactionsChanged();
-        this.dialogRef.close(account);
-      },
-      error: (error) => {
-        this.saving.set(false);
-        this.notify.error(error);
-      },
-    });
+    typeId$
+      .pipe(
+        switchMap((accountTypeId) => {
+          const request: AccountRequest = {
+            name: v.name.trim(),
+            description: v.description.trim() || null,
+            bankName: v.bankName.trim() || null,
+            accountTypeId,
+            currencyId: v.currencyId!,
+            initialBalance: v.initialBalance ?? 0,
+            openingDate: toIsoDate(v.openingDate) ?? toIsoDate(new Date())!,
+            closed: v.closed,
+          };
+          return this.data ? this.api.update(this.data.id, request) : this.api.create(request);
+        }),
+      )
+      .subscribe({
+        next: (account) => {
+          this.notify.success(this.data ? 'Compte modifié' : `Compte « ${account.name} » créé`);
+          this.store.reloadAccountTypes();
+          this.store.transactionsChanged();
+          this.dialogRef.close(account);
+        },
+        error: (error) => {
+          this.saving.set(false);
+          this.store.reloadAccountTypes();
+          this.notify.error(error);
+        },
+      });
   }
 }

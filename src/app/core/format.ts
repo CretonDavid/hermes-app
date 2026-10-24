@@ -37,7 +37,12 @@ export const STATUS_LABELS: Record<TransactionStatus, string> = {
   RECONCILED: 'Rapprochée',
 };
 
-export const FREQUENCIES: { value: RecurrenceFrequency; label: string; unit: string; units: string }[] = [
+export const FREQUENCIES: {
+  value: RecurrenceFrequency;
+  label: string;
+  unit: string;
+  units: string;
+}[] = [
   { value: 'DAILY', label: 'Quotidienne', unit: 'jour', units: 'jours' },
   { value: 'WEEKLY', label: 'Hebdomadaire', unit: 'semaine', units: 'semaines' },
   { value: 'MONTHLY', label: 'Mensuelle', unit: 'mois', units: 'mois' },

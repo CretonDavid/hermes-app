@@ -5,10 +5,20 @@
       <span>Hermès</span>
     </div>
 
-    <button matButton="filled" class="new-button" (click)="newTransaction()" [disabled]="store.openAccounts().length === 0">
-      <mat-icon>add</mat-icon>
-      Nouvelle opération
-    </button>
+    <span
+      class="new-button-wrapper"
+      [matTooltip]="store.openAccounts().length === 0 ? 'Créez d’abord un compte' : ''"
+    >
+      <button
+        matButton="filled"
+        class="new-button"
+        (click)="newTransaction()"
+        [disabled]="store.openAccounts().length === 0"
+      >
+        <mat-icon>add</mat-icon>
+        Nouvelle opération
+      </button>
+    </span>
 
     <mat-nav-list>
       @for (item of navigation; track item.path) {
@@ -30,8 +40,12 @@
       <div class="accounts-title">Mes comptes</div>
       <div class="accounts">
         @for (account of store.openAccounts(); track account.id) {
-          <a class="account-link" [routerLink]="['/accounts', account.id]" routerLinkActive="active">
-            <span class="name">{{ account.name }}</span>
+          <a
+            class="account-link"
+            [routerLink]="['/accounts', account.id]"
+            routerLinkActive="active"
+          >
+            <span class="name" [title]="account.name">{{ account.name }}</span>
             <span class="amount" [class.negative]="account.balance < 0">
               {{ account.balance | money: account.currency.code }}
             </span>

@@ -12,7 +12,8 @@ export const routes: Routes = [
     path: 'register',
     canActivate: [guestGuard],
     title: 'Créer un compte · Hermès',
-    loadComponent: () => import('./features/auth/register.component').then((m) => m.RegisterComponent),
+    loadComponent: () =>
+      import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },
   {
     path: '',
@@ -23,49 +24,60 @@ export const routes: Routes = [
         path: '',
         pathMatch: 'full',
         title: 'Tableau de bord · Hermès',
-        loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
         path: 'accounts',
         title: 'Comptes · Hermès',
-        loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
+        loadComponent: () =>
+          import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
       },
       {
         path: 'accounts/:id',
         title: 'Compte · Hermès',
         loadComponent: () =>
-          import('./features/accounts/account-detail.component').then((m) => m.AccountDetailComponent),
+          import('./features/accounts/account-detail.component').then(
+            (m) => m.AccountDetailComponent,
+          ),
       },
       {
         path: 'transactions',
         title: 'Opérations · Hermès',
         loadComponent: () =>
-          import('./features/transactions/transactions.component').then((m) => m.TransactionsComponent),
+          import('./features/transactions/transactions.component').then(
+            (m) => m.TransactionsComponent,
+          ),
       },
       {
         path: 'recurring',
         title: 'Récurrences · Hermès',
-        loadComponent: () => import('./features/recurring/recurring.component').then((m) => m.RecurringComponent),
+        loadComponent: () =>
+          import('./features/recurring/recurring.component').then((m) => m.RecurringComponent),
       },
       {
         path: 'import',
         title: 'Import · Hermès',
-        loadComponent: () => import('./features/import/import.component').then((m) => m.ImportComponent),
+        loadComponent: () =>
+          import('./features/import/import.component').then((m) => m.ImportComponent),
       },
       {
         path: 'categories',
         title: 'Catégories · Hermès',
-        loadComponent: () => import('./features/categories/categories.component').then((m) => m.CategoriesComponent),
+        loadComponent: () =>
+          import('./features/categories/categories.component').then((m) => m.CategoriesComponent),
       },
       {
         path: 'stats',
         title: 'Statistiques · Hermès',
-        loadComponent: () => import('./features/stats/stats.component').then((m) => m.StatsComponent),
+        loadComponent: () =>
+          import('./features/stats/stats.component').then((m) => m.StatsComponent),
       },
       {
         path: 'settings',
         title: 'Paramètres · Hermès',
-        loadComponent: () => import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+        loadComponent: () =>
+          import('./features/settings/settings.component').then((m) => m.SettingsComponent),
       },
     ],
   },

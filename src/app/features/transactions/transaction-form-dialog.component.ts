@@ -1,5 +1,12 @@
 import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -7,12 +14,18 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable, debounceTime, distinctUntilChanged, of, startWith, switchMap } from 'rxjs';
 import { TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
@@ -26,7 +39,9 @@ import {
   TransferRequest,
 } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { CategoryPickerComponent } from '../../shared/category-picker.component';
 import { confirm } from '../../shared/confirm-dialog.component';
+import { MoneyPipe } from '../../shared/money.pipe';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -52,42 +67,27 @@ export interface TransactionFormData {
     MatCheckboxModule,
     MatIconModule,
     MatProgressBarModule,
+    MatTooltipModule,
+    MoneyPipe,
+    CategoryPickerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './transaction-form-dialog.component.html',
-  styles: `
-    .mode {
-      width: 100%;
-      margin-bottom: 20px;
-      mat-button-toggle {
-        flex: 1;
-      }
-    }
-    .amount-field input {
-      font-size: 20px;
-      font-variant-numeric: tabular-nums;
-    }
-    .locked {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      padding: 10px 14px;
-      margin-bottom: 16px;
-      border-radius: 12px;
-      background: var(--mat-sys-tertiary-container);
-      color: var(--mat-sys-on-tertiary-container);
-      font: var(--mat-sys-body-medium);
-    }
-    .option-indent {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-  `,
+  styleUrl: './transaction-form-dialog.component.scss',
 })
 export class TransactionFormDialogComponent implements OnInit {
-  static open(dialog: MatDialog, data: TransactionFormData): MatDialogRef<TransactionFormDialogComponent, boolean> {
-    return dialog.open(TransactionFormDialogComponent, { data, width: '640px', maxHeight: '92vh', autoFocus: 'first-tabbable' });
+  static open(
+    dialog: MatDialog,
+    data: TransactionFormData,
+  ): MatDialogRef<TransactionFormDialogComponent, boolean> {
+    // Le curseur se place directement sur le montant à la création
+    const autoFocus = data.transaction ? 'dialog' : 'input[formcontrolname="amount"]';
+    return dialog.open(TransactionFormDialogComponent, {
+      data,
+      width: '640px',
+      maxHeight: '92vh',
+      autoFocus,
+    });
   }
 
   protected readonly data = inject<TransactionFormData>(MAT_DIALOG_DATA);
@@ -103,8 +103,14 @@ export class TransactionFormDialogComponent implements OnInit {
   protected readonly reconciled = this.data.transaction?.status === 'RECONCILED';
 
   protected readonly mode = signal<Mode>(
-    this.data.transaction ? (this.data.transaction.transfer ? 'TRANSFER' : this.data.transaction.direction) : (this.data.mode ?? 'DEBIT'),
+    this.data.transaction
+      ? this.data.transaction.transfer
+        ? 'TRANSFER'
+        : this.data.transaction.direction
+      : (this.data.mode ?? 'DEBIT'),
   );
+  // Les champs secondaires sont repliés à la création pour garder une saisie rapide
+  protected readonly showDetails = signal(this.editing);
   // Pour un virement en édition, id de l'opération de débit
   private transferId: number | null = null;
 
@@ -123,33 +129,58 @@ export class TransactionFormDialogComponent implements OnInit {
     cleared: new FormControl(false, { nonNullable: true }),
   });
 
-  private readonly accountId = toSignal(this.form.controls.accountId.valueChanges, { initialValue: null });
-  private readonly toAccountId = toSignal(this.form.controls.toAccountId.valueChanges, { initialValue: null });
+  private readonly accountId = toSignal(this.form.controls.accountId.valueChanges, {
+    initialValue: null,
+  });
+  private readonly toAccountId = toSignal(this.form.controls.toAccountId.valueChanges, {
+    initialValue: null,
+  });
+  private readonly amount = toSignal(this.form.controls.amount.valueChanges, {
+    initialValue: null,
+  });
+  private readonly payee = toSignal(this.form.controls.payee.valueChanges, { initialValue: '' });
 
   protected readonly accounts = computed(() =>
     this.store.accounts().filter((a) => !a.closed || a.id === this.data.transaction?.accountId),
   );
-  protected readonly categoryOptions = computed(() =>
-    this.store.categoryOptions(this.mode() === 'CREDIT' ? 'INCOME' : 'EXPENSE'),
+  protected readonly canTransfer = computed(() => this.store.openAccounts().length >= 2);
+  protected readonly categoryType = computed(() =>
+    this.mode() === 'CREDIT' ? 'INCOME' : 'EXPENSE',
   );
-  protected readonly currencyCode = computed(() => this.store.account(this.accountId())?.currency.code ?? 'EUR');
-  protected readonly targetCurrency = computed(() => this.store.account(this.toAccountId())?.currency.code ?? null);
+  protected readonly currencyCode = computed(
+    () => this.store.account(this.accountId())?.currency.code ?? 'EUR',
+  );
+  protected readonly fromAccount = computed(() => this.store.account(this.accountId()));
+  protected readonly toAccount = computed(() => this.store.account(this.toAccountId()));
   protected readonly needsTargetAmount = computed(
-    () => this.mode() === 'TRANSFER' && !!this.targetCurrency() && this.targetCurrency() !== this.currencyCode(),
+    () =>
+      this.mode() === 'TRANSFER' &&
+      !!this.toAccount() &&
+      this.toAccount()!.currency.code !== this.currencyCode(),
+  );
+  protected readonly amountValue = computed(() => this.amount() ?? 0);
+  protected readonly labelPlaceholder = computed(
+    () => this.payee().trim() || 'Par défaut : le tiers',
   );
 
-  protected readonly payeeSuggestions: Observable<PayeeSuggestion[]> = this.form.controls.payee.valueChanges.pipe(
-    startWith(''),
-    debounceTime(200),
-    distinctUntilChanged(),
-    switchMap((q) => (q.length >= 1 ? this.api.payees(q, 8) : of([]))),
-  );
+  protected readonly payeeSuggestions: Observable<PayeeSuggestion[]> =
+    this.form.controls.payee.valueChanges.pipe(
+      startWith(''),
+      debounceTime(200),
+      distinctUntilChanged(),
+      switchMap((q) => (q.length >= 1 ? this.api.payees(q, 8) : of([]))),
+    );
 
   ngOnInit(): void {
     const t = this.data.transaction;
     if (!t) {
       const accountId = this.data.accountId ?? this.store.openAccounts()[0]?.id ?? null;
       this.form.patchValue({ accountId });
+      if (this.mode() === 'TRANSFER') {
+        this.form.patchValue({
+          toAccountId: this.store.openAccounts().find((a) => a.id !== accountId)?.id ?? null,
+        });
+      }
       return;
     }
 
@@ -158,13 +189,18 @@ export class TransactionFormDialogComponent implements OnInit {
       amount: t.amount,
       operationDate: fromIsoDate(t.operationDate),
       valueDate: fromIsoDate(t.valueDate),
-      label: t.label,
+      // Un libellé identique au tiers n'apporte rien : on le laisse vide
+      label: t.label === t.payee ? '' : t.label,
       payee: t.payee ?? '',
       categoryId: t.category?.id ?? null,
       paymentMethod: t.paymentMethod,
       notes: t.notes ?? '',
       cleared: t.status !== 'PENDING',
     });
+    if (!t.payee && !t.transfer) {
+      // Opération sans tiers (import par exemple) : le libellé est l'information principale
+      this.form.patchValue({ payee: '', label: t.label });
+    }
 
     if (t.transfer) {
       // On recharge le virement complet pour connaître les deux côtés
@@ -175,6 +211,7 @@ export class TransactionFormDialogComponent implements OnInit {
           toAccountId: transfer.credit.accountId,
           amount: transfer.debit.amount,
           targetAmount: transfer.credit.amount,
+          label: transfer.debit.label,
         });
       });
     }
@@ -192,18 +229,26 @@ export class TransactionFormDialogComponent implements OnInit {
     }
     this.mode.set(mode);
     this.form.controls.categoryId.setValue(null);
+    if (mode === 'TRANSFER' && !this.form.controls.toAccountId.value) {
+      const other = this.store
+        .openAccounts()
+        .find((a) => a.id !== this.form.controls.accountId.value);
+      this.form.controls.toAccountId.setValue(other?.id ?? null);
+    }
   }
 
   protected selectPayee(suggestion: PayeeSuggestion): void {
     if (!this.form.controls.categoryId.value && suggestion.lastCategoryId) {
       const option = this.store.categoryOption(suggestion.lastCategoryId);
-      if (option && option.category.type === (this.mode() === 'CREDIT' ? 'INCOME' : 'EXPENSE')) {
+      if (option && option.category.type === this.categoryType()) {
         this.form.controls.categoryId.setValue(suggestion.lastCategoryId);
       }
     }
-    if (!this.form.controls.label.value) {
-      this.form.controls.label.setValue(suggestion.payee);
-    }
+  }
+
+  protected swapAccounts(): void {
+    const { accountId, toAccountId } = this.form.getRawValue();
+    this.form.patchValue({ accountId: toAccountId, toAccountId: accountId });
   }
 
   protected save(): void {
@@ -216,7 +261,7 @@ export class TransactionFormDialogComponent implements OnInit {
     let request$: Observable<unknown>;
     if (this.mode() === 'TRANSFER') {
       if (!v.toAccountId) {
-        this.notify.error('Choisissez le compte crédité');
+        this.notify.error('Choisissez le compte qui reçoit le virement');
         return;
       }
       const request: TransferRequest = {
@@ -228,11 +273,13 @@ export class TransactionFormDialogComponent implements OnInit {
         notes: v.notes.trim() || null,
         operationDate: toIsoDate(v.operationDate)!,
       };
-      request$ = this.transferId ? this.api.updateTransfer(this.transferId, request) : this.api.createTransfer(request);
+      request$ = this.transferId
+        ? this.api.updateTransfer(this.transferId, request)
+        : this.api.createTransfer(request);
     } else {
       const label = v.label.trim() || v.payee.trim();
       if (!label) {
-        this.notify.error('Indiquez un libellé ou un tiers');
+        this.notify.error('Indiquez au moins un tiers ou un libellé');
         return;
       }
       const request: TransactionRequest = {
@@ -272,7 +319,7 @@ export class TransactionFormDialogComponent implements OnInit {
     confirm(this.dialog, {
       title: "Supprimer l'opération",
       message: t.transfer
-        ? 'Les deux opérations du virement seront supprimées.'
+        ? 'Les deux côtés du virement seront supprimés.'
         : `« ${t.label} » sera définitivement supprimée.`,
       confirmLabel: 'Supprimer',
       danger: true,

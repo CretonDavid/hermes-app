@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/comm
 import { inject } from '@angular/core';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { NotifyService } from '../notify.service';
 import { AuthService } from './auth.service';
 
 const withToken = (request: HttpRequest<unknown>, token: string | null) =>
@@ -17,6 +18,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   }
 
   const auth = inject(AuthService);
+  const notify = inject(NotifyService);
   return next(withToken(request, auth.token)).pipe(
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
@@ -28,6 +30,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       }
       return auth.refresh().pipe(
         catchError((refreshError: unknown) => {
+          notify.error('Votre session a expiré, veuillez vous reconnecter.');
           auth.logout();
           return throwError(() => refreshError);
         }),

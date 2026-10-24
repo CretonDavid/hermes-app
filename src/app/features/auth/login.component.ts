@@ -34,7 +34,14 @@ import { errorMessage } from '../../core/notify.service';
       <form [formGroup]="form" (ngSubmit)="submit()">
         <mat-form-field class="number-input">
           <mat-label>Numéro de compte</mat-label>
-          <input matInput formControlName="number" autocomplete="off" inputmode="numeric" autofocus />
+          <input
+            matInput
+            formControlName="number"
+            autocomplete="off"
+            inputmode="numeric"
+            autofocus
+            placeholder="000000 000000 000000 000000 000000"
+          />
           <mat-hint align="end">{{ digits().length }} / 30</mat-hint>
           @if (number.hasError('pattern')) {
             <mat-error>Le numéro doit contenir exactement 30 chiffres</mat-error>
@@ -79,8 +86,16 @@ export class LoginComponent {
   protected readonly digits = signal('');
 
   constructor() {
-    // Les espaces et tirets collés avec le numéro sont ignorés
-    this.number.valueChanges.subscribe((value) => this.digits.set(value.replace(/\D/g, '')));
+    // Les espaces et tirets collés avec le numéro sont ignorés, l'affichage est regroupé par 6 chiffres
+    this.number.valueChanges.subscribe((value) => {
+      const digits = value.replace(/\D/g, '').slice(0, 30);
+      this.digits.set(digits);
+      this.error.set(null);
+      const formatted = digits.match(/.{1,6}/g)?.join(' ') ?? '';
+      if (formatted !== value) {
+        this.number.setValue(formatted, { emitEvent: false });
+      }
+    });
   }
 
   protected submit(): void {

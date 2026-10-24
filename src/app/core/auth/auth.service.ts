@@ -29,11 +29,15 @@ export class AuthService {
   }
 
   login(accountNumber: string): Observable<Tokens> {
-    return this.http.post<Tokens>(`${this.url}/login`, { accountNumber }).pipe(tap((t) => this.store(t)));
+    return this.http
+      .post<Tokens>(`${this.url}/login`, { accountNumber })
+      .pipe(tap((t) => this.store(t)));
   }
 
   reactivate(accountNumber: string): Observable<Tokens> {
-    return this.http.post<Tokens>(`${this.url}/reactivate`, { accountNumber }).pipe(tap((t) => this.store(t)));
+    return this.http
+      .post<Tokens>(`${this.url}/reactivate`, { accountNumber })
+      .pipe(tap((t) => this.store(t)));
   }
 
   refresh(): Observable<Tokens> {

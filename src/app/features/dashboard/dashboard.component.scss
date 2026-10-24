@@ -3,7 +3,7 @@
 }
 
 .onboarding {
-  max-width: 640px;
+  max-width: 820px;
 
   ol {
     line-height: 2;
@@ -50,4 +50,45 @@
   .small {
     font: var(--mat-sys-body-small);
   }
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--hermes-border);
+
+  .state {
+    color: var(--mat-sys-primary);
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &.done .state {
+    color: var(--hermes-positive);
+  }
+
+  &.done strong {
+    text-decoration: line-through;
+    color: var(--hermes-muted);
+  }
+
+  &.locked {
+    opacity: 0.5;
+  }
+}
+
+.hint {
+  font: var(--mat-sys-body-small);
+  text-align: center;
+  margin: 8px 0 0;
 }

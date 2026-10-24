@@ -15,6 +15,9 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { fr } from 'date-fns/locale';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { FrDatepickerIntl, FrPaginatorIntl } from './core/material-intl';
+import { MatDatepickerIntl } from '@angular/material/datepicker';
+import { MatPaginatorIntl } from '@angular/material/paginator';
 
 registerLocaleData(localeFr);
 
@@ -35,7 +38,15 @@ export const appConfig: ApplicationConfig = {
         monthYearA11yLabel: 'LLLL yyyy',
       },
     }),
-    { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { appearance: 'outline', subscriptSizing: 'dynamic' } },
-    { provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, useValue: { duration: 4000, verticalPosition: 'bottom' } },
+    {
+      provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
+      useValue: { appearance: 'outline', subscriptSizing: 'dynamic' },
+    },
+    { provide: MatPaginatorIntl, useClass: FrPaginatorIntl },
+    { provide: MatDatepickerIntl, useClass: FrDatepickerIntl },
+    {
+      provide: MAT_SNACK_BAR_DEFAULT_OPTIONS,
+      useValue: { duration: 4000, verticalPosition: 'bottom' },
+    },
   ],
 };

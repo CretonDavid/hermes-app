@@ -51,7 +51,13 @@ export class DataStore {
     children.forEach((list) => list.sort((a, b) => a.name.localeCompare(b.name, 'fr')));
 
     const result: CategoryOption[] = [];
-    const walk = (parentId: number | null, depth: number, prefix: string, color: string | null, icon: string | null) => {
+    const walk = (
+      parentId: number | null,
+      depth: number,
+      prefix: string,
+      color: string | null,
+      icon: string | null,
+    ) => {
       for (const category of children.get(parentId) ?? []) {
         const path = prefix ? `${prefix} › ${category.name}` : category.name;
         const ownColor = category.color ?? color;
@@ -103,23 +109,33 @@ export class DataStore {
   }
 
   reloadAccounts(): void {
-    this.accountApi.list().subscribe({ next: (a) => this.accounts.set(a), error: (e) => this.notify.error(e) });
+    this.accountApi
+      .list()
+      .subscribe({ next: (a) => this.accounts.set(a), error: (e) => this.notify.error(e) });
   }
 
   reloadAccountTypes(): void {
-    this.accountApi.types().subscribe({ next: (t) => this.accountTypes.set(t), error: (e) => this.notify.error(e) });
+    this.accountApi
+      .types()
+      .subscribe({ next: (t) => this.accountTypes.set(t), error: (e) => this.notify.error(e) });
   }
 
   reloadCategories(): void {
-    this.categoryApi.list().subscribe({ next: (c) => this.categories.set(c), error: (e) => this.notify.error(e) });
+    this.categoryApi
+      .list()
+      .subscribe({ next: (c) => this.categories.set(c), error: (e) => this.notify.error(e) });
   }
 
   reloadCurrencies(): void {
-    this.currencyApi.list().subscribe({ next: (c) => this.currencies.set(c), error: (e) => this.notify.error(e) });
+    this.currencyApi
+      .list()
+      .subscribe({ next: (c) => this.currencies.set(c), error: (e) => this.notify.error(e) });
   }
 
   reloadUser(): void {
-    this.userApi.me().subscribe({ next: (u) => this.user.set(u), error: (e) => this.notify.error(e) });
+    this.userApi
+      .me()
+      .subscribe({ next: (u) => this.user.set(u), error: (e) => this.notify.error(e) });
   }
 
   clear(): void {

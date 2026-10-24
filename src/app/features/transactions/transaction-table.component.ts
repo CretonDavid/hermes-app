@@ -21,7 +21,13 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
     <div class="table-wrapper">
       <table mat-table [dataSource]="transactions()">
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef></th>
+          <th mat-header-cell *matHeaderCellDef>
+            <mat-icon
+              class="help"
+              matTooltip="Pointage : ○ non pointée · ✓ pointée (vue sur le relevé bancaire) · cadenas = rapprochée. Cliquez sur le rond pour pointer."
+              >help</mat-icon
+            >
+          </th>
           <td mat-cell *matCellDef="let t" class="status-cell">
             <button
               matIconButton
@@ -31,7 +37,11 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
               [class]="'status ' + t.status"
             >
               <mat-icon>{{
-                t.status === 'RECONCILED' ? 'lock' : t.status === 'CLEARED' ? 'check_circle' : 'radio_button_unchecked'
+                t.status === 'RECONCILED'
+                  ? 'lock'
+                  : t.status === 'CLEARED'
+                    ? 'check_circle'
+                    : 'radio_button_unchecked'
               }}</mat-icon>
             </button>
           </td>
@@ -39,7 +49,9 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
 
         <ng-container matColumnDef="date">
           <th mat-header-cell *matHeaderCellDef>Date</th>
-          <td mat-cell *matCellDef="let t" class="date">{{ t.operationDate | date: 'dd/MM/yyyy' }}</td>
+          <td mat-cell *matCellDef="let t" class="date">
+            {{ t.operationDate | date: 'dd/MM/yyyy' }}
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="label">
@@ -53,7 +65,8 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
               }
               <span>{{ t.label }}</span>
             </div>
-            @if (t.payee && t.payee !== t.label) {
+            @if (t.transfer) {
+            } @else if (t.payee && t.payee !== t.label) {
               <div class="sub">{{ t.payee }}</div>
             } @else if (t.paymentMethod) {
               <div class="sub">{{ methodLabel(t.paymentMethod) }}</div>
@@ -65,7 +78,15 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
           <th mat-header-cell *matHeaderCellDef>Catégorie</th>
           <td mat-cell *matCellDef="let t">
             @if (t.transfer) {
-              <span class="chip"><mat-icon>swap_horiz</mat-icon>{{ t.direction === 'DEBIT' ? 'Vers' : 'Depuis' }} {{ t.transfer.accountName }}</span>
+              <span
+                class="chip"
+                [matTooltip]="
+                  (t.direction === 'DEBIT' ? 'Vers ' : 'Depuis ') +
+                  t.transfer.accountName +
+                  ' · ni dépense ni revenu'
+                "
+                ><mat-icon>swap_horiz</mat-icon>Virement interne</span
+              >
             } @else if (t.category) {
               <span class="chip">
                 <span class="category-dot" [style.background]="categoryColor(t.category.id)"></span>
@@ -84,13 +105,23 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
 
         <ng-container matColumnDef="amount">
           <th mat-header-cell *matHeaderCellDef>Montant</th>
-          <td mat-cell *matCellDef="let t" class="amount" [class.positive]="t.direction === 'CREDIT'">
+          <td
+            mat-cell
+            *matCellDef="let t"
+            class="amount"
+            [class.positive]="t.direction === 'CREDIT'"
+          >
             {{ (t.direction === 'DEBIT' ? -t.amount : t.amount) | money: t.currencyCode : true }}
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columns()"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns()" class="clickable" (click)="edit(row)"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: columns()"
+          class="clickable"
+          (click)="edit(row)"
+        ></tr>
       </table>
     </div>
     @if (transactions().length === 0) {
@@ -137,6 +168,14 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
     .status.PENDING {
       color: var(--mat-sys-outline);
     }
+    .help {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--hermes-muted);
+      cursor: help;
+      margin-left: 10px;
+    }
     .uncategorized {
       font-style: italic;
     }
@@ -170,7 +209,9 @@ export class TransactionTableComponent {
   }
 
   protected statusTooltip(t: Transaction): string {
-    return t.status === 'RECONCILED' ? STATUS_LABELS.RECONCILED : `${STATUS_LABELS[t.status]} — cliquer pour changer`;
+    return t.status === 'RECONCILED'
+      ? STATUS_LABELS.RECONCILED
+      : `${STATUS_LABELS[t.status]} — cliquer pour changer`;
   }
 
   protected toggleStatus(t: Transaction, event: Event): void {

@@ -112,7 +112,9 @@ export class CurrencyApi {
   }
 
   rates(latest: boolean, currencyId?: number): Observable<ExchangeRate[]> {
-    return this.http.get<ExchangeRate[]>(`${API}/exchange-rates`, { params: toParams({ latest, currencyId }) });
+    return this.http.get<ExchangeRate[]>(`${API}/exchange-rates`, {
+      params: toParams({ latest, currencyId }),
+    });
   }
 
   createRate(request: ExchangeRateRequest): Observable<ExchangeRate> {
@@ -128,7 +130,9 @@ export class CurrencyApi {
   }
 
   syncRates(from?: string): Observable<ExchangeRateSyncResult> {
-    return this.http.post<ExchangeRateSyncResult>(`${API}/exchange-rates/sync`, null, { params: toParams({ from }) });
+    return this.http.post<ExchangeRateSyncResult>(`${API}/exchange-rates/sync`, null, {
+      params: toParams({ from }),
+    });
   }
 }
 
@@ -180,8 +184,15 @@ export class AccountApi {
     return this.http.get<ReconciliationStatus>(`${API}/accounts/${id}/reconciliation-status`);
   }
 
-  reconcile(id: number, statementDate: string, statementBalance: number): Observable<Reconciliation> {
-    return this.http.post<Reconciliation>(`${API}/accounts/${id}/reconciliations`, { statementDate, statementBalance });
+  reconcile(
+    id: number,
+    statementDate: string,
+    statementBalance: number,
+  ): Observable<Reconciliation> {
+    return this.http.post<Reconciliation>(`${API}/accounts/${id}/reconciliations`, {
+      statementDate,
+      statementBalance,
+    });
   }
 
   undoReconciliation(id: number, reconciliationId: number): Observable<void> {
@@ -206,7 +217,9 @@ export class CategoryApi {
   }
 
   delete(id: number, replacementId?: number | null): Observable<void> {
-    return this.http.delete<void>(`${API}/categories/${id}`, { params: toParams({ replacementId }) });
+    return this.http.delete<void>(`${API}/categories/${id}`, {
+      params: toParams({ replacementId }),
+    });
   }
 }
 
@@ -215,7 +228,9 @@ export class TransactionApi {
   private readonly http = inject(HttpClient);
 
   search(filter: TransactionFilter, page = 0, size = 50): Observable<Page<Transaction>> {
-    return this.http.get<Page<Transaction>>(`${API}/transactions`, { params: toParams({ ...filter, page, size }) });
+    return this.http.get<Page<Transaction>>(`${API}/transactions`, {
+      params: toParams({ ...filter, page, size }),
+    });
   }
 
   get(id: number): Observable<Transaction> {
@@ -239,7 +254,9 @@ export class TransactionApi {
   }
 
   payees(q: string, limit = 10): Observable<PayeeSuggestion[]> {
-    return this.http.get<PayeeSuggestion[]>(`${API}/transactions/payees`, { params: toParams({ q, limit }) });
+    return this.http.get<PayeeSuggestion[]>(`${API}/transactions/payees`, {
+      params: toParams({ q, limit }),
+    });
   }
 
   getTransfer(transactionId: number): Observable<Transfer> {
@@ -264,7 +281,9 @@ export class RecurringApi {
   }
 
   upcoming(days: number): Observable<UpcomingOccurrence[]> {
-    return this.http.get<UpcomingOccurrence[]>(`${API}/recurring-transactions/upcoming`, { params: toParams({ days }) });
+    return this.http.get<UpcomingOccurrence[]>(`${API}/recurring-transactions/upcoming`, {
+      params: toParams({ days }),
+    });
   }
 
   create(request: RecurringTransactionRequest): Observable<RecurringTransaction> {
@@ -321,24 +340,38 @@ export class StatsApi {
     return this.http.get<StatsSummary>(`${API}/stats/summary`, { params: toParams(query) });
   }
 
-  categories(query: StatsQuery & { type: CategoryType; parentId?: number | null }): Observable<StatsList<CategoryStat>> {
-    return this.http.get<StatsList<CategoryStat>>(`${API}/stats/categories`, { params: toParams(query) });
+  categories(
+    query: StatsQuery & { type: CategoryType; parentId?: number | null },
+  ): Observable<StatsList<CategoryStat>> {
+    return this.http.get<StatsList<CategoryStat>>(`${API}/stats/categories`, {
+      params: toParams(query),
+    });
   }
 
   monthly(query: StatsQuery): Observable<StatsList<MonthlyStat>> {
-    return this.http.get<StatsList<MonthlyStat>>(`${API}/stats/monthly`, { params: toParams(query) });
+    return this.http.get<StatsList<MonthlyStat>>(`${API}/stats/monthly`, {
+      params: toParams(query),
+    });
   }
 
-  categoryTrend(query: StatsQuery & { categoryId: number }): Observable<StatsList<CategoryTrendStat>> {
-    return this.http.get<StatsList<CategoryTrendStat>>(`${API}/stats/category-trend`, { params: toParams(query) });
+  categoryTrend(
+    query: StatsQuery & { categoryId: number },
+  ): Observable<StatsList<CategoryTrendStat>> {
+    return this.http.get<StatsList<CategoryTrendStat>>(`${API}/stats/category-trend`, {
+      params: toParams(query),
+    });
   }
 
   payees(query: StatsQuery & { limit?: number }): Observable<StatsList<PayeeStat>> {
     return this.http.get<StatsList<PayeeStat>>(`${API}/stats/payees`, { params: toParams(query) });
   }
 
-  balanceHistory(query: StatsQuery & { granularity?: 'DAY' | 'WEEK' | 'MONTH' }): Observable<BalanceHistory> {
-    return this.http.get<BalanceHistory>(`${API}/stats/balance-history`, { params: toParams(query) });
+  balanceHistory(
+    query: StatsQuery & { granularity?: 'DAY' | 'WEEK' | 'MONTH' },
+  ): Observable<BalanceHistory> {
+    return this.http.get<BalanceHistory>(`${API}/stats/balance-history`, {
+      params: toParams(query),
+    });
   }
 
   savings(query: StatsQuery): Observable<SavingsStats> {

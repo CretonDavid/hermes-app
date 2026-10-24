@@ -7,7 +7,16 @@ export const INCOME_COLOR = '#2e7d32';
 export const EXPENSE_COLOR = '#c62828';
 export const SAVINGS_COLOR = '#1565c0';
 
-const FALLBACK = ['#5c6bc0', '#26a69a', '#ffa726', '#ec407a', '#7e57c2', '#42a5f5', '#9ccc65', '#8d6e63'];
+const FALLBACK = [
+  '#5c6bc0',
+  '#26a69a',
+  '#ffa726',
+  '#ec407a',
+  '#7e57c2',
+  '#42a5f5',
+  '#9ccc65',
+  '#8d6e63',
+];
 
 export function categoryColors(items: CategoryStat[]): string[] {
   const colors = items.map((item, index) => item.color ?? FALLBACK[index % FALLBACK.length]);
@@ -23,7 +32,9 @@ function shades(hex: string, count: number): string[] {
   return Array.from({ length: count }, (_, i) => {
     // De la couleur assombrie à la couleur éclaircie
     const factor = count === 1 ? 0 : -0.35 + (0.95 * i) / (count - 1);
-    const mixed = rgb.map((c) => Math.round(factor < 0 ? c * (1 + factor) : c + (255 - c) * factor));
+    const mixed = rgb.map((c) =>
+      Math.round(factor < 0 ? c * (1 + factor) : c + (255 - c) * factor),
+    );
     return `#${mixed.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
   });
 }
@@ -36,7 +47,13 @@ export function donutChart(items: CategoryStat[], currency: string): ChartConfig
     type: 'doughnut',
     data: {
       labels: items.map((i) => i.name),
-      datasets: [{ data: items.map((i) => i.amount), backgroundColor: categoryColors(items), borderWidth: 2 }],
+      datasets: [
+        {
+          data: items.map((i) => i.amount),
+          backgroundColor: categoryColors(items),
+          borderWidth: 2,
+        },
+      ],
     },
     options: {
       cutout: '62%',
@@ -56,14 +73,28 @@ export function donutChart(items: CategoryStat[], currency: string): ChartConfig
   return config as unknown as ChartConfiguration;
 }
 
-export function incomeExpenseChart(months: MonthlyStat[], currency: string, withNet = true): ChartConfiguration {
+export function incomeExpenseChart(
+  months: MonthlyStat[],
+  currency: string,
+  withNet = true,
+): ChartConfiguration {
   return {
     type: 'bar',
     data: {
       labels: months.map((m) => formatMonth(m.month)),
       datasets: [
-        { label: 'Revenus', data: months.map((m) => m.income), backgroundColor: INCOME_COLOR, borderRadius: 4 },
-        { label: 'Dépenses', data: months.map((m) => m.expenses), backgroundColor: EXPENSE_COLOR, borderRadius: 4 },
+        {
+          label: 'Revenus',
+          data: months.map((m) => m.income),
+          backgroundColor: INCOME_COLOR,
+          borderRadius: 4,
+        },
+        {
+          label: 'Dépenses',
+          data: months.map((m) => m.expenses),
+          backgroundColor: EXPENSE_COLOR,
+          borderRadius: 4,
+        },
         ...(withNet
           ? [
               {
@@ -80,7 +111,11 @@ export function incomeExpenseChart(months: MonthlyStat[], currency: string, with
     },
     options: {
       plugins: {
-        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label} : ${formatMoney(ctx.parsed.y, currency)}` } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.dataset.label} : ${formatMoney(ctx.parsed.y, currency)}`,
+          },
+        },
       },
       scales: { y: { ticks: { callback: (v) => formatMoney(Number(v), currency) } } },
     },

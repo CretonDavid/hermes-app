@@ -32,6 +32,7 @@ Chart.defaults.plugins.legend.labels.usePointStyle = true;
 export class ChartComponent implements OnDestroy {
   readonly config = input.required<ChartConfiguration>();
   readonly height = input(280);
+  readonly clickable = input(false);
   // Index de l'élément cliqué (part de camembert, barre...)
   readonly elementClick = output<number>();
 
@@ -48,6 +49,13 @@ export class ChartComponent implements OnDestroy {
           responsive: true,
           maintainAspectRatio: false,
           ...config.options,
+          // Curseur « main » sur les éléments cliquables
+          onHover: (event, elements) => {
+            const target = event.native?.target as HTMLElement | undefined;
+            if (target) {
+              target.style.cursor = elements.length > 0 && this.clickable() ? 'pointer' : 'default';
+            }
+          },
           onClick: (_event, elements) => {
             if (elements.length > 0) {
               this.elementClick.emit(elements[0].index);

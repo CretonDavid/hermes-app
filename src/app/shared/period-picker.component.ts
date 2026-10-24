@@ -5,14 +5,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import {
-  endOfMonth,
-  endOfYear,
-  startOfMonth,
-  startOfYear,
-  subMonths,
-  subYears,
-} from 'date-fns';
+import { endOfMonth, endOfYear, startOfMonth, startOfYear, subMonths, subYears } from 'date-fns';
 import { toIsoDate } from '../core/format';
 
 export interface Period {
@@ -20,7 +13,8 @@ export interface Period {
   to: string;
 }
 
-export type PeriodPreset = 'month' | 'lastMonth' | '3months' | '6months' | '12months' | 'year' | 'lastYear' | 'custom';
+export type PeriodPreset =
+  'month' | 'lastMonth' | '3months' | '6months' | '12months' | 'year' | 'lastYear' | 'custom';
 
 const PRESETS: { value: PeriodPreset; label: string }[] = [
   { value: 'month', label: 'Ce mois-ci' },
@@ -58,7 +52,14 @@ export function presetPeriod(preset: PeriodPreset): Period | null {
 
 @Component({
   selector: 'app-period-picker',
-  imports: [FormsModule, MatSelectModule, MatFormFieldModule, MatDatepickerModule, MatInputModule, MatButtonToggleModule],
+  imports: [
+    FormsModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    MatDatepickerModule,
+    MatInputModule,
+    MatButtonToggleModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="period">
@@ -74,8 +75,18 @@ export function presetPeriod(preset: PeriodPreset): Period | null {
         <mat-form-field class="range">
           <mat-label>Du … au</mat-label>
           <mat-date-range-input [rangePicker]="picker">
-            <input matStartDate placeholder="Début" [ngModel]="start()" (ngModelChange)="start.set($event)" />
-            <input matEndDate placeholder="Fin" [ngModel]="end()" (ngModelChange)="end.set($event); emitCustom()" />
+            <input
+              matStartDate
+              placeholder="Début"
+              [ngModel]="start()"
+              (ngModelChange)="start.set($event)"
+            />
+            <input
+              matEndDate
+              placeholder="Fin"
+              [ngModel]="end()"
+              (ngModelChange)="end.set($event); emitCustom()"
+            />
           </mat-date-range-input>
           <mat-datepicker-toggle matIconSuffix [for]="picker" />
           <mat-date-range-picker #picker />

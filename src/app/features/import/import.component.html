@@ -1,0 +1,285 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Importer un relevé</h1>
+      <div class="subtitle">Formats acceptés : CSV (tous formats de banque) et OFX / QFX</div>
+    </div>
+  </div>
+
+  <div class="steps">
+    @for (s of [['file', 'Fichier'], ['mapping', 'Colonnes'], ['preview', 'Vérification'], ['done', 'Terminé']]; track s[0]; let i = $index) {
+      <div class="step" [class.active]="step() === s[0]">
+        <span class="number">{{ i + 1 }}</span> {{ s[1] }}
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @switch (step()) {
+    @case ('file') {
+      <div class="card file-step">
+        <mat-form-field style="max-width: 420px">
+          <mat-label>Compte de destination</mat-label>
+          <mat-select [ngModel]="accountId()" (ngModelChange)="accountId.set($event)">
+            @for (account of store.openAccounts(); track account.id) {
+              <mat-option [value]="account.id">{{ account.name }} ({{ account.currency.code }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <label class="dropzone" (dragover)="$event.preventDefault()" (drop)="drop($event)">
+          <input type="file" accept=".csv,.txt,.ofx,.qfx" (change)="selectFile($event)" hidden />
+          <mat-icon>upload_file</mat-icon>
+          @if (file(); as f) {
+            <strong>{{ f.name }}</strong>
+            <span class="muted">{{ isOfx() ? 'Relevé OFX' : 'Fichier CSV' }} · cliquez pour changer</span>
+          } @else {
+            <strong>Déposez votre relevé ici</strong>
+            <span class="muted">ou cliquez pour choisir un fichier</span>
+          }
+        </label>
+
+        <div class="row">
+          <span class="spacer"></span>
+          <button matButton="filled" [disabled]="!file() || !accountId() || loading()" (click)="next()">
+            Continuer <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+          </button>
+        </div>
+      </div>
+    }
+
+    @case ('mapping') {
+      @if (inspection(); as inspection) {
+        <div class="card">
+          <h2><mat-icon>view_column</mat-icon> Correspondance des colonnes</h2>
+          <p class="muted">
+            Séparateur détecté : « {{ inspection.separator === '\t' ? 'tabulation' : inspection.separator }} » · encodage
+            {{ inspection.encoding }}. Le mapping est mémorisé pour ce compte.
+          </p>
+
+          <div class="mapping">
+            <mat-form-field>
+              <mat-label>Lignes à ignorer avant l'en-tête</mat-label>
+              <input matInput type="number" min="0" [(ngModel)]="options.skipLines" />
+            </mat-form-field>
+            <div class="checkbox"><mat-checkbox [(ngModel)]="options.hasHeader">Ligne d'en-tête</mat-checkbox></div>
+
+            <mat-form-field>
+              <mat-label>Date de l'opération</mat-label>
+              <mat-select [(ngModel)]="options.dateColumn">
+                @for (c of columns(); track c) {
+                  <mat-option [value]="c">{{ columnLabel(c) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Format de date</mat-label>
+              <mat-select [(ngModel)]="options.dateFormat">
+                @for (f of dateFormats; track f) {
+                  <mat-option [value]="f">{{ f }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Date de valeur (facultatif)</mat-label>
+              <mat-select [(ngModel)]="options.valueDateColumn">
+                <mat-option [value]="null">—</mat-option>
+                @for (c of columns(); track c) {
+                  <mat-option [value]="c">{{ columnLabel(c) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>Libellé (une ou plusieurs colonnes)</mat-label>
+              <mat-select multiple [(ngModel)]="options.labelColumns">
+                @for (c of columns(); track c) {
+                  <mat-option [value]="c">{{ columnLabel(c) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Tiers (facultatif)</mat-label>
+              <mat-select [(ngModel)]="options.payeeColumn">
+                <mat-option [value]="null">—</mat-option>
+                @for (c of columns(); track c) {
+                  <mat-option [value]="c">{{ columnLabel(c) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <div class="full">
+              <mat-button-toggle-group [(ngModel)]="amountMode" hideSingleSelectionIndicator>
+                <mat-button-toggle value="single">Une colonne montant signée</mat-button-toggle>
+                <mat-button-toggle value="split">Colonnes débit et crédit séparées</mat-button-toggle>
+              </mat-button-toggle-group>
+            </div>
+
+            @if (amountMode === 'single') {
+              <mat-form-field>
+                <mat-label>Montant</mat-label>
+                <mat-select [(ngModel)]="options.amountColumn">
+                  @for (c of columns(); track c) {
+                    <mat-option [value]="c">{{ columnLabel(c) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <div class="checkbox">
+                <mat-checkbox [(ngModel)]="options.negateAmounts" matTooltip="Pour les relevés de carte où les dépenses sont positives">
+                  Inverser le signe
+                </mat-checkbox>
+              </div>
+            } @else {
+              <mat-form-field>
+                <mat-label>Débit</mat-label>
+                <mat-select [(ngModel)]="options.debitColumn">
+                  @for (c of columns(); track c) {
+                    <mat-option [value]="c">{{ columnLabel(c) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Crédit</mat-label>
+                <mat-select [(ngModel)]="options.creditColumn">
+                  @for (c of columns(); track c) {
+                    <mat-option [value]="c">{{ columnLabel(c) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+            <mat-form-field>
+              <mat-label>Séparateur décimal</mat-label>
+              <mat-select [(ngModel)]="options.decimalSeparator">
+                <mat-option value="">Automatique</mat-option>
+                <mat-option value=",">Virgule (1 234,56)</mat-option>
+                <mat-option value=".">Point (1,234.56)</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <h2 style="margin-top: 16px"><mat-icon>table</mat-icon> Aperçu du fichier</h2>
+          <div class="table-wrapper raw">
+            <table>
+              <thead>
+                <tr>
+                  @for (c of columns(); track c) {
+                    <th>{{ c + 1 }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of inspection.rows; track $index; let i = $index) {
+                  <tr [class.ignored]="!isDataRow(i)">
+                    @for (c of columns(); track c) {
+                      <td>{{ row[c] }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="row" style="margin-top: 16px">
+            <button matButton (click)="restart()"><mat-icon>arrow_back</mat-icon> Retour</button>
+            <span class="spacer"></span>
+            <button matButton="filled" (click)="previewCsv()" [disabled]="loading()">
+              Prévisualiser <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+            </button>
+          </div>
+        </div>
+      }
+    }
+
+    @case ('preview') {
+      <div class="card">
+        <div class="row" style="margin-bottom: 12px">
+          <h2 style="margin: 0">
+            <mat-icon>checklist</mat-icon> {{ rows().length }} opération(s) lue(s) vers {{ account()?.name }}
+          </h2>
+          <span class="spacer"></span>
+          <button matButton (click)="toggleAll(true)">Tout cocher</button>
+          <button matButton (click)="toggleAll(false)">Tout décocher</button>
+        </div>
+
+        @if (duplicateCount() > 0) {
+          <div class="notice">
+            <mat-icon>content_copy</mat-icon>
+            {{ duplicateCount() }} opération(s) semblent déjà présentes dans le compte et ont été décochées.
+          </div>
+        }
+        @for (w of preview()?.warnings ?? []; track $index) {
+          <div class="notice warning"><mat-icon>warning</mat-icon> {{ w }}</div>
+        }
+
+        <div class="table-wrapper">
+          <table class="preview-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Date</th>
+                <th>Libellé</th>
+                <th>Catégorie</th>
+                <th class="right">Montant</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track $index) {
+                <tr [class.unselected]="!row.selected">
+                  <td><mat-checkbox [checked]="row.selected" (change)="toggleRow(row, $event.checked)" /></td>
+                  <td class="nowrap">{{ row.operationDate | date: 'dd/MM/yyyy' }}</td>
+                  <td>
+                    {{ row.label }}
+                    @if (row.duplicate) {
+                      <span class="chip" matTooltip="Une opération de même date et même montant existe déjà">doublon ?</span>
+                    }
+                    @if (row.payee) {
+                      <div class="muted small">{{ row.payee }}</div>
+                    }
+                  </td>
+                  <td class="category">
+                    <mat-select [value]="row.categoryId" (valueChange)="setCategory(row, $event)" placeholder="Non catégorisée">
+                      <mat-option [value]="null">— Non catégorisée —</mat-option>
+                      @for (option of store.categoryOptions(row.direction === 'CREDIT' ? 'INCOME' : 'EXPENSE'); track option.category.id) {
+                        <mat-option [value]="option.category.id">
+                          <span [style.padding-left.px]="option.depth * 14">{{ option.category.name }}</span>
+                        </mat-option>
+                      }
+                    </mat-select>
+                  </td>
+                  <td class="right amount" [class.positive]="row.direction === 'CREDIT'">
+                    {{ (row.direction === 'DEBIT' ? -row.amount : row.amount) | money: account()?.currency?.code : true }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="row" style="margin-top: 16px">
+          <button matButton (click)="restart()"><mat-icon>arrow_back</mat-icon> Recommencer</button>
+          <span class="spacer"></span>
+          <span class="muted">
+            {{ selectedCount() }} sélectionnée(s) · total {{ selectedTotal() | money: account()?.currency?.code : true }}
+          </span>
+          <button matButton="filled" (click)="confirm()" [disabled]="selectedCount() === 0 || loading()">
+            Importer {{ selectedCount() }} opération(s)
+          </button>
+        </div>
+      </div>
+    }
+
+    @case ('done') {
+      <div class="card empty">
+        <mat-icon class="positive">task_alt</mat-icon>
+        <p><strong>{{ imported() }} opération(s) importée(s)</strong> et marquées comme pointées.</p>
+        <div class="row" style="justify-content: center">
+          <a matButton="tonal" [routerLink]="['/accounts', accountId()]">Voir le compte</a>
+          <button matButton="filled" (click)="restart()">Importer un autre fichier</button>
+        </div>
+      </div>
+    }
+  }
+</div>

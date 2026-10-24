@@ -1,0 +1,223 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Statistiques</h1>
+      <div class="subtitle">Montants convertis en {{ currency() }} · virements internes exclus des revenus et dépenses</div>
+    </div>
+    <app-period-picker initial="12months" (periodChange)="period.set($event)" />
+    <mat-form-field style="width: 220px">
+      <mat-label>Comptes</mat-label>
+      <mat-select multiple [ngModel]="accountIds()" (ngModelChange)="accountIds.set($event)" placeholder="Tous">
+        @for (account of store.accounts(); track account.id) {
+          <mat-option [value]="account.id">{{ account.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  @if (missingRates().length > 0) {
+    <div class="card notice">
+      <mat-icon>currency_exchange</mat-icon>
+      Taux de change manquants pour {{ missingRates().join(', ') }} : ces montants sont ignorés.
+      <a routerLink="/settings" [queryParams]="{ tab: 'rates' }">Gérer les taux</a>
+    </div>
+  }
+
+  @if (summary(); as s) {
+    <div class="grid grid-4" style="margin-bottom: 16px">
+      <div class="card kpi">
+        <div class="label">Revenus</div>
+        <div class="value amount positive">{{ s.income | money: s.currencyCode }}</div>
+        <div class="delta muted">Période précédente : {{ s.previousIncome | money: s.currencyCode }}</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Dépenses</div>
+        <div class="value amount negative">{{ s.expenses | money: s.currencyCode }}</div>
+        <div class="delta muted">Période précédente : {{ s.previousExpenses | money: s.currencyCode }}</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Solde de la période</div>
+        <div class="value amount" [class.positive]="s.net >= 0" [class.negative]="s.net < 0">
+          {{ s.net | money: s.currencyCode : true }}
+        </div>
+        <div class="delta muted">
+          Taux d'épargne : {{ s.savingsRate === null ? '—' : (s.savingsRate | percent: '1.0-1') }}
+        </div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Virements vers l'épargne</div>
+        <div class="value amount">{{ s.savings | money: s.currencyCode }}</div>
+        <div class="delta muted">Patrimoine actuel : {{ s.netWorth | money: s.currencyCode }}</div>
+      </div>
+    </div>
+  }
+
+  <mat-tab-group animationDuration="0ms" mat-stretch-tabs="false">
+    <mat-tab label="Revenus et dépenses">
+      <div class="tab">
+        <div class="card">
+          <h2><mat-icon>bar_chart</mat-icon> Évolution mensuelle</h2>
+          @if (monthlyChart(); as config) {
+            <app-chart [config]="config" [height]="340" />
+          }
+        </div>
+        <div class="card" style="margin-top: 16px">
+          <table class="simple">
+            <thead>
+              <tr>
+                <th>Mois</th>
+                <th class="right">Revenus</th>
+                <th class="right">Dépenses</th>
+                <th class="right">Solde</th>
+                <th class="right">Épargne</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of monthly(); track m.month) {
+                <tr>
+                  <td>{{ monthLabel(m.month) }}</td>
+                  <td class="right amount positive">{{ m.income | money: currency() }}</td>
+                  <td class="right amount negative">{{ m.expenses | money: currency() }}</td>
+                  <td class="right amount">{{ m.net | money: currency() : true }}</td>
+                  <td class="right amount">{{ m.savings | money: currency() }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Catégories">
+      <div class="tab">
+        <div class="row" style="margin-bottom: 16px">
+          <mat-button-toggle-group [value]="categoryType()" (change)="setType($event.value)" hideSingleSelectionIndicator>
+            <mat-button-toggle value="EXPENSE">Dépenses</mat-button-toggle>
+            <mat-button-toggle value="INCOME">Revenus</mat-button-toggle>
+          </mat-button-toggle-group>
+          <div class="breadcrumb">
+            <button matButton (click)="drillTo(0)">Toutes les catégories</button>
+            @for (crumb of drill(); track crumb.id; let i = $index) {
+              <mat-icon>chevron_right</mat-icon>
+              <button matButton (click)="drillTo(i + 1)" [disabled]="$last">{{ crumb.name }}</button>
+            }
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card">
+            @if (categoryChart(); as config) {
+              <app-chart [config]="config" [height]="340" (elementClick)="openCategory($event)" />
+              <p class="muted hint">Cliquez sur une catégorie pour voir le détail de ses sous-catégories.</p>
+            } @else {
+              <div class="empty"><p>Aucune opération sur la période</p></div>
+            }
+          </div>
+          <div class="card">
+            <table class="simple">
+              <tbody>
+                @for (c of categories(); track c.categoryId; let i = $index) {
+                  <tr class="clickable" (click)="openCategory(i)">
+                    <td>
+                      <span class="category-dot" [style.background]="colors()[i]"></span>
+                      {{ c.name }}{{ c.direct ? ' (direct)' : '' }}
+                      @if (c.hasChildren) {
+                        <mat-icon class="muted chevron">chevron_right</mat-icon>
+                      }
+                    </td>
+                    <td class="muted right">{{ c.count }} op.</td>
+                    <td class="right">{{ c.share | percent: '1.0-1' }}</td>
+                    <td class="right amount">{{ c.amount | money: currency() }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        @if (trendChart(); as config) {
+          <div class="card" style="margin-top: 16px">
+            <h2><mat-icon>trending_up</mat-icon> Évolution — {{ trendTarget()?.name }}</h2>
+            <app-chart [config]="config" [height]="240" />
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Patrimoine">
+      <div class="tab">
+        <div class="card">
+          <h2><mat-icon>show_chart</mat-icon> Patrimoine total ({{ currency() }})</h2>
+          @if (netWorthChart(); as config) {
+            <app-chart [config]="config" [height]="300" />
+          }
+        </div>
+        <div class="card" style="margin-top: 16px">
+          <h2><mat-icon>stacked_line_chart</mat-icon> Solde par compte</h2>
+          @if (accountsChart(); as config) {
+            <app-chart [config]="config" [height]="320" />
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Épargne">
+      <div class="tab">
+        @if (savings(); as sv) {
+          <div class="grid grid-4" style="margin-bottom: 16px">
+            <div class="card kpi">
+              <div class="label">Encours d'épargne</div>
+              <div class="value amount">{{ sv.currentSavingsBalance | money: sv.currencyCode }}</div>
+            </div>
+            <div class="card kpi">
+              <div class="label">Versements</div>
+              <div class="value amount positive">{{ sv.totalDeposits | money: sv.currencyCode }}</div>
+            </div>
+            <div class="card kpi">
+              <div class="label">Retraits</div>
+              <div class="value amount negative">{{ sv.totalWithdrawals | money: sv.currencyCode }}</div>
+            </div>
+            <div class="card kpi">
+              <div class="label">Taux d'épargne</div>
+              <div class="value">{{ sv.savingsRate === null ? '—' : (sv.savingsRate | percent: '1.0-1') }}</div>
+              <div class="delta muted">(revenus − dépenses) / revenus</div>
+            </div>
+          </div>
+          @if (!store.accountTypes().some(t => t.savings)) {
+            <div class="card notice">
+              <mat-icon>info</mat-icon>
+              Aucun type de compte n'est marqué « épargne ». Cochez cette option dans les paramètres pour suivre vos versements.
+            </div>
+          }
+          <div class="grid grid-2">
+            <div class="card">
+              <h2><mat-icon>savings</mat-icon> Versements et encours</h2>
+              @if (savingsChart(); as config) {
+                <app-chart [config]="config" [height]="300" />
+              }
+            </div>
+            <div class="card">
+              <h2><mat-icon>percent</mat-icon> Taux d'épargne mensuel</h2>
+              @if (savingsRateChart(); as config) {
+                <app-chart [config]="config" [height]="300" />
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Tiers">
+      <div class="tab">
+        <div class="card">
+          <h2><mat-icon>storefront</mat-icon> Principaux bénéficiaires de vos dépenses</h2>
+          @if (payeesChart(); as config) {
+            <app-chart [config]="config" [height]="420" />
+          } @else {
+            <div class="empty"><p>Aucune dépense sur la période</p></div>
+          }
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

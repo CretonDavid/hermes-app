@@ -1,0 +1,97 @@
+:host {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--mat-sys-primary-container) 0%, var(--mat-sys-surface) 60%);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+  background: var(--mat-sys-surface-container-lowest);
+  border-radius: 24px;
+  padding: 36px;
+  box-shadow: var(--mat-sys-level2);
+  box-sizing: border-box;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: var(--mat-sys-headline-small);
+  color: var(--mat-sys-primary);
+  margin-bottom: 8px;
+
+  mat-icon {
+    font-size: 34px;
+    width: 34px;
+    height: 34px;
+  }
+}
+
+h1 {
+  font: var(--mat-sys-title-large);
+  margin: 16px 0 4px;
+}
+
+p.intro {
+  color: var(--hermes-muted);
+  margin: 0 0 24px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.number-input input {
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 0.08em;
+}
+
+.switch {
+  margin-top: 24px;
+  text-align: center;
+  color: var(--hermes-muted);
+
+  a {
+    color: var(--mat-sys-primary);
+    font-weight: 500;
+  }
+}
+
+.account-number {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 19px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  text-align: center;
+  padding: 20px 12px;
+  border-radius: 16px;
+  background: var(--mat-sys-surface-container-high);
+  margin: 16px 0;
+  user-select: all;
+  word-break: break-all;
+}
+
+.warning {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  font: var(--mat-sys-body-medium);
+}
+
+.error {
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-medium);
+  margin-top: 8px;
+}

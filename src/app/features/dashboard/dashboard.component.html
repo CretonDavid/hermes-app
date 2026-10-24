@@ -1,0 +1,111 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Tableau de bord</h1>
+      <div class="subtitle">{{ now | date: 'MMMM yyyy' }}</div>
+    </div>
+  </div>
+
+  @if (store.loaded() && store.accounts().length === 0) {
+    <div class="card onboarding">
+      <h2><mat-icon>waving_hand</mat-icon> Bienvenue dans Hermès</h2>
+      <ol>
+        <li>Créez vos comptes bancaires (compte courant, livrets…).</li>
+        <li>Saisissez vos opérations ou importez un relevé bancaire (CSV ou OFX).</li>
+        <li>Ajustez les catégories si besoin, puis suivez vos dépenses dans les statistiques.</li>
+      </ol>
+      <button matButton="filled" (click)="createAccount()"><mat-icon>add</mat-icon> Créer mon premier compte</button>
+    </div>
+  } @else {
+    @if (summary(); as s) {
+      @if (s.missingRates.length > 0) {
+        <div class="card warning-card">
+          <mat-icon>currency_exchange</mat-icon>
+          Taux de change manquants pour {{ s.missingRates.join(', ') }} : ces montants ne sont pas comptés.
+          <a routerLink="/settings" [queryParams]="{ tab: 'rates' }">Ajouter des taux</a>
+        </div>
+      }
+      <div class="grid grid-4 kpis">
+        <div class="card kpi">
+          <div class="label">Patrimoine total</div>
+          <div class="value amount" [class.negative]="s.netWorth < 0">{{ s.netWorth | money: s.currencyCode }}</div>
+          <div class="delta muted">Tous comptes, en {{ s.currencyCode }}</div>
+        </div>
+        <div class="card kpi">
+          <div class="label">Revenus du mois</div>
+          <div class="value amount positive">{{ s.income | money: s.currencyCode }}</div>
+          <div class="delta muted">Mois précédent : {{ s.previousIncome | money: s.currencyCode }}</div>
+        </div>
+        <div class="card kpi">
+          <div class="label">Dépenses du mois</div>
+          <div class="value amount negative">{{ s.expenses | money: s.currencyCode }}</div>
+          @if (expenseDelta(); as delta) {
+            <div class="delta" [class.negative]="delta > 0" [class.positive]="delta < 0">
+              {{ delta > 0 ? '+' : '' }}{{ delta | percent: '1.0-0' }} vs mois précédent
+            </div>
+          } @else {
+            <div class="delta muted">Mois précédent : {{ s.previousExpenses | money: s.currencyCode }}</div>
+          }
+        </div>
+        <div class="card kpi">
+          <div class="label">Épargne du mois</div>
+          <div class="value amount">{{ s.savings | money: s.currencyCode }}</div>
+          <div class="delta muted">
+            Taux d'épargne : {{ s.savingsRate === null ? '—' : (s.savingsRate | percent: '1.0-1') }}
+          </div>
+        </div>
+      </div>
+    }
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2><mat-icon>donut_large</mat-icon> Dépenses du mois par catégorie</h2>
+        @if (donut(); as config) {
+          <app-chart [config]="config" [height]="260" (elementClick)="openCategory($event)" />
+        } @else {
+          <div class="empty"><p>Aucune dépense ce mois-ci</p></div>
+        }
+      </div>
+      <div class="card">
+        <h2><mat-icon>bar_chart</mat-icon> Revenus et dépenses sur 6 mois</h2>
+        @if (bars(); as config) {
+          <app-chart [config]="config" [height]="260" />
+        }
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top: 16px">
+      <div class="card">
+        <h2>
+          <mat-icon>receipt_long</mat-icon> Dernières opérations
+          <span class="spacer"></span>
+          <a matButton routerLink="/transactions">Tout voir</a>
+        </h2>
+        <app-transaction-table [transactions]="recent()" [showStatus]="false" [showAccount]="false" />
+      </div>
+      <div class="card">
+        <h2>
+          <mat-icon>event_upcoming</mat-icon> À venir sur 30 jours
+          <span class="spacer"></span>
+          <a matButton routerLink="/recurring">Récurrences</a>
+        </h2>
+        @for (o of upcoming(); track o.recurringTransactionId + o.date) {
+          <div class="upcoming">
+            <div class="date">{{ o.date | date: 'dd MMM' }}</div>
+            <div class="label">
+              <div>{{ o.label }}</div>
+              <div class="muted small">
+                {{ o.accountName }}{{ o.transfer ? ' → ' + o.targetAccountName : '' }}
+              </div>
+            </div>
+            <div class="amount" [class.positive]="o.direction === 'CREDIT'">
+              {{ (o.direction === 'DEBIT' ? -o.amount : o.amount) | money: o.currencyCode : true }}
+            </div>
+          </div>
+        } @empty {
+          <div class="empty"><p>Aucune opération récurrente prévue</p></div>
+        }
+      </div>
+    </div>
+  }
+</div>

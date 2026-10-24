@@ -1,0 +1,53 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav mode="side" opened class="sidenav">
+    <div class="brand">
+      <mat-icon class="logo">account_balance_wallet</mat-icon>
+      <span>Hermès</span>
+    </div>
+
+    <button matButton="filled" class="new-button" (click)="newTransaction()" [disabled]="store.openAccounts().length === 0">
+      <mat-icon>add</mat-icon>
+      Nouvelle opération
+    </button>
+
+    <mat-nav-list>
+      @for (item of navigation; track item.path) {
+        <a
+          mat-list-item
+          [routerLink]="item.path"
+          routerLinkActive
+          #rla="routerLinkActive"
+          [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          [activated]="rla.isActive"
+        >
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    @if (store.openAccounts().length > 0) {
+      <div class="accounts-title">Mes comptes</div>
+      <div class="accounts">
+        @for (account of store.openAccounts(); track account.id) {
+          <a class="account-link" [routerLink]="['/accounts', account.id]" routerLinkActive="active">
+            <span class="name">{{ account.name }}</span>
+            <span class="amount" [class.negative]="account.balance < 0">
+              {{ account.balance | money: account.currency.code }}
+            </span>
+          </a>
+        }
+      </div>
+    }
+
+    <div class="spacer"></div>
+    <button matButton class="logout" (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      Se déconnecter
+    </button>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content">
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>

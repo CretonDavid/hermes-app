@@ -1,0 +1,53 @@
+.kpis {
+  margin-bottom: 16px;
+}
+
+.onboarding {
+  max-width: 640px;
+
+  ol {
+    line-height: 2;
+    margin: 0 0 20px;
+  }
+}
+
+.warning-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+  border: none;
+
+  a {
+    color: inherit;
+    font-weight: 500;
+  }
+}
+
+.upcoming {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--hermes-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .date {
+    width: 56px;
+    font: var(--mat-sys-label-large);
+    color: var(--mat-sys-primary);
+  }
+
+  .label {
+    flex: 1;
+  }
+
+  .small {
+    font: var(--mat-sys-body-small);
+  }
+}

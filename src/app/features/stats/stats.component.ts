@@ -1,0 +1,338 @@
+import { PercentPipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTabsModule } from '@angular/material/tabs';
+import { RouterLink } from '@angular/router';
+import { ChartConfiguration } from 'chart.js';
+import { format, parseISO } from 'date-fns';
+import { forkJoin } from 'rxjs';
+import { StatsApi, StatsQuery } from '../../core/api';
+import { DataStore } from '../../core/data.store';
+import { formatMonth } from '../../core/format';
+import {
+  BalanceHistory,
+  CategoryStat,
+  CategoryTrendStat,
+  CategoryType,
+  MonthlyStat,
+  PayeeStat,
+  SavingsStats,
+  StatsSummary,
+} from '../../core/models';
+import { NotifyService } from '../../core/notify.service';
+import { ChartComponent } from '../../shared/chart.component';
+import { DATE_AXIS, EXPENSE_COLOR, INCOME_COLOR, SAVINGS_COLOR, categoryColors, donutChart, incomeExpenseChart } from '../../shared/charts';
+import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
+import { Period, PeriodPickerComponent, presetPeriod } from '../../shared/period-picker.component';
+
+const LINE_COLORS = ['#1565c0', '#2e7d32', '#ef6c00', '#6a1b9a', '#00838f', '#ad1457', '#4e342e', '#37474f'];
+
+@Component({
+  selector: 'app-stats',
+  imports: [
+    FormsModule,
+    RouterLink,
+    PercentPipe,
+    MatTabsModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatIconModule,
+    MoneyPipe,
+    ChartComponent,
+    PeriodPickerComponent,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './stats.component.html',
+  styleUrl: './stats.component.scss',
+})
+export class StatsComponent {
+  protected readonly store = inject(DataStore);
+  private readonly api = inject(StatsApi);
+  private readonly notify = inject(NotifyService);
+
+  protected readonly period = signal<Period>(presetPeriod('12months')!);
+  protected readonly accountIds = signal<number[]>([]);
+  protected readonly categoryType = signal<CategoryType>('EXPENSE');
+  // Fil d'Ariane de la catégorie explorée (vide = catégories principales)
+  protected readonly drill = signal<{ id: number; name: string }[]>([]);
+  // Catégorie dont on affiche l'évolution (par défaut, celle explorée)
+  protected readonly selected = signal<{ id: number; name: string } | null>(null);
+  protected readonly trendTarget = computed(() => this.selected() ?? this.drill().at(-1) ?? null);
+
+  protected readonly summary = signal<StatsSummary | null>(null);
+  protected readonly monthly = signal<MonthlyStat[]>([]);
+  protected readonly categories = signal<CategoryStat[]>([]);
+  protected readonly trend = signal<CategoryTrendStat[]>([]);
+  protected readonly history = signal<BalanceHistory | null>(null);
+  protected readonly savings = signal<SavingsStats | null>(null);
+  protected readonly payees = signal<PayeeStat[]>([]);
+  protected readonly missingRates = signal<string[]>([]);
+
+  protected readonly currency = computed(() => this.summary()?.currencyCode ?? this.store.referenceCurrency());
+  private readonly query = computed<StatsQuery>(() => ({ ...this.period(), accountIds: this.accountIds() }));
+
+  protected readonly monthlyChart = computed(() =>
+    this.monthly().length ? incomeExpenseChart(this.monthly(), this.currency()) : null,
+  );
+
+  protected readonly categoryChart = computed(() =>
+    this.categories().length ? donutChart(this.categories(), this.currency()) : null,
+  );
+
+  protected readonly trendChart = computed<ChartConfiguration | null>(() => {
+    const current = this.trendTarget();
+    if (!current || !this.trend().length) {
+      return null;
+    }
+    const currency = this.currency();
+    return {
+      type: 'bar',
+      data: {
+        labels: this.trend().map((t) => formatMonth(t.month)),
+        datasets: [{ label: current.name, data: this.trend().map((t) => t.amount), backgroundColor: SAVINGS_COLOR, borderRadius: 4 }],
+      },
+      options: {
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatMoney(c.parsed.y, currency) } } },
+        scales: { y: { ticks: { callback: (v) => formatMoney(Number(v), currency) } } },
+      },
+    };
+  });
+
+  protected readonly netWorthChart = computed<ChartConfiguration | null>(() => {
+    const history = this.history();
+    if (!history || history.points.length < 2) {
+      return null;
+    }
+    const currency = history.currencyCode;
+    return {
+      type: 'line',
+      data: {
+        labels: history.points.map((p) => format(parseISO(p.date), 'dd/MM/yy')),
+        datasets: [
+          {
+            label: 'Patrimoine total',
+            data: history.points.map((p) => p.value),
+            borderColor: SAVINGS_COLOR,
+            backgroundColor: 'rgba(21, 101, 192, 0.1)',
+            fill: true,
+            tension: 0.25,
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatMoney(c.parsed.y, currency) } } },
+        scales: { x: DATE_AXIS, y: { ticks: { callback: (v) => formatMoney(Number(v), currency) } } },
+      },
+    };
+  });
+
+  protected readonly accountsChart = computed<ChartConfiguration | null>(() => {
+    const history = this.history();
+    if (!history || history.points.length < 2 || history.accounts.length === 0) {
+      return null;
+    }
+    return {
+      type: 'line',
+      data: {
+        labels: history.points.map((p) => format(parseISO(p.date), 'dd/MM/yy')),
+        datasets: history.accounts.map((a, i) => ({
+          label: `${a.name} (${a.currencyCode})`,
+          data: a.points.map((p) => p.value),
+          borderColor: LINE_COLORS[i % LINE_COLORS.length],
+          backgroundColor: LINE_COLORS[i % LINE_COLORS.length],
+          tension: 0.25,
+          pointRadius: 0,
+        })),
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (c) => ` ${c.dataset.label} : ${formatMoney(c.parsed.y, history.accounts[c.datasetIndex].currencyCode)}`,
+            },
+          },
+        },
+        scales: { x: DATE_AXIS },
+      },
+    };
+  });
+
+  protected readonly monthLabel = formatMonth;
+
+  protected readonly savingsChart = computed<ChartConfiguration | null>(() => {
+    const savings = this.savings();
+    if (!savings || !savings.months.length) {
+      return null;
+    }
+    const currency = savings.currencyCode;
+    return {
+      type: 'bar',
+      data: {
+        labels: savings.months.map((m) => formatMonth(m.month)),
+        datasets: [
+          { label: 'Versements', data: savings.months.map((m) => m.deposits), backgroundColor: INCOME_COLOR, borderRadius: 4, yAxisID: 'y' },
+          { label: 'Retraits', data: savings.months.map((m) => -m.withdrawals), backgroundColor: EXPENSE_COLOR, borderRadius: 4, yAxisID: 'y' },
+          {
+            type: 'line',
+            label: 'Encours épargne',
+            data: savings.months.map((m) => m.balance),
+            borderColor: SAVINGS_COLOR,
+            backgroundColor: SAVINGS_COLOR,
+            tension: 0.3,
+            yAxisID: 'balance',
+          },
+        ],
+      },
+      options: {
+        plugins: { tooltip: { callbacks: { label: (c) => ` ${c.dataset.label} : ${formatMoney(c.parsed.y, currency)}` } } },
+        scales: {
+          y: { stacked: true, ticks: { callback: (v) => formatMoney(Number(v), currency) } },
+          x: { stacked: true },
+          balance: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: (v) => formatMoney(Number(v), currency) } },
+        },
+      },
+    } as ChartConfiguration;
+  });
+
+  protected readonly savingsRateChart = computed<ChartConfiguration | null>(() => {
+    const savings = this.savings();
+    if (!savings || !savings.months.length) {
+      return null;
+    }
+    return {
+      type: 'line',
+      data: {
+        labels: savings.months.map((m) => formatMonth(m.month)),
+        datasets: [
+          {
+            label: "Taux d'épargne",
+            data: savings.months.map((m) => (m.savingsRate === null ? null : Math.round(m.savingsRate * 1000) / 10)),
+            borderColor: INCOME_COLOR,
+            backgroundColor: INCOME_COLOR,
+            tension: 0.3,
+            spanGaps: true,
+          },
+        ],
+      },
+      options: {
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} %` } } },
+        scales: { y: { ticks: { callback: (v) => `${v} %` } } },
+      },
+    };
+  });
+
+  protected readonly payeesChart = computed<ChartConfiguration | null>(() => {
+    const payees = this.payees();
+    if (!payees.length) {
+      return null;
+    }
+    const currency = this.currency();
+    return {
+      type: 'bar',
+      data: {
+        labels: payees.map((p) => p.payee),
+        datasets: [{ data: payees.map((p) => p.amount), backgroundColor: EXPENSE_COLOR, borderRadius: 4 }],
+      },
+      options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatMoney(c.parsed.x, currency) } } },
+        scales: { x: { ticks: { callback: (v) => formatMoney(Number(v), currency) } } },
+      },
+    };
+  });
+
+  protected readonly colors = computed(() => categoryColors(this.categories()));
+
+  constructor() {
+    effect(() => {
+      this.query();
+      this.store.version();
+      untracked(() => this.loadAll());
+    });
+  }
+
+  protected setType(type: CategoryType): void {
+    this.categoryType.set(type);
+    this.drill.set([]);
+    this.selected.set(null);
+    this.loadCategories();
+  }
+
+  // Une catégorie avec sous-catégories s'ouvre ; une feuille affiche son évolution mensuelle
+  protected openCategory(index: number): void {
+    const item = this.categories()[index];
+    if (!item?.categoryId) {
+      return;
+    }
+    const target = { id: item.categoryId, name: item.name };
+    if (item.hasChildren && !item.direct) {
+      this.drill.update((d) => [...d, target]);
+      this.selected.set(null);
+      this.loadCategories();
+    } else {
+      this.selected.set(target);
+      this.loadTrend();
+    }
+  }
+
+  protected drillTo(index: number): void {
+    this.drill.update((d) => d.slice(0, index));
+    this.selected.set(null);
+    this.loadCategories();
+  }
+
+  private loadAll(): void {
+    const query = this.query();
+    forkJoin({
+      summary: this.api.summary(query),
+      monthly: this.api.monthly(query),
+      history: this.api.balanceHistory(query),
+      savings: this.api.savings({ from: query.from, to: query.to }),
+      payees: this.api.payees({ ...query, limit: 15 }),
+    }).subscribe({
+      next: (r) => {
+        this.summary.set(r.summary);
+        this.monthly.set(r.monthly.items);
+        this.history.set(r.history);
+        this.savings.set(r.savings);
+        this.payees.set(r.payees.items);
+        this.missingRates.set([...new Set([...r.summary.missingRates, ...r.history.missingRates])]);
+      },
+      error: (error) => this.notify.error(error),
+    });
+    this.loadCategories();
+  }
+
+  private loadCategories(): void {
+    const parent = this.drill().at(-1);
+    this.api.categories({ ...this.query(), type: this.categoryType(), parentId: parent?.id }).subscribe({
+      next: (r) => {
+        this.categories.set(r.items);
+        this.loadTrend();
+      },
+      error: (error) => this.notify.error(error),
+    });
+  }
+
+  private loadTrend(): void {
+    const current = this.trendTarget();
+    if (!current) {
+      this.trend.set([]);
+      return;
+    }
+    this.api.categoryTrend({ ...this.query(), categoryId: current.id }).subscribe({
+      next: (r) => this.trend.set(r.items),
+      error: (error) => this.notify.error(error),
+    });
+  }
+}

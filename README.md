@@ -1,4 +1,4 @@
-# Hermès — front
+# Hermès — hermes-app
 
 Interface web de l'application de comptabilité personnelle Hermès, branchée sur [hermes-api](../hermes-api).
 

@@ -189,6 +189,8 @@ html {
     (
       container-color: var(--mat-sys-surface-container-lowest),
       container-shape: 20px,
+      // Réserve à droite la place de la croix de fermeture
+      headline-padding: 6px 56px 13px 24px,
     )
   );
 

@@ -42,6 +42,7 @@ import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { DialogCloseComponent } from '../../shared/dialog-close.component';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -57,6 +58,7 @@ export interface TransactionFormData {
     AsyncPipe,
     ReactiveFormsModule,
     MatDialogModule,
+    DialogCloseComponent,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,

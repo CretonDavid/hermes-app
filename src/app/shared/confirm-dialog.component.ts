@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
+import { DialogCloseComponent } from './dialog-close.component';
 
 export interface ConfirmData {
   title: string;
@@ -12,7 +13,7 @@ export interface ConfirmData {
 
 @Component({
   selector: 'app-confirm-dialog',
-  imports: [MatDialogModule, MatButtonModule],
+  imports: [MatDialogModule, DialogCloseComponent, MatButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ data.title }}</h2>
@@ -25,6 +26,7 @@ export interface ConfirmData {
         {{ data.confirmLabel ?? 'Confirmer' }}
       </button>
     </mat-dialog-actions>
+    <app-dialog-close />
   `,
   styles: `
     .danger {

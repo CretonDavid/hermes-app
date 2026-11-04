@@ -22,6 +22,7 @@ import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
 import { Account, AccountRequest } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { DialogCloseComponent } from '../../shared/dialog-close.component';
 
 // Types proposés tant que l'utilisateur ne les a pas encore créés
 const SUGGESTED_TYPES: { name: string; savings: boolean }[] = [
@@ -42,6 +43,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
   imports: [
     ReactiveFormsModule,
     MatDialogModule,
+    DialogCloseComponent,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -166,6 +168,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
         {{ data ? 'Enregistrer' : 'Créer le compte' }}
       </button>
     </mat-dialog-actions>
+    <app-dialog-close />
   `,
   styles: `
     .savings {

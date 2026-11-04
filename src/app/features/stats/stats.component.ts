@@ -49,8 +49,8 @@ import { NoAccountComponent } from '../../shared/no-account.component';
 import { Period, PeriodPickerComponent, presetPeriod } from '../../shared/period-picker.component';
 
 const LINE_COLORS = [
-  '#1e88e5',
-  '#43a047',
+  '#8a63d2',
+  '#0f9d82',
   '#ef6c00',
   '#ab47bc',
   '#0097a7',

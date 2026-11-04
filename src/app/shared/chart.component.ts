@@ -13,8 +13,13 @@ import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { ThemeService } from '../core/theme.service';
 
 Chart.register(...registerables);
-Chart.defaults.font.family = 'Quicksand, sans-serif';
+Chart.defaults.font.family = 'Nunito, sans-serif';
 Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.boxWidth = 8;
+Chart.defaults.plugins.legend.labels.boxHeight = 8;
+Chart.defaults.plugins.tooltip.cornerRadius = 10;
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.datasets.bar.maxBarThickness = 22;
 
 // Le canvas ne connaît pas les variables CSS : on lit la couleur calculée pour le thème actif
 function themeColor(token: string): string {
@@ -24,6 +29,28 @@ function themeColor(token: string): string {
   const color = getComputedStyle(probe).color;
   probe.remove();
   return color;
+}
+
+// Axes discrets : seules les lignes horizontales de valeur restent visibles
+function quietScales(config: ChartConfiguration): NonNullable<ChartConfiguration['options']> {
+  const options = config.options ?? {};
+  if (config.type === 'doughnut' || config.type === 'pie') {
+    return options;
+  }
+  const horizontal = (options as { indexAxis?: string }).indexAxis === 'y';
+  const [categoryAxis, valueAxis] = horizontal ? ['y', 'x'] : ['x', 'y'];
+  return {
+    ...options,
+    scales: {
+      ...options.scales,
+      [categoryAxis]: {
+        grid: { display: false },
+        border: { display: false },
+        ...options.scales?.[categoryAxis],
+      },
+      [valueAxis]: { border: { display: false }, ...options.scales?.[valueAxis] },
+    },
+  };
 }
 
 /**
@@ -64,7 +91,7 @@ export class ChartComponent implements OnDestroy {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          ...config.options,
+          ...quietScales(config),
           // Curseur « main » sur les éléments cliquables
           onHover: (event, elements) => {
             const target = event.native?.target as HTMLElement | undefined;

@@ -61,7 +61,7 @@
         </div>
       }
       <div class="grid grid-4 kpis">
-        <div class="card kpi">
+        <div class="card kpi hero">
           <div class="label">Patrimoine total</div>
           <div class="value amount" [class.negative]="s.netWorth < 0">
             {{ s.netWorth | money: s.currencyCode }}
@@ -128,11 +128,25 @@
           <span class="spacer"></span>
           <a matButton routerLink="/transactions">Tout voir</a>
         </h2>
-        <app-transaction-table
-          [transactions]="recent()"
-          [showStatus]="false"
-          [showAccount]="false"
-        />
+        @for (t of recent(); track t.id) {
+          <button type="button" class="operation" (click)="editTransaction(t)">
+            <span class="icon" [style.background]="operationColor(t)">
+              <mat-icon>{{ operationIcon(t) }}</mat-icon>
+            </span>
+            <span class="text">
+              <span class="title">{{ t.label }}</span>
+              <span class="muted small">
+                {{ t.transfer ? 'Virement interne' : (t.category?.name ?? 'Non catégorisée') }} ·
+                {{ t.operationDate | date: 'dd MMM' }}
+              </span>
+            </span>
+            <span class="amount" [class.positive]="t.direction === 'CREDIT'">
+              {{ (t.direction === 'DEBIT' ? -t.amount : t.amount) | money: t.currencyCode : true }}
+            </span>
+          </button>
+        } @empty {
+          <div class="empty"><p>Aucune opération</p></div>
+        }
       </div>
       <div class="card">
         <h2>

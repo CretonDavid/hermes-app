@@ -1,13 +1,13 @@
-import { ChartConfiguration } from 'chart.js';
+import { Chart, ChartConfiguration, Plugin } from 'chart.js';
 import { formatMonth } from '../core/format';
 import { CategoryStat, MonthlyStat } from '../core/models';
 import { formatMoney } from './money.pipe';
 
 // Tons moyens, contrastés (au moins 3:1) sur les fonds clair et sombre
-export const INCOME_COLOR = '#43a047';
-export const EXPENSE_COLOR = '#e53935';
-export const SAVINGS_COLOR = '#1e88e5';
-export const SAVINGS_FILL = 'rgba(30, 136, 229, 0.12)';
+export const INCOME_COLOR = '#0f9d82';
+export const EXPENSE_COLOR = '#e5486d';
+export const SAVINGS_COLOR = '#8a63d2';
+export const SAVINGS_FILL = 'rgba(138, 99, 210, 0.14)';
 
 const FALLBACK = [
   '#5c6bc0',
@@ -44,9 +44,35 @@ function shades(hex: string, count: number): string[] {
 // Axe des dates lisible : étiquettes horizontales et espacées
 export const DATE_AXIS = { ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 24 } };
 
+// Affiche le total au centre de l'anneau
+function donutTotal(label: string): Plugin<'doughnut'> {
+  return {
+    id: 'donutTotal',
+    afterDraw(chart) {
+      const arc = chart.getDatasetMeta(0).data[0];
+      if (!arc) {
+        return;
+      }
+      const { ctx } = chart;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = String(Chart.defaults.color);
+      ctx.font = '600 12px Nunito, sans-serif';
+      ctx.fillText('Total', arc.x, arc.y - 12);
+      // Le canvas hérite de la couleur de texte de la carte
+      ctx.fillStyle = getComputedStyle(chart.canvas).color;
+      ctx.font = '800 18px Nunito, sans-serif';
+      ctx.fillText(label, arc.x, arc.y + 12);
+      ctx.restore();
+    },
+  };
+}
+
 export function donutChart(items: CategoryStat[], currency: string): ChartConfiguration {
+  const total = items.reduce((sum, item) => sum + item.amount, 0);
   const config: ChartConfiguration<'doughnut'> = {
     type: 'doughnut',
+    plugins: [donutTotal(formatMoney(total, currency))],
     data: {
       labels: items.map((i) => i.name),
       datasets: [
@@ -58,9 +84,21 @@ export function donutChart(items: CategoryStat[], currency: string): ChartConfig
       ],
     },
     options: {
-      cutout: '62%',
+      cutout: '72%',
       plugins: {
-        legend: { position: 'right' },
+        legend: {
+          position: 'right',
+          labels: {
+            // La légende donne aussi le montant de chaque catégorie
+            generateLabels: (chart) =>
+              Chart.overrides.doughnut.plugins.legend.labels
+                .generateLabels(chart)
+                .map((label, i) => ({
+                  ...label,
+                  text: `${label.text} · ${formatMoney(items[i].amount, currency)}`,
+                })),
+          },
+        },
         tooltip: {
           callbacks: {
             label: (ctx) => {
@@ -101,6 +139,7 @@ export function incomeExpenseChart(
           ? [
               {
                 type: 'line' as const,
+                order: -1,
                 label: 'Solde du mois',
                 data: months.map((m) => m.net),
                 borderColor: SAVINGS_COLOR,

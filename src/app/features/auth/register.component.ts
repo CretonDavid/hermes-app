@@ -7,6 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { NotifyService, errorMessage } from '../../core/notify.service';
+import { AuthVisualComponent } from './auth-visual.component';
 
 @Component({
   selector: 'app-register',
@@ -17,64 +18,70 @@ import { NotifyService, errorMessage } from '../../core/notify.service';
     MatIconModule,
     MatCheckboxModule,
     MatProgressBarModule,
+    AuthVisualComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './auth-layout.scss',
   template: `
-    <div class="auth-card">
-      <div class="brand"><mat-icon>account_balance_wallet</mat-icon> Hermès</div>
-
-      @if (!accountNumber()) {
-        <h1>Créer un compte</h1>
-        <p class="intro">
-          Pas d'e-mail ni de mot de passe : un numéro de compte unique de 30 chiffres vous est
-          attribué. C'est votre seul identifiant.
-        </p>
-        @if (error()) {
-          <div class="error">{{ error() }}</div>
-        }
-        <div class="actions">
-          <button matButton="filled" (click)="register()" [disabled]="loading()">
-            Générer mon numéro de compte
-          </button>
-        </div>
-        @if (loading()) {
-          <mat-progress-bar mode="indeterminate" />
-        }
-        <div class="switch">Déjà un compte ? <a routerLink="/login">Se connecter</a></div>
-      } @else {
-        <h1>Votre numéro de compte</h1>
-        <div class="account-number">{{ formatted() }}</div>
-
-        <div class="row" style="justify-content: center">
-          <button matButton="tonal" (click)="copy()">
-            <mat-icon>content_copy</mat-icon> Copier
-          </button>
-          <button matButton="tonal" (click)="download()">
-            <mat-icon>download</mat-icon> Télécharger
-          </button>
+    <main class="auth-side">
+      <div class="auth-card">
+        <div class="brand">
+          <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span> Hermès
         </div>
 
-        <div class="warning" style="margin-top: 20px">
-          <mat-icon>warning</mat-icon>
-          <div>
-            Conservez ce numéro en lieu sûr (gestionnaire de mots de passe par exemple).
-            <strong>Il ne pourra jamais être récupéré</strong> : sans lui, l'accès à vos données est
-            définitivement perdu.
+        @if (!accountNumber()) {
+          <h1>Créer un compte</h1>
+          <p class="intro">
+            Pas d'e-mail ni de mot de passe : un numéro de compte unique de 30 chiffres vous est
+            attribué. C'est votre seul identifiant.
+          </p>
+          @if (error()) {
+            <div class="error">{{ error() }}</div>
+          }
+          <div class="actions">
+            <button matButton="filled" (click)="register()" [disabled]="loading()">
+              Générer mon numéro de compte
+            </button>
           </div>
-        </div>
+          @if (loading()) {
+            <mat-progress-bar mode="indeterminate" />
+          }
+          <div class="switch">Déjà un compte ? <a routerLink="/login">Se connecter</a></div>
+        } @else {
+          <h1>Votre numéro de compte</h1>
+          <div class="account-number">{{ formatted() }}</div>
 
-        <mat-checkbox [(ngModel)]="saved" style="margin-top: 16px; display: block">
-          J'ai conservé mon numéro de compte
-        </mat-checkbox>
+          <div class="row" style="justify-content: center">
+            <button matButton="tonal" (click)="copy()">
+              <mat-icon>content_copy</mat-icon> Copier
+            </button>
+            <button matButton="tonal" (click)="download()">
+              <mat-icon>download</mat-icon> Télécharger
+            </button>
+          </div>
 
-        <div class="actions">
-          <button matButton="filled" [disabled]="!saved || loading()" (click)="continue()">
-            Accéder à mon espace
-          </button>
-        </div>
-      }
-    </div>
+          <div class="warning" style="margin-top: 20px">
+            <mat-icon>warning</mat-icon>
+            <div>
+              Conservez ce numéro en lieu sûr (gestionnaire de mots de passe par exemple).
+              <strong>Il ne pourra jamais être récupéré</strong> : sans lui, l'accès à vos données
+              est définitivement perdu.
+            </div>
+          </div>
+
+          <mat-checkbox [(ngModel)]="saved" style="margin-top: 16px; display: block">
+            J'ai conservé mon numéro de compte
+          </mat-checkbox>
+
+          <div class="actions">
+            <button matButton="filled" [disabled]="!saved || loading()" (click)="continue()">
+              Accéder à mon espace
+            </button>
+          </div>
+        }
+      </div>
+    </main>
+    <app-auth-visual />
   `,
 })
 export class RegisterComponent {

@@ -1,45 +1,54 @@
 :host {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   min-height: 100vh;
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.auth-side {
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    160deg,
-    var(--mat-sys-primary-container) 0%,
-    var(--mat-sys-surface) 60%
-  );
-  padding: 24px;
+  padding: 40px 24px;
   box-sizing: border-box;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 520px;
-  background: var(--mat-sys-surface-container-lowest);
-  border-radius: 24px;
-  padding: 36px;
-  box-shadow: var(--mat-sys-level2);
-  box-sizing: border-box;
+  max-width: 460px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font: var(--mat-sys-headline-small);
-  color: var(--mat-sys-primary);
-  margin-bottom: 8px;
+  gap: 12px;
+  font: 800 20px/28px Nunito, sans-serif;
+  margin-bottom: 40px;
+
+  .logo {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--hermes-saffron);
+    color: #2a1846;
+  }
 
   mat-icon {
-    font-size: 34px;
-    width: 34px;
-    height: 34px;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
   }
 }
 
 h1 {
-  font: var(--mat-sys-title-large);
-  margin: 16px 0 4px;
+  font: 700 30px/38px Nunito, sans-serif;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
 }
 
 p.intro {
@@ -55,9 +64,9 @@ p.intro {
 }
 
 .number-input input {
-  font-size: 17px;
-  font-family: 'Roboto Mono', monospace;
-  letter-spacing: 0.08em;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
 }
 
 .switch {
@@ -72,8 +81,8 @@ p.intro {
 }
 
 .account-number {
-  font-family: 'Roboto Mono', monospace;
-  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
   white-space: nowrap;
   letter-spacing: 0.02em;
   text-align: center;

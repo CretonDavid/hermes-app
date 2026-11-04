@@ -3,9 +3,11 @@ import { formatMonth } from '../core/format';
 import { CategoryStat, MonthlyStat } from '../core/models';
 import { formatMoney } from './money.pipe';
 
-export const INCOME_COLOR = '#2e7d32';
-export const EXPENSE_COLOR = '#c62828';
-export const SAVINGS_COLOR = '#1565c0';
+// Tons moyens, contrastés (au moins 3:1) sur les fonds clair et sombre
+export const INCOME_COLOR = '#43a047';
+export const EXPENSE_COLOR = '#e53935';
+export const SAVINGS_COLOR = '#1e88e5';
+export const SAVINGS_FILL = 'rgba(30, 136, 229, 0.12)';
 
 const FALLBACK = [
   '#5c6bc0',

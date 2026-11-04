@@ -83,8 +83,13 @@
   flex: 1;
 }
 
+.theme-toggle {
+  margin: 12px 16px 0;
+  justify-content: flex-start;
+}
+
 .logout {
-  margin: 12px 16px 16px;
+  margin: 4px 16px 16px;
   justify-content: flex-start;
 }
 

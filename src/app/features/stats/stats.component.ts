@@ -39,6 +39,7 @@ import {
   EXPENSE_COLOR,
   INCOME_COLOR,
   SAVINGS_COLOR,
+  SAVINGS_FILL,
   categoryColors,
   donutChart,
   incomeExpenseChart,
@@ -48,14 +49,14 @@ import { NoAccountComponent } from '../../shared/no-account.component';
 import { Period, PeriodPickerComponent, presetPeriod } from '../../shared/period-picker.component';
 
 const LINE_COLORS = [
-  '#1565c0',
-  '#2e7d32',
+  '#1e88e5',
+  '#43a047',
   '#ef6c00',
-  '#6a1b9a',
-  '#00838f',
-  '#ad1457',
-  '#4e342e',
-  '#37474f',
+  '#ab47bc',
+  '#0097a7',
+  '#ec407a',
+  '#a1887f',
+  '#78909c',
 ];
 
 @Component({
@@ -168,7 +169,7 @@ export class StatsComponent {
             label: 'Patrimoine total',
             data: history.points.map((p) => p.value),
             borderColor: SAVINGS_COLOR,
-            backgroundColor: 'rgba(21, 101, 192, 0.1)',
+            backgroundColor: SAVINGS_FILL,
             fill: true,
             tension: 0.25,
             pointRadius: 0,

@@ -1,5 +1,12 @@
+<a class="skip-link" href="#main-content" (click)="skipToContent($event)">Aller au contenu</a>
+
 <mat-sidenav-container class="shell">
-  <mat-sidenav mode="side" opened class="sidenav">
+  <mat-sidenav
+    #sidenav
+    class="sidenav"
+    [mode]="compact() ? 'over' : 'side'"
+    [opened]="!compact()"
+  >
     <div class="brand">
       <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span>
       <span>Hermès</span>
@@ -20,6 +27,7 @@
       </button>
     </span>
 
+    <nav aria-label="Navigation principale">
     <mat-nav-list>
       @for (item of navigation; track item.path) {
         <a
@@ -35,10 +43,11 @@
         </a>
       }
     </mat-nav-list>
+    </nav>
 
     @if (store.openAccounts().length > 0) {
       <div class="accounts-title">Mes comptes</div>
-      <div class="accounts">
+      <nav class="accounts" aria-label="Mes comptes">
         @for (account of store.openAccounts(); track account.id) {
           <a
             class="account-link"
@@ -51,7 +60,7 @@
             </span>
           </a>
         }
-      </div>
+      </nav>
     }
 
     <div class="spacer"></div>
@@ -73,6 +82,25 @@
   </mat-sidenav>
 
   <mat-sidenav-content class="content">
-    <router-outlet />
+    @if (loading.active()) {
+      <mat-progress-bar class="global-loader" mode="indeterminate" />
+    }
+    @if (compact()) {
+      <header class="topbar">
+        <button matIconButton (click)="sidenav.open()" aria-label="Ouvrir le menu">
+          <mat-icon>menu</mat-icon>
+        </button>
+        <span class="topbar-title">Hermès</span>
+        <span class="spacer"></span>
+        @if (store.openAccounts().length > 0) {
+          <button matButton="filled" (click)="newTransaction()">
+            <mat-icon>add</mat-icon> Nouvelle opération
+          </button>
+        }
+      </header>
+    }
+    <main id="main-content" tabindex="-1">
+      <router-outlet />
+    </main>
   </mat-sidenav-content>
 </mat-sidenav-container>

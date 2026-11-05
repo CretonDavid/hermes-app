@@ -17,7 +17,8 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute } from '@angular/router';
-import { Subject, debounceTime } from 'rxjs';
+import { format } from 'date-fns';
+import { EMPTY, Subject, debounceTime, expand, map, reduce } from 'rxjs';
 import { TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
@@ -25,10 +26,15 @@ import {
   Transaction,
   TransactionFilter,
   TransactionKind,
+  TransactionSort,
   TransactionStatus,
+  TransactionTotals,
 } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { MoneyPipe } from '../../shared/money.pipe';
 import { NoAccountComponent } from '../../shared/no-account.component';
+import { BulkCategoryDialogComponent } from './bulk-category-dialog.component';
+import { transactionsToCsv } from './transactions-csv';
 import { TransactionFormDialogComponent } from './transaction-form-dialog.component';
 import { TransactionTableComponent } from './transaction-table.component';
 
@@ -44,6 +50,7 @@ import { TransactionTableComponent } from './transaction-table.component';
     MatIconModule,
     MatPaginatorModule,
     MatProgressBarModule,
+    MoneyPipe,
     TransactionTableComponent,
     NoAccountComponent,
   ],
@@ -59,9 +66,9 @@ import { TransactionTableComponent } from './transaction-table.component';
             modifier
           </div>
         </div>
-        @if (store.openAccounts().length > 0) {
-          <button matButton="filled" (click)="create()">
-            <mat-icon>add</mat-icon> Nouvelle opération
+        @if (total() > 0) {
+          <button matButton="tonal" (click)="export()" [disabled]="exporting()">
+            <mat-icon>download</mat-icon> Exporter en CSV
           </button>
         }
       </div>
@@ -161,10 +168,49 @@ import { TransactionTableComponent } from './transaction-table.component';
             }
           </div>
 
+          @if (selectedIds().size > 0) {
+            <div class="selection" role="status">
+              <strong>
+                {{ selectedIds().size }} sélectionnée{{ selectedIds().size > 1 ? 's' : '' }}
+              </strong>
+              <button matButton="tonal" (click)="categorize()">
+                <mat-icon>sell</mat-icon> Catégoriser
+              </button>
+              <button matButton (click)="selectedIds.set(emptySelection)">
+                Tout désélectionner
+              </button>
+            </div>
+          }
           @if (loading()) {
             <mat-progress-bar mode="indeterminate" />
           }
-          <app-transaction-table [transactions]="transactions()" [emptyMessage]="emptyMessage()" />
+          <app-transaction-table
+            [transactions]="transactions()"
+            [emptyMessage]="emptyMessage()"
+            [scrollable]="true"
+            [sort]="sort()"
+            [selectable]="true"
+            [selectedIds]="selectedIds()"
+            (sortChange)="changeSort($event)"
+            (selectedIdsChange)="selectedIds.set($event)"
+          />
+          @if (total() > 0) {
+            <div class="totals" aria-label="Total des opérations affichées par les filtres">
+              <span class="muted">Total {{ hasFilters() ? 'filtré' : 'général' }}</span>
+              @for (t of totals(); track t.currencyCode) {
+                <span class="currency">
+                  <span>Entrées <strong class="amount positive">{{ t.credits | money: t.currencyCode : true }}</strong></span>
+                  <span>Sorties <strong class="amount">{{ -t.debits | money: t.currencyCode : true }}</strong></span>
+                  <span>
+                    Net
+                    <strong class="amount" [class.positive]="t.net > 0" [class.negative]="t.net < 0">{{
+                      t.net | money: t.currencyCode : true
+                    }}</strong>
+                  </span>
+                </span>
+              }
+            </div>
+          }
           @if (!loading() && total() === 0) {
             <div class="row" style="justify-content: center; margin-bottom: 16px">
               @if (hasFilters()) {
@@ -190,21 +236,41 @@ import { TransactionTableComponent } from './transaction-table.component';
     </div>
   `,
   styles: `
-    .filters mat-form-field {
-      min-width: 0;
-      width: 150px;
-    }
     .filters .search {
-      width: 230px;
+      flex: 2 1 230px;
     }
     .filters .wide {
-      width: 200px;
+      flex: 1.5 1 200px;
     }
     .filters .period {
-      width: 270px;
+      flex: 2 1 270px;
     }
     .reset {
       margin-top: 8px;
+    }
+    .selection {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 8px 8px 8px 16px;
+      border-radius: 12px;
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+    .totals {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 4px 20px;
+      padding: 12px 16px 0;
+      .currency {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 4px 16px;
+      }
     }
   `,
 })
@@ -223,6 +289,12 @@ export class TransactionsComponent {
   protected readonly to = signal<Date | null>(null);
   protected readonly page = signal(0);
   protected readonly size = signal(50);
+
+  protected readonly sort = signal<TransactionSort>({ field: 'date', direction: 'desc' });
+  protected readonly emptySelection: ReadonlySet<number> = new Set();
+  protected readonly selectedIds = signal<ReadonlySet<number>>(this.emptySelection);
+  protected readonly totals = signal<TransactionTotals[]>([]);
+  protected readonly exporting = signal(false);
 
   protected readonly transactions = signal<Transaction[]>([]);
   protected readonly total = signal(0);
@@ -291,7 +363,55 @@ export class TransactionsComponent {
   protected changePage(event: PageEvent): void {
     this.page.set(event.pageIndex);
     this.size.set(event.pageSize);
-    this.load();
+    this.loadPage();
+  }
+
+  protected changeSort(sort: TransactionSort): void {
+    this.sort.set(sort);
+    this.page.set(0);
+    this.loadPage();
+  }
+
+  protected categorize(): void {
+    BulkCategoryDialogComponent.open(this.dialog, [...this.selectedIds()]);
+  }
+
+  // Exporte toutes les opérations correspondant aux filtres, page après page
+  protected export(): void {
+    const size = 500;
+    const filter = this.filter();
+    const sort = this.sort();
+    this.exporting.set(true);
+    this.api
+      .search(filter, 0, size, sort)
+      .pipe(
+        expand((page) =>
+          page.page + 1 < page.totalPages
+            ? this.api.search(filter, page.page + 1, size, sort)
+            : EMPTY,
+        ),
+        map((page) => page.content),
+        reduce((all, content) => [...all, ...content], [] as Transaction[]),
+      )
+      .subscribe({
+        next: (transactions) => {
+          this.exporting.set(false);
+          this.download(transactionsToCsv(transactions));
+        },
+        error: (error) => {
+          this.exporting.set(false);
+          this.notify.error(error);
+        },
+      });
+  }
+
+  private download(content: string): void {
+    const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `hermes-operations-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   protected create(): void {
@@ -299,8 +419,17 @@ export class TransactionsComponent {
   }
 
   load(): void {
+    this.selectedIds.set(this.emptySelection);
+    this.loadPage();
+    this.api.totals(this.filter()).subscribe({
+      next: (totals) => this.totals.set(totals),
+      error: (error) => this.notify.error(error),
+    });
+  }
+
+  private filter(): TransactionFilter {
     const categoryId = this.categoryId();
-    const filter: TransactionFilter = {
+    return {
       search: this.search() || undefined,
       accountIds: this.accountIds(),
       kind: this.kind() ?? undefined,
@@ -310,8 +439,11 @@ export class TransactionsComponent {
       from: toIsoDate(this.from()) ?? undefined,
       to: toIsoDate(this.to()) ?? undefined,
     };
+  }
+
+  private loadPage(): void {
     this.loading.set(true);
-    this.api.search(filter, this.page(), this.size()).subscribe({
+    this.api.search(this.filter(), this.page(), this.size(), this.sort()).subscribe({
       next: (page) => {
         this.transactions.set(page.content);
         this.total.set(page.totalElements);

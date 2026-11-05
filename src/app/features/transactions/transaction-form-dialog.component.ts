@@ -26,7 +26,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable, debounceTime, distinctUntilChanged, of, startWith, switchMap } from 'rxjs';
+import {
+  Observable,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  of,
+  startWith,
+  switchMap,
+} from 'rxjs';
 import { TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { PAYMENT_METHODS, fromIsoDate, toIsoDate } from '../../core/format';
@@ -36,6 +44,7 @@ import {
   Transaction,
   TransactionDirection,
   TransactionRequest,
+  Transfer,
   TransferRequest,
 } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
@@ -341,14 +350,53 @@ export class TransactionFormDialogComponent implements OnInit {
       if (!ok) {
         return;
       }
-      this.api.delete(t.id).subscribe({
-        next: () => {
-          this.notify.success('Opération supprimée');
-          this.store.transactionsChanged();
-          this.dialogRef.close(true);
-        },
-        error: (error) => this.notify.error(error),
-      });
+      // Le virement complet doit être lu avant sa suppression pour pouvoir le recréer
+      const transfer$: Observable<Transfer | null> = t.transfer
+        ? this.api.getTransfer(t.id)
+        : of(null);
+      transfer$
+        .pipe(switchMap((transfer) => this.api.delete(t.id).pipe(map(() => transfer))))
+        .subscribe({
+          next: (transfer) => {
+            this.notify.successWithUndo('Opération supprimée', () => this.restore(t, transfer));
+            this.store.transactionsChanged();
+            this.dialogRef.close(true);
+          },
+          error: (error) => this.notify.error(error),
+        });
+    });
+  }
+
+  private restore(t: Transaction, transfer: Transfer | null): void {
+    const request$: Observable<unknown> = transfer
+      ? this.api.createTransfer({
+          fromAccountId: transfer.debit.accountId,
+          toAccountId: transfer.credit.accountId,
+          amount: transfer.debit.amount,
+          targetAmount: transfer.credit.amount,
+          label: transfer.debit.label,
+          notes: transfer.debit.notes,
+          operationDate: transfer.debit.operationDate,
+        })
+      : this.api.create({
+          accountId: t.accountId,
+          direction: t.direction,
+          amount: t.amount,
+          label: t.label,
+          payee: t.payee,
+          notes: t.notes,
+          categoryId: t.category?.id ?? null,
+          paymentMethod: t.paymentMethod,
+          operationDate: t.operationDate,
+          valueDate: t.valueDate,
+          status: t.status === 'CLEARED' ? 'CLEARED' : 'PENDING',
+        });
+    request$.subscribe({
+      next: () => {
+        this.notify.success('Opération rétablie');
+        this.store.transactionsChanged();
+      },
+      error: (error) => this.notify.error(error),
     });
   }
 }

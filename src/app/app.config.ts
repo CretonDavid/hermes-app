@@ -16,6 +16,7 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { fr } from 'date-fns/locale';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { loadingInterceptor } from './core/loading.service';
 import { FrDatepickerIntl, FrPaginatorIntl } from './core/material-intl';
 import { MatDatepickerIntl } from '@angular/material/datepicker';
 import { MatPaginatorIntl } from '@angular/material/paginator';
@@ -26,7 +27,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([loadingInterceptor, authInterceptor])),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
     { provide: DEFAULT_CURRENCY_CODE, useValue: 'EUR' },
     { provide: MAT_DATE_LOCALE, useValue: fr },

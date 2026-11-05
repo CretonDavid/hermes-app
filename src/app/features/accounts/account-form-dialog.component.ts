@@ -171,6 +171,11 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     <app-dialog-close />
   `,
   styles: `
+    mat-dialog-content .form-grid {
+      column-gap: 20px;
+      row-gap: 24px;
+      padding-bottom: 24px;
+    }
     .savings {
       display: flex;
       flex-direction: column;
@@ -183,7 +188,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     .help {
       font: var(--mat-sys-body-small);
       color: var(--hermes-muted);
-      margin: -6px 0 4px;
+      margin: -12px 0 10px;
     }
     .chip.new {
       margin-left: 8px;
@@ -197,7 +202,8 @@ export class AccountFormDialogComponent {
   ): MatDialogRef<AccountFormDialogComponent, Account> {
     return dialog.open(AccountFormDialogComponent, {
       data: account ?? null,
-      width: '640px',
+      width: '680px',
+      maxWidth: '92vw',
       maxHeight: '92vh',
     });
   }

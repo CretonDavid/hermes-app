@@ -142,13 +142,10 @@
               @if (categoryChart(); as config) {
                 <app-chart
                   [config]="config"
-                  [height]="340"
+                  [height]="364"
                   [clickable]="true"
                   (elementClick)="openCategory($event)"
                 />
-                <p class="muted hint">
-                  Cliquez sur une catégorie pour voir le détail de ses sous-catégories.
-                </p>
               } @else {
                 <div class="empty"><p>Aucune opération sur la période</p></div>
               }

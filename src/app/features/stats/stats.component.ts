@@ -122,7 +122,13 @@ export class StatsComponent {
   );
 
   protected readonly categoryChart = computed(() =>
-    this.categories().length ? donutChart(this.categories(), this.currency()) : null,
+    this.categories().length
+      ? donutChart(
+          this.categories(),
+          this.currency(),
+          'Cliquez sur une catégorie pour voir le détail de ses sous-catégories.',
+        )
+      : null,
   );
 
   protected readonly trendChart = computed<ChartConfiguration | null>(() => {

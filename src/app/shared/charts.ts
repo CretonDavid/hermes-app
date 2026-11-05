@@ -68,6 +68,72 @@ function donutTotal(label: string): Plugin<'doughnut'> {
   };
 }
 
+const HINT_FONT = '12px Nunito, sans-serif';
+const HINT_LINE_HEIGHT = 16;
+const HINT_GAP = 8;
+
+// Coupe aux espaces, seulement si le texte dépasse la largeur disponible
+function wrapText(text: string, width: number, measure: (s: string) => number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && measure(candidate) > width) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  lines.push(line);
+  return lines;
+}
+
+// Centre le texte sous l'anneau, en le décalant juste assez pour qu'il reste dans le cadre.
+// Sur plusieurs lignes, il occupe tout le cadre : il est donc centré sur celui-ci.
+export function layoutHint(
+  text: string,
+  ringCenter: number,
+  width: number,
+  measure: (s: string) => number,
+): { lines: string[]; x: number } {
+  const lines = wrapText(text, width, measure);
+  if (lines.length > 1) {
+    return { lines, x: width / 2 };
+  }
+  const half = measure(text) / 2;
+  return { lines, x: Math.min(Math.max(ringCenter, half), width - half) };
+}
+
+function chartHint(chart: Chart, text: string): { lines: string[]; x: number } {
+  const { ctx, chartArea, width } = chart;
+  ctx.save();
+  ctx.font = HINT_FONT;
+  const ringCenter = chartArea ? (chartArea.left + chartArea.right) / 2 : width / 2;
+  const layout = layoutHint(text, ringCenter, width, (s) => ctx.measureText(s).width);
+  ctx.restore();
+  return layout;
+}
+
+function donutHint(text: string): Plugin<'doughnut'> {
+  return {
+    id: 'donutHint',
+    afterDraw(chart) {
+      const { lines, x } = chartHint(chart as unknown as Chart, text);
+      const { ctx, height } = chart;
+      ctx.save();
+      ctx.font = HINT_FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = String(Chart.defaults.color);
+      lines.forEach((line, i) => {
+        ctx.fillText(line, x, height - (lines.length - i) * HINT_LINE_HEIGHT);
+      });
+      ctx.restore();
+    },
+  };
+}
+
 export function donutChart(
   items: CategoryStat[],
   currency: string,
@@ -76,7 +142,7 @@ export function donutChart(
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const config: ChartConfiguration<'doughnut'> = {
     type: 'doughnut',
-    plugins: [donutTotal(formatMoney(total, currency))],
+    plugins: [donutTotal(formatMoney(total, currency)), ...(hint ? [donutHint(hint)] : [])],
     data: {
       labels: items.map((i) => i.name),
       datasets: [
@@ -89,16 +155,17 @@ export function donutChart(
     },
     options: {
       cutout: '72%',
+      // Réserve sous le graphique la hauteur des lignes du texte d'aide
+      ...(hint
+        ? {
+            layout: {
+              padding: ({ chart }: { chart: Chart }) => ({
+                bottom: chartHint(chart, hint).lines.length * HINT_LINE_HEIGHT + HINT_GAP,
+              }),
+            },
+          }
+        : {}),
       plugins: {
-        // Sans fullSize, le texte se centre sous l'anneau et non sur toute la largeur du graphique
-        subtitle: {
-          display: !!hint,
-          text: hint ?? '',
-          position: 'bottom',
-          fullSize: false,
-          font: { size: 12 },
-          padding: { top: 8 },
-        },
         legend: {
           position: 'right',
           labels: {

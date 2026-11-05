@@ -45,7 +45,7 @@ function shades(hex: string, count: number): string[] {
 export const DATE_AXIS = { ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 24 } };
 
 // Affiche le total au centre de l'anneau
-function donutTotal(label: string, amount: string): Plugin<'doughnut'> {
+function donutTotal(amount: string): Plugin<'doughnut'> {
   return {
     id: 'donutTotal',
     afterDraw(chart) {
@@ -58,7 +58,7 @@ function donutTotal(label: string, amount: string): Plugin<'doughnut'> {
       ctx.textAlign = 'center';
       ctx.fillStyle = String(Chart.defaults.color);
       ctx.font = '600 12px Nunito, sans-serif';
-      ctx.fillText(label, arc.x, arc.y - 12);
+      ctx.fillText('Total', arc.x, arc.y - 12);
       // Le canvas hérite de la couleur de texte de la carte
       ctx.fillStyle = getComputedStyle(chart.canvas).color;
       ctx.font = '800 18px Nunito, sans-serif';
@@ -137,15 +137,12 @@ function donutHint(text: string): Plugin<'doughnut'> {
 export function donutChart(
   items: CategoryStat[],
   currency: string,
-  { hint, totalLabel = 'Total' }: { hint?: string; totalLabel?: string } = {},
+  hint?: string,
 ): ChartConfiguration {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const config: ChartConfiguration<'doughnut'> = {
     type: 'doughnut',
-    plugins: [
-      donutTotal(totalLabel, formatMoney(total, currency)),
-      ...(hint ? [donutHint(hint)] : []),
-    ],
+    plugins: [donutTotal(formatMoney(total, currency)), ...(hint ? [donutHint(hint)] : [])],
     data: {
       labels: items.map((i) => i.name),
       datasets: [

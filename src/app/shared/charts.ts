@@ -68,7 +68,11 @@ function donutTotal(label: string): Plugin<'doughnut'> {
   };
 }
 
-export function donutChart(items: CategoryStat[], currency: string): ChartConfiguration {
+export function donutChart(
+  items: CategoryStat[],
+  currency: string,
+  hint?: string,
+): ChartConfiguration {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const config: ChartConfiguration<'doughnut'> = {
     type: 'doughnut',
@@ -86,6 +90,15 @@ export function donutChart(items: CategoryStat[], currency: string): ChartConfig
     options: {
       cutout: '72%',
       plugins: {
+        // Sans fullSize, le texte se centre sous l'anneau et non sur toute la largeur du graphique
+        subtitle: {
+          display: !!hint,
+          text: hint ?? '',
+          position: 'bottom',
+          fullSize: false,
+          font: { size: 12 },
+          padding: { top: 8 },
+        },
         legend: {
           position: 'right',
           labels: {

@@ -75,7 +75,13 @@ export class DashboardComponent {
     () => this.summary()?.currencyCode ?? this.store.referenceCurrency(),
   );
   protected readonly donut = computed(() =>
-    this.categories().length ? donutChart(this.categories(), this.currency()) : null,
+    this.categories().length
+      ? donutChart(
+          this.categories(),
+          this.currency(),
+          'Cliquez sur une catégorie pour voir ses opérations du mois.',
+        )
+      : null,
   );
   protected readonly bars = computed(() =>
     this.months().length ? incomeExpenseChart(this.months(), this.currency()) : null,

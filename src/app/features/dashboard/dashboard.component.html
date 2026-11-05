@@ -104,11 +104,10 @@
         @if (donut(); as config) {
           <app-chart
             [config]="config"
-            [height]="260"
+            [height]="284"
             [clickable]="true"
             (elementClick)="openCategory($event)"
           />
-          <p class="muted hint">Cliquez sur une catégorie pour voir ses opérations du mois.</p>
         } @else {
           <div class="empty"><p>Aucune dépense ce mois-ci</p></div>
         }

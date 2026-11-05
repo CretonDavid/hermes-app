@@ -76,11 +76,10 @@ export class DashboardComponent {
   );
   protected readonly donut = computed(() =>
     this.categories().length
-      ? donutChart(
-          this.categories(),
-          this.currency(),
-          'Cliquez sur une catégorie pour voir ses opérations du mois.',
-        )
+      ? donutChart(this.categories(), this.currency(), {
+          hint: 'Cliquez sur une catégorie pour voir ses opérations du mois.',
+          legendTitle: 'Catégories :',
+        })
       : null,
   );
   protected readonly bars = computed(() =>

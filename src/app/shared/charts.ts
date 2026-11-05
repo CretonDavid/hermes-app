@@ -137,7 +137,7 @@ function donutHint(text: string): Plugin<'doughnut'> {
 export function donutChart(
   items: CategoryStat[],
   currency: string,
-  hint?: string,
+  { hint, legendTitle }: { hint?: string; legendTitle?: string } = {},
 ): ChartConfiguration {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const config: ChartConfiguration<'doughnut'> = {
@@ -168,6 +168,13 @@ export function donutChart(
       plugins: {
         legend: {
           position: 'right',
+          title: {
+            display: !!legendTitle,
+            text: legendTitle ?? '',
+            position: 'start',
+            font: { size: 12, weight: 600 },
+            padding: { bottom: 4 },
+          },
           labels: {
             // La légende donne aussi le montant de chaque catégorie
             generateLabels: (chart) =>

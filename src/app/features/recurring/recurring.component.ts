@@ -54,7 +54,7 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
 
       @if (store.loaded() && store.accounts().length === 0) {
         <app-no-account
-          message="Les récurrences (loyer, salaire, abonnements…) sont rattachées à un compte."
+          message="Les récurrences (loyer, salaire, abonnements…) sont rattachées à un compte bancaire."
         />
       } @else {
         <div class="grid grid-3" style="margin-bottom: 16px">
@@ -63,21 +63,21 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
             <div class="value amount">
               {{ monthly().expenses | money: store.referenceCurrency() }}
             </div>
-            <div class="delta muted">Estimation, dans la devise des comptes</div>
+            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
           </div>
           <div class="card kpi">
             <div class="label">Revenus récurrents / mois</div>
             <div class="value amount" [class.positive]="monthly().income > 0">
               {{ monthly().income | money: store.referenceCurrency() }}
             </div>
-            <div class="delta muted">Estimation, dans la devise des comptes</div>
+            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
           </div>
           <div class="card kpi">
             <div class="label">Virements programmés / mois</div>
             <div class="value amount">
               {{ monthly().transfers | money: store.referenceCurrency() }}
             </div>
-            <div class="delta muted">Estimation, dans la devise des comptes</div>
+            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
           </div>
         </div>
 

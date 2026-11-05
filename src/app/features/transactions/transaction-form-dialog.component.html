@@ -28,8 +28,8 @@
         editing && mode() !== 'TRANSFER'
           ? transferLockedHint
           : canTransfer()
-            ? 'Déplacer de l\'argent entre deux de vos comptes'
-            : 'Il faut au moins deux comptes pour faire un virement'
+            ? 'Déplacer de l\'argent entre deux de vos comptes bancaires'
+            : 'Il faut au moins deux comptes bancaires pour faire un virement'
       "
     >
       <mat-icon>swap_horiz</mat-icon> Virement
@@ -39,7 +39,7 @@
   @if (reconciled) {
     <div class="info-banner">
       <mat-icon>lock</mat-icon>
-      Opération rapprochée avec un relevé : le compte, le montant et la date ne sont plus
+      Opération rapprochée avec un relevé : le compte bancaire, le montant et la date ne sont plus
       modifiables.
     </div>
   }
@@ -70,7 +70,7 @@
     @if (mode() === 'TRANSFER') {
       <div class="full transfer-accounts">
         <mat-form-field>
-          <mat-label>Depuis le compte</mat-label>
+          <mat-label>Depuis le compte bancaire</mat-label>
           <mat-select formControlName="accountId">
             @for (account of accounts(); track account.id) {
               <mat-option [value]="account.id"
@@ -89,7 +89,7 @@
           <mat-icon>swap_horiz</mat-icon>
         </button>
         <mat-form-field>
-          <mat-label>Vers le compte</mat-label>
+          <mat-label>Vers le compte bancaire</mat-label>
           <mat-select formControlName="toAccountId" required>
             @for (account of accounts(); track account.id) {
               @if (account.id !== form.controls.accountId.value) {
@@ -108,7 +108,7 @@
           <input matInput appAmount formControlName="targetAmount" />
           <span matTextSuffix>&nbsp;{{ toAccount()?.currency?.code }}</span>
           <mat-hint
-            >Les deux comptes n'ont pas la même devise. Laissez vide pour convertir au taux
+            >Les deux comptes bancaires n'ont pas la même devise. Laissez vide pour convertir au taux
             enregistré.</mat-hint
           >
         </mat-form-field>
@@ -118,7 +118,7 @@
         <p class="full summary">
           <mat-icon inline>info</mat-icon>
           {{ amountValue() | money: currencyCode() }} quitteront « {{ fromAccount()!.name }} » pour
-          « {{ toAccount()!.name }} ». Les virements entre vos comptes ne comptent ni en dépense ni
+          « {{ toAccount()!.name }} ». Les virements entre vos comptes bancaires ne comptent ni en dépense ni
           en revenu.
         </p>
       }
@@ -149,7 +149,7 @@
       />
 
       <mat-form-field>
-        <mat-label>Compte</mat-label>
+        <mat-label>Compte bancaire</mat-label>
         <mat-select formControlName="accountId">
           @for (account of accounts(); track account.id) {
             <mat-option [value]="account.id"
@@ -157,7 +157,7 @@
             >
           }
         </mat-select>
-        <mat-error>Choisissez un compte</mat-error>
+        <mat-error>Choisissez un compte bancaire</mat-error>
       </mat-form-field>
 
       <mat-form-field>

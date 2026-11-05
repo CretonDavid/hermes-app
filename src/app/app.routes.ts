@@ -11,7 +11,7 @@ export const routes: Routes = [
   {
     path: 'register',
     canActivate: [guestGuard],
-    title: 'Créer mon espace · Hermès',
+    title: 'Créer un compte · Hermès',
     loadComponent: () =>
       import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },
@@ -29,13 +29,13 @@ export const routes: Routes = [
       },
       {
         path: 'accounts',
-        title: 'Comptes · Hermès',
+        title: 'Comptes bancaires · Hermès',
         loadComponent: () =>
           import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
       },
       {
         path: 'accounts/:id',
-        title: 'Compte · Hermès',
+        title: 'Compte bancaire · Hermès',
         loadComponent: () =>
           import('./features/accounts/account-detail.component').then(
             (m) => m.AccountDetailComponent,

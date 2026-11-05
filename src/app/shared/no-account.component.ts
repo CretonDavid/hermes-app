@@ -19,13 +19,13 @@ import { AccountFormDialogComponent } from '../features/accounts/account-form-di
         {{ message() }}
       </p>
       <button matButton="filled" (click)="create()">
-        <mat-icon>add</mat-icon> Créer mon premier compte
+        <mat-icon>add</mat-icon> Créer mon premier compte bancaire
       </button>
     </div>
   `,
 })
 export class NoAccountComponent {
-  readonly message = input('Toutes vos opérations sont rattachées à un compte.');
+  readonly message = input('Toutes vos opérations sont rattachées à un compte bancaire.');
 
   private readonly dialog = inject(MatDialog);
 

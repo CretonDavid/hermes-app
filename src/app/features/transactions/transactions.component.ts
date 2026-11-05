@@ -90,7 +90,7 @@ import { TransactionTableComponent } from './transaction-table.component';
             </mat-form-field>
 
             <mat-form-field>
-              <mat-label>Comptes</mat-label>
+              <mat-label>Comptes bancaires</mat-label>
               <mat-select
                 multiple
                 [ngModel]="accountIds()"

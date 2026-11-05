@@ -7,7 +7,7 @@ const HEADERS = [
   'Libellé',
   'Bénéficiaire',
   'Catégorie',
-  'Compte',
+  'Compte bancaire',
   'Montant',
   'Devise',
   'Moyen de paiement',

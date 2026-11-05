@@ -12,7 +12,7 @@
     <mat-tab label="Profil">
       <div class="tab">
         <div class="card">
-          <h2><mat-icon>person</mat-icon> Mon espace</h2>
+          <h2><mat-icon>person</mat-icon> Mon compte</h2>
           @if (store.user(); as user) {
             <p class="muted">
               Créé le {{ user.createdAt | date: 'dd/MM/yyyy' }}
@@ -34,8 +34,8 @@
             </mat-form-field>
           }
           <p class="muted" style="margin-top: 24px">
-            <mat-icon inline>key</mat-icon> Votre numéro d'accès n'est pas conservé en clair : il ne
-            peut être ni affiché ni récupéré.
+            <mat-icon inline>key</mat-icon> Votre numéro de compte n'est pas conservé en clair : il
+            ne peut être ni affiché ni récupéré.
           </p>
         </div>
 
@@ -43,22 +43,22 @@
           <h2><mat-icon>warning</mat-icon> Zone sensible</h2>
           <div class="danger-row">
             <div>
-              <strong>Désactiver mon espace</strong>
+              <strong>Désactiver mon compte</strong>
               <div class="muted">
-                Bloque la connexion. Les données sont conservées et l'espace peut être réactivé.
+                Bloque la connexion. Les données sont conservées et le compte peut être réactivé.
               </div>
             </div>
             <button matButton="outlined" (click)="disable()">Désactiver</button>
           </div>
           <div class="danger-row delete">
-            <strong>Supprimer définitivement mon espace</strong>
+            <strong>Supprimer définitivement mon compte</strong>
             <div class="muted">
               Efface tous vos comptes bancaires, opérations et catégories. Saisissez votre numéro
-              d'accès pour confirmer.
+              de compte pour confirmer.
             </div>
             <div class="delete-action">
               <mat-form-field>
-                <mat-label>Numéro d'accès</mat-label>
+                <mat-label>Numéro de compte</mat-label>
                 <input
                   matInput
                   [(ngModel)]="deleteNumber"
@@ -88,11 +88,11 @@
       </div>
     </mat-tab>
 
-    <mat-tab label="Types de compte">
+    <mat-tab label="Types de compte bancaire">
       <div class="tab">
         <div class="card">
           <div class="row" style="margin-bottom: 12px">
-            <h2 style="margin: 0; flex: 1"><mat-icon>category</mat-icon> Types de compte</h2>
+            <h2 style="margin: 0; flex: 1"><mat-icon>category</mat-icon> Types de compte bancaire</h2>
             <button matButton="tonal" (click)="createType()">
               <mat-icon>add</mat-icon> Ajouter
             </button>
@@ -123,7 +123,7 @@
             </div>
           } @empty {
             <p class="muted">
-              Aucun type de compte. Exemples : Compte courant, Livret A, Assurance vie, PEA…
+              Aucun type de compte bancaire. Exemples : Compte courant, Livret A, Assurance vie, PEA…
             </p>
           }
         </div>
@@ -183,11 +183,11 @@
           <h2><mat-icon>currency_exchange</mat-icon> Synchronisation BCE</h2>
           <p class="muted">
             Récupère les taux de référence de la Banque centrale européenne entre votre devise de
-            référence ({{ store.referenceCurrency() }}) et les devises de vos comptes
+            référence ({{ store.referenceCurrency() }}) et les devises de vos comptes bancaires
             @if (foreignCurrencies().length) {
               ({{ foreignCurrencies().join(', ') }}).
             } @else {
-              — tous vos comptes sont actuellement en {{ store.referenceCurrency() }}.
+              — tous vos comptes bancaires sont actuellement en {{ store.referenceCurrency() }}.
             }
           </p>
           <div class="row">

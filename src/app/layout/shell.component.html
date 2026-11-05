@@ -14,7 +14,7 @@
 
     <span
       class="new-button-wrapper"
-      [matTooltip]="store.openAccounts().length === 0 ? 'Créez d’abord un compte' : ''"
+      [matTooltip]="store.openAccounts().length === 0 ? 'Créez d’abord un compte bancaire' : ''"
     >
       <button
         matButton="filled"
@@ -46,8 +46,8 @@
     </nav>
 
     @if (store.openAccounts().length > 0) {
-      <div class="accounts-title">Mes comptes</div>
-      <nav class="accounts" aria-label="Mes comptes">
+      <div class="accounts-title">Mes comptes bancaires</div>
+      <nav class="accounts" aria-label="Mes comptes bancaires">
         @for (account of store.openAccounts(); track account.id) {
           <a
             class="account-link"

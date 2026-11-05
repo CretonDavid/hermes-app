@@ -250,7 +250,6 @@ export class TransactionFormDialogComponent implements OnInit {
       return;
     }
     this.mode.set(mode);
-    this.form.markAsDirty();
     this.form.controls.categoryId.setValue(null);
     if (mode === 'TRANSFER' && !this.form.controls.toAccountId.value) {
       const other = this.store
@@ -284,7 +283,7 @@ export class TransactionFormDialogComponent implements OnInit {
     let request$: Observable<unknown>;
     if (this.mode() === 'TRANSFER') {
       if (!v.toAccountId) {
-        this.notify.error('Choisissez le compte qui reçoit le virement');
+        this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
         return;
       }
       const request: TransferRequest = {

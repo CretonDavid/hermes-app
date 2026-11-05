@@ -9,7 +9,7 @@
     @if (store.accounts().length > 0) {
       <app-period-picker initial="12months" (periodChange)="period.set($event)" />
       <mat-form-field style="width: 220px">
-        <mat-label>Comptes</mat-label>
+        <mat-label>Comptes bancaires</mat-label>
         <mat-select
           multiple
           [ngModel]="accountIds()"
@@ -26,7 +26,7 @@
 
   @if (store.loaded() && store.accounts().length === 0) {
     <app-no-account
-      message="Les statistiques sont calculées à partir des opérations de vos comptes."
+      message="Les statistiques sont calculées à partir des opérations de vos comptes bancaires."
     />
   } @else {
     @if (isEmpty()) {
@@ -222,12 +222,12 @@
             }
           </div>
           <div class="card" style="margin-top: 16px">
-            <h2><mat-icon>stacked_line_chart</mat-icon> Solde par compte</h2>
+            <h2><mat-icon>stacked_line_chart</mat-icon> Solde par compte bancaire</h2>
             @if (accountsChart(); as config) {
               <app-chart
                 [config]="config"
                 [height]="320"
-                label="Courbes de l'évolution du solde de chaque compte, avec une échelle par devise"
+                label="Courbes de l'évolution du solde de chaque compte bancaire, avec une échelle par devise"
               />
             }
           </div>
@@ -267,7 +267,7 @@
             @if (!store.accountTypes().some((t) => t.savings)) {
               <div class="card notice">
                 <mat-icon>info</mat-icon>
-                Aucun type de compte n'est marqué « épargne ». Cochez cette option dans les
+                Aucun type de compte bancaire n'est marqué « épargne ». Cochez cette option dans les
                 paramètres pour suivre vos versements.
               </div>
             }

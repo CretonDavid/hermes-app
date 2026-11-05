@@ -81,7 +81,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
           [disabled]="store.openAccounts().length < 2"
           [matTooltip]="
             store.openAccounts().length < 2
-              ? 'Il faut au moins deux comptes'
+              ? 'Il faut au moins deux comptes bancaires'
               : 'Épargne programmée, virement mensuel…'
           "
           ><mat-icon>swap_horiz</mat-icon> Virement</mat-button-toggle
@@ -103,7 +103,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>{{ mode() === 'TRANSFER' ? 'Depuis le compte' : 'Compte' }}</mat-label>
+          <mat-label>{{ mode() === 'TRANSFER' ? 'Depuis le compte bancaire' : 'Compte bancaire' }}</mat-label>
           <mat-select formControlName="accountId">
             @for (account of store.openAccounts(); track account.id) {
               <mat-option [value]="account.id">{{ account.name }}</mat-option>
@@ -113,7 +113,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
         @if (mode() === 'TRANSFER') {
           <mat-form-field>
-            <mat-label>Vers le compte</mat-label>
+            <mat-label>Vers le compte bancaire</mat-label>
             <mat-select formControlName="targetAccountId" required>
               @for (account of store.openAccounts(); track account.id) {
                 @if (account.id !== form.controls.accountId.value) {
@@ -388,7 +388,6 @@ export class RecurringDialogComponent {
 
   protected setMode(mode: Mode): void {
     this.mode.set(mode);
-    this.form.markAsDirty();
     this.form.controls.categoryId.setValue(null);
     if (mode === 'TRANSFER' && !this.form.controls.targetAccountId.value) {
       const other = this.store
@@ -420,7 +419,7 @@ export class RecurringDialogComponent {
     const v = this.form.getRawValue();
     const transfer = this.mode() === 'TRANSFER';
     if (transfer && !v.targetAccountId) {
-      this.notify.error('Choisissez le compte qui reçoit le virement');
+      this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
       return;
     }
     const request: RecurringTransactionRequest = {

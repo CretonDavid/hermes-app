@@ -34,11 +34,11 @@ import { AuthVisualComponent } from './auth-visual.component';
           <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span> Hermès
         </div>
         <h1>Connexion</h1>
-        <p class="intro">Saisissez votre numéro d'accès à 30 chiffres.</p>
+        <p class="intro">Saisissez votre numéro de compte à 30 chiffres.</p>
 
         <form [formGroup]="form" (ngSubmit)="submit()">
           <mat-form-field class="number-input">
-            <mat-label>Numéro d'accès</mat-label>
+            <mat-label>Numéro de compte</mat-label>
             <input
               matInput
               formControlName="number"
@@ -66,7 +66,7 @@ import { AuthVisualComponent } from './auth-visual.component';
                 (click)="reactivate()"
                 [disabled]="loading()"
               >
-                Réactiver mon espace
+                Réactiver mon compte
               </button>
             } @else {
               <button matButton="filled" type="submit" [disabled]="loading()">Se connecter</button>
@@ -78,7 +78,7 @@ import { AuthVisualComponent } from './auth-visual.component';
         </form>
 
         <div class="switch">
-          Pas encore d'espace ? <a routerLink="/register">Créer mon espace</a>
+          Pas encore de compte ? <a routerLink="/register">Créer un compte</a>
         </div>
       </div>
     </main>
@@ -134,9 +134,9 @@ export class LoginComponent {
         this.loading.set(false);
         if (error instanceof HttpErrorResponse && error.error?.code === 'ACCOUNT_DISABLED') {
           this.disabled.set(true);
-          this.error.set('Cet espace est désactivé. Vous pouvez le réactiver avec ce même numéro.');
+          this.error.set('Ce compte est désactivé. Vous pouvez le réactiver avec ce même numéro.');
         } else if (error instanceof HttpErrorResponse && error.status === 401) {
-          this.error.set("Numéro d'accès inconnu");
+          this.error.set('Numéro de compte inconnu');
         } else {
           this.error.set(errorMessage(error));
         }

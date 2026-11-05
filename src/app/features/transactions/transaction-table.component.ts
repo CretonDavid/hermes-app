@@ -143,7 +143,7 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
         </ng-container>
 
         <ng-container matColumnDef="account">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header="account">Compte</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="account">Compte bancaire</th>
           <td mat-cell *matCellDef="let t" class="muted">{{ t.accountName }}</td>
         </ng-container>
 

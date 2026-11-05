@@ -65,7 +65,7 @@ export class ShellComponent implements OnInit {
 
   protected readonly navigation: NavItem[] = [
     { path: '/', label: 'Tableau de bord', icon: 'dashboard', exact: true },
-    { path: '/accounts', label: 'Comptes', icon: 'account_balance' },
+    { path: '/accounts', label: 'Comptes bancaires', icon: 'account_balance' },
     { path: '/transactions', label: 'Opérations', icon: 'receipt_long' },
     { path: '/recurring', label: 'Récurrences', icon: 'event_repeat' },
     { path: '/import', label: 'Import', icon: 'upload_file' },

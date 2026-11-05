@@ -44,10 +44,9 @@ interface AccountGroup {
     <div class="page">
       <div class="page-header">
         <div>
-          <h1>Comptes</h1>
+          <h1>Comptes bancaires</h1>
           <div class="subtitle">
-            {{ store.openAccounts().length }} compte{{ store.openAccounts().length > 1 ? 's' : '' }}
-            ouvert{{ store.openAccounts().length > 1 ? 's' : '' }}
+            {{ store.openAccounts().length }} ouvert{{ store.openAccounts().length > 1 ? 's' : '' }}
             @if (summary(); as s) {
               · Patrimoine total : <strong class="amount">{{ s.netWorth | money: s.currencyCode }}</strong>
             }
@@ -55,18 +54,18 @@ interface AccountGroup {
         </div>
         @if (hasClosed()) {
           <mat-slide-toggle [checked]="showClosed()" (change)="showClosed.set($event.checked)">
-            Afficher les comptes clôturés
+            Afficher les comptes bancaires clôturés
           </mat-slide-toggle>
         }
         <button matButton="filled" (click)="create()">
-          <mat-icon>add</mat-icon> Nouveau compte
+          <mat-icon>add</mat-icon> Nouveau compte bancaire
         </button>
       </div>
 
       @if (store.loaded() && store.accounts().length === 0) {
         <div class="card empty">
           <mat-icon>account_balance</mat-icon>
-          <p>Vous n'avez encore aucun compte. Commencez par créer votre compte courant.</p>
+          <p>Vous n'avez encore aucun compte bancaire. Commencez par créer votre compte courant.</p>
           <button matButton="filled" (click)="create()">Créer un compte bancaire</button>
         </div>
       }

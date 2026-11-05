@@ -68,7 +68,7 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
     @if (account(); as a) {
       <div class="page">
         <div class="page-header">
-          <button matIconButton routerLink="/accounts" aria-label="Retour aux comptes">
+          <button matIconButton routerLink="/accounts" aria-label="Retour aux comptes bancaires">
             <mat-icon>arrow_back</mat-icon>
           </button>
           <div style="flex: 1">
@@ -90,12 +90,12 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
           <button matButton="filled" (click)="newTransaction()" [disabled]="a.closed">
             <mat-icon>add</mat-icon> Opération
           </button>
-          <button matIconButton [matMenuTriggerFor]="menu" aria-label="Autres actions sur ce compte">
+          <button matIconButton [matMenuTriggerFor]="menu" aria-label="Autres actions sur ce compte bancaire">
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #menu>
             <button mat-menu-item (click)="edit()">
-              <mat-icon>edit</mat-icon> Modifier le compte
+              <mat-icon>edit</mat-icon> Modifier ce compte bancaire
             </button>
             <button mat-menu-item routerLink="/import" [queryParams]="{ accountId: a.id }">
               <mat-icon>upload_file</mat-icon> Importer un relevé
@@ -164,7 +164,7 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
           <div class="card kpi">
             <div class="label">
               Solde de départ
-              <mat-icon class="info" matTooltip="Solde indiqué à la création du compte"
+              <mat-icon class="info" matTooltip="Solde indiqué à la création du compte bancaire"
                 >info</mat-icon
               >
             </div>
@@ -178,7 +178,7 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
             <app-chart
               [config]="config"
               [height]="220"
-              label="Courbe de l'évolution du solde du compte sur 12 mois"
+              label="Courbe de l'évolution du solde du compte bancaire sur 12 mois"
             />
           </div>
         }
@@ -217,7 +217,7 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
             [emptyMessage]="
               reconciling()
                 ? 'Toutes les opérations sont déjà rapprochées'
-                : 'Aucune opération sur ce compte pour l’instant'
+                : 'Aucune opération sur ce compte bancaire pour l’instant'
             "
           />
           @if (!reconciling() && total() > size()) {
@@ -357,7 +357,7 @@ export class AccountDetailComponent {
     const account = this.account()!;
     confirm(this.dialog, {
       title: 'Supprimer ce compte bancaire',
-      message: `Le compte bancaire « ${account.name} », toutes ses opérations et ses récurrences seront définitivement supprimés.\nLes virements vers d'autres comptes y seront conservés comme opérations simples.\n\nPour garder l'historique, préférez clôturer le compte.`,
+      message: `Le compte bancaire « ${account.name} », toutes ses opérations et ses récurrences seront définitivement supprimés.\nLes virements vers d'autres comptes bancaires y seront conservés comme opérations simples.\n\nPour garder l'historique, préférez clôturer ce compte bancaire.`,
       confirmLabel: 'Supprimer définitivement',
       danger: true,
     }).subscribe((ok) => {

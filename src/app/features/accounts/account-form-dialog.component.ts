@@ -60,22 +60,22 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data ? 'Modifier le compte' : 'Nouveau compte' }}</h2>
+    <h2 mat-dialog-title>{{ data ? 'Modifier le compte bancaire' : 'Nouveau compte bancaire' }}</h2>
     <mat-dialog-content>
       <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
         <mat-form-field class="full">
-          <mat-label>Nom du compte</mat-label>
+          <mat-label>Nom du compte bancaire</mat-label>
           <input
             matInput
             formControlName="name"
             placeholder="Ex. Compte courant BNP"
             cdkFocusInitial
           />
-          <mat-error>Donnez un nom à ce compte</mat-error>
+          <mat-error>Donnez un nom à ce compte bancaire</mat-error>
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Type de compte</mat-label>
+          <mat-label>Type de compte bancaire</mat-label>
           <input
             matInput
             formControlName="typeName"
@@ -96,7 +96,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
             }
           </mat-autocomplete>
           @if (isNewType()) {
-            <mat-hint>Nouveau type : il sera créé avec le compte</mat-hint>
+            <mat-hint>Nouveau type : il sera créé avec le compte bancaire</mat-hint>
           }
           <mat-error>Choisissez ou saisissez un type</mat-error>
         </mat-form-field>
@@ -116,7 +116,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
           <div class="full savings">
             <mat-checkbox formControlName="savings">C'est un compte d'épargne</mat-checkbox>
             <span class="muted"
-              >Les virements vers ce compte seront comptés comme de l'épargne dans les
+              >Les virements vers ce compte bancaire seront comptés comme de l'épargne dans les
               statistiques.</span
             >
           </div>
@@ -138,7 +138,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
         </mat-form-field>
         <p class="full help">
           <mat-icon inline>info</mat-icon>
-          Indiquez le solde de votre compte à cette date : inutile de saisir les opérations plus
+          Indiquez le solde de votre compte bancaire à cette date : inutile de saisir les opérations plus
           anciennes. Le solde affiché ensuite est calculé automatiquement à partir de vos
           opérations.
         </p>
@@ -155,7 +155,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
 
         @if (data) {
           <div class="full savings">
-            <mat-checkbox formControlName="closed">Compte clôturé</mat-checkbox>
+            <mat-checkbox formControlName="closed">Compte bancaire clôturé</mat-checkbox>
             <span class="muted"
               >Il reste visible dans l'historique et les statistiques, mais on ne peut plus y
               ajouter d'opérations.</span
@@ -171,7 +171,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     <mat-dialog-actions align="end">
       <button matButton mat-dialog-close>Annuler</button>
       <button matButton="filled" (click)="save()" [disabled]="saving()">
-        {{ data ? 'Enregistrer' : 'Créer le compte' }}
+        {{ data ? 'Enregistrer' : 'Créer le compte bancaire' }}
       </button>
     </mat-dialog-actions>
     <app-dialog-close />
@@ -332,7 +332,7 @@ export class AccountFormDialogComponent {
       )
       .subscribe({
         next: (account) => {
-          this.notify.success(this.data ? 'Compte modifié' : `Compte « ${account.name} » créé`);
+          this.notify.success(this.data ? 'Compte bancaire modifié' : `Compte bancaire « ${account.name} » créé`);
           this.store.reloadAccountTypes();
           this.store.transactionsChanged();
           this.dialogRef.close(account);

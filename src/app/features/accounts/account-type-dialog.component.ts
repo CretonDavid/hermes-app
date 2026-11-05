@@ -31,7 +31,7 @@ import { protectDirtyForm } from '../../shared/dialog-guard';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data ? 'Modifier le type de compte' : 'Nouveau type de compte' }}</h2>
+    <h2 mat-dialog-title>{{ data ? 'Modifier le type de compte bancaire' : 'Nouveau type de compte bancaire' }}</h2>
     <mat-dialog-content>
       <form [formGroup]="form" (ngSubmit)="save()" style="padding-top: 8px">
         <mat-form-field style="margin-bottom: 16px">
@@ -41,7 +41,7 @@ import { protectDirtyForm } from '../../shared/dialog-guard';
         </mat-form-field>
         <mat-checkbox formControlName="savings">Compte d'épargne</mat-checkbox>
         <p class="muted" style="font: var(--mat-sys-body-small); margin: 4px 0 0 40px">
-          Les virements vers ces comptes sont comptés comme de l'épargne dans les statistiques.
+          Les virements vers ces comptes bancaires sont comptés comme de l'épargne dans les statistiques.
         </p>
       </form>
     </mat-dialog-content>

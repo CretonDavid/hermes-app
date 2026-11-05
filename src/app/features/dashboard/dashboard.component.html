@@ -14,13 +14,13 @@
       <div class="step" [class.done]="hasAccount()">
         <mat-icon class="state">{{ hasAccount() ? 'check_circle' : 'looks_one' }}</mat-icon>
         <div class="text">
-          <strong>Créer vos comptes</strong>
+          <strong>Créer vos comptes bancaires</strong>
           <span class="muted">Compte courant, livrets… avec leur solde actuel.</span>
         </div>
         @if (hasAccount()) {
-          <button matButton (click)="createAccount()">Ajouter un autre compte</button>
+          <button matButton (click)="createAccount()">Ajouter un autre compte bancaire</button>
         } @else {
-          <button matButton="filled" (click)="createAccount()">Créer un compte</button>
+          <button matButton="filled" (click)="createAccount()">Créer un compte bancaire</button>
         }
       </div>
 
@@ -66,7 +66,7 @@
           <div class="value amount" [class.negative]="s.netWorth < 0">
             {{ s.netWorth | money: s.currencyCode }}
           </div>
-          <div class="delta muted">Tous comptes, en {{ s.currencyCode }}</div>
+          <div class="delta muted">Tous comptes bancaires, en {{ s.currencyCode }}</div>
         </div>
         <div class="card kpi">
           <div class="label">Revenus du mois</div>

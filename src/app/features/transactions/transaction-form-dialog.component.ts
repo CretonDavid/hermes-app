@@ -40,7 +40,8 @@ import {
 } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
-import { confirm } from '../../shared/confirm-dialog.component';
+import { AmountInputDirective } from '../../shared/amount-input.directive';
+import { DIALOG_LARGE, confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 import { protectDirtyForm } from '../../shared/dialog-guard';
@@ -60,6 +61,7 @@ export interface TransactionFormData {
     ReactiveFormsModule,
     MatDialogModule,
     DialogCloseComponent,
+    AmountInputDirective,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -87,8 +89,7 @@ export class TransactionFormDialogComponent implements OnInit {
     const autoFocus = data.transaction ? 'dialog' : 'input[formcontrolname="amount"]';
     return dialog.open(TransactionFormDialogComponent, {
       data,
-      width: '640px',
-      maxHeight: '92vh',
+      width: DIALOG_LARGE,
       autoFocus,
     });
   }
@@ -167,8 +168,13 @@ export class TransactionFormDialogComponent implements OnInit {
   );
   protected readonly amountValue = computed(() => this.amount() ?? 0);
   protected readonly labelPlaceholder = computed(
-    () => this.payee().trim() || 'Par défaut : le tiers',
+    () => this.payee().trim() || 'Par défaut : le bénéficiaire',
   );
+  private readonly label = toSignal(this.form.controls.label.valueChanges, { initialValue: '' });
+  // Le bénéficiaire n'est obligatoire que si aucun libellé ne permet d'identifier l'opération
+  protected readonly payeeRequired = computed(() => !this.label().trim());
+  protected readonly transferLockedHint =
+    "Une opération et un virement ne sont pas interchangeables : supprimez celle-ci et créez-en une nouvelle pour changer de nature.";
 
   protected readonly payeeSuggestions: Observable<PayeeSuggestion[]> =
     this.form.controls.payee.valueChanges.pipe(
@@ -287,7 +293,7 @@ export class TransactionFormDialogComponent implements OnInit {
     } else {
       const label = v.label.trim() || v.payee.trim();
       if (!label) {
-        this.notify.error('Indiquez au moins un tiers ou un libellé');
+        this.notify.error('Indiquez au moins un bénéficiaire ou un libellé');
         return;
       }
       const request: TransactionRequest = {

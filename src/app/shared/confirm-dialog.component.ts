@@ -4,6 +4,11 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/d
 import { Observable } from 'rxjs';
 import { DialogCloseComponent } from './dialog-close.component';
 
+// Largeurs communes des fenêtres : confirmation ou champ unique, formulaire simple, formulaire complet
+export const DIALOG_SMALL = '480px';
+export const DIALOG_MEDIUM = '560px';
+export const DIALOG_LARGE = '680px';
+
 export interface ConfirmData {
   title: string;
   message: string;
@@ -41,5 +46,5 @@ export class ConfirmDialogComponent {
 }
 
 export function confirm(dialog: MatDialog, data: ConfirmData): Observable<boolean | undefined> {
-  return dialog.open(ConfirmDialogComponent, { data, width: '440px' }).afterClosed();
+  return dialog.open(ConfirmDialogComponent, { data, width: DIALOG_SMALL }).afterClosed();
 }

@@ -22,6 +22,8 @@ import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
 import { Account, AccountRequest } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { AmountInputDirective } from '../../shared/amount-input.directive';
+import { DIALOG_LARGE } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 import { protectDirtyForm } from '../../shared/dialog-guard';
 
@@ -45,6 +47,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     ReactiveFormsModule,
     MatDialogModule,
     DialogCloseComponent,
+    AmountInputDirective,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -121,8 +124,9 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
 
         <mat-form-field>
           <mat-label>Solde de départ</mat-label>
-          <input matInput type="number" step="0.01" formControlName="initialBalance" />
+          <input matInput appAmount formControlName="initialBalance" />
           <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
+          <mat-error>Indiquez le solde, 0 s'il est vide</mat-error>
         </mat-form-field>
 
         <mat-form-field>
@@ -130,6 +134,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
           <input matInput [matDatepicker]="picker" formControlName="openingDate" />
           <mat-datepicker-toggle matIconSuffix [for]="picker" />
           <mat-datepicker #picker />
+          <mat-error>Date obligatoire (jj/mm/aaaa)</mat-error>
         </mat-form-field>
         <p class="full help">
           <mat-icon inline>info</mat-icon>
@@ -172,11 +177,6 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     <app-dialog-close />
   `,
   styles: `
-    mat-dialog-content .form-grid {
-      column-gap: 20px;
-      row-gap: 24px;
-      padding-bottom: 24px;
-    }
     .savings {
       display: flex;
       flex-direction: column;
@@ -203,9 +203,7 @@ export class AccountFormDialogComponent {
   ): MatDialogRef<AccountFormDialogComponent, Account> {
     return dialog.open(AccountFormDialogComponent, {
       data: account ?? null,
-      width: '680px',
-      maxWidth: '92vw',
-      maxHeight: '92vh',
+      width: DIALOG_LARGE,
     });
   }
 
@@ -240,8 +238,14 @@ export class AccountFormDialogComponent {
       Validators.required,
     ),
     bankName: new FormControl(this.data?.bankName ?? '', { nonNullable: true }),
-    openingDate: new FormControl<Date | null>(fromIsoDate(this.data?.openingDate) ?? new Date()),
-    initialBalance: new FormControl<number | null>(this.data?.initialBalance ?? 0),
+    openingDate: new FormControl<Date | null>(
+      fromIsoDate(this.data?.openingDate) ?? new Date(),
+      Validators.required,
+    ),
+    initialBalance: new FormControl<number | null>(
+      this.data?.initialBalance ?? 0,
+      Validators.required,
+    ),
     description: new FormControl(this.data?.description ?? '', { nonNullable: true }),
     closed: new FormControl(this.data?.closed ?? false, { nonNullable: true }),
   });
@@ -319,8 +323,8 @@ export class AccountFormDialogComponent {
             bankName: v.bankName.trim() || null,
             accountTypeId,
             currencyId: v.currencyId!,
-            initialBalance: v.initialBalance ?? 0,
-            openingDate: toIsoDate(v.openingDate) ?? toIsoDate(new Date())!,
+            initialBalance: v.initialBalance!,
+            openingDate: toIsoDate(v.openingDate)!,
             closed: v.closed,
           };
           return this.data ? this.api.update(this.data.id, request) : this.api.create(request);

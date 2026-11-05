@@ -16,6 +16,7 @@ import { CategoryApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { Category, CategoryRequest, CategoryType } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { DIALOG_MEDIUM } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 import { protectDirtyForm } from '../../shared/dialog-guard';
 
@@ -84,7 +85,7 @@ const ICONS = [
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Catégorie parente</mat-label>
+          <mat-label>Catégorie parente (facultatif)</mat-label>
           <mat-select formControlName="parentId">
             <mat-option [value]="null">— Aucune (catégorie principale) —</mat-option>
             @for (option of parents(); track option.category.id) {
@@ -117,7 +118,7 @@ const ICONS = [
         </div>
 
         <mat-form-field>
-          <mat-label>Icône</mat-label>
+          <mat-label>Icône (facultatif)</mat-label>
           <mat-select formControlName="icon">
             <mat-select-trigger>
               <span class="icon-option"
@@ -172,7 +173,7 @@ export class CategoryDialogComponent {
     dialog: MatDialog,
     data: CategoryDialogData,
   ): MatDialogRef<CategoryDialogComponent, Category> {
-    return dialog.open(CategoryDialogComponent, { data, width: '560px' });
+    return dialog.open(CategoryDialogComponent, { data, width: DIALOG_MEDIUM });
   }
 
   protected readonly data = inject<CategoryDialogData>(MAT_DIALOG_DATA);

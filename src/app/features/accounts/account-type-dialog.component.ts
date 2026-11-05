@@ -14,6 +14,7 @@ import { AccountApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { AccountType } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { DIALOG_SMALL } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 import { protectDirtyForm } from '../../shared/dialog-guard';
 
@@ -33,13 +34,13 @@ import { protectDirtyForm } from '../../shared/dialog-guard';
     <h2 mat-dialog-title>{{ data ? 'Modifier le type de compte' : 'Nouveau type de compte' }}</h2>
     <mat-dialog-content>
       <form [formGroup]="form" (ngSubmit)="save()" style="padding-top: 8px">
-        <mat-form-field>
+        <mat-form-field style="margin-bottom: 16px">
           <mat-label>Nom</mat-label>
           <input matInput formControlName="name" placeholder="Ex. Compte courant, Livret A, PEA…" />
           <mat-error>Nom obligatoire</mat-error>
         </mat-form-field>
         <mat-checkbox formControlName="savings">Compte d'épargne</mat-checkbox>
-        <p class="muted" style="font-size: 13px; margin: 4px 0 0 40px">
+        <p class="muted" style="font: var(--mat-sys-body-small); margin: 4px 0 0 40px">
           Les virements vers ces comptes sont comptés comme de l'épargne dans les statistiques.
         </p>
       </form>
@@ -56,7 +57,7 @@ export class AccountTypeDialogComponent {
     dialog: MatDialog,
     type?: AccountType,
   ): MatDialogRef<AccountTypeDialogComponent, AccountType> {
-    return dialog.open(AccountTypeDialogComponent, { data: type ?? null, width: '440px' });
+    return dialog.open(AccountTypeDialogComponent, { data: type ?? null, width: DIALOG_SMALL });
   }
 
   protected readonly data = inject<AccountType | null>(MAT_DIALOG_DATA);

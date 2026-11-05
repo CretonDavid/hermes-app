@@ -78,7 +78,7 @@ import { TransactionTableComponent } from './transaction-table.component';
                 matInput
                 [ngModel]="search()"
                 (ngModelChange)="searchInput.next($event)"
-                placeholder="Libellé, tiers, notes"
+                placeholder="Libellé, bénéficiaire, notes"
               />
             </mat-form-field>
 

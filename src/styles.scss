@@ -458,8 +458,23 @@ th.mat-column-balance {
   text-align: right;
 }
 
+// Même espacement dans toutes les fenêtres de formulaire
 .mat-mdc-dialog-content .form-grid {
   padding-top: 8px;
+  padding-bottom: 24px;
+  column-gap: 20px;
+  row-gap: 24px;
+}
+
+// Les flèches des champs numériques n'apportent rien pour des taux ou des montants
+input[type='number'] {
+  appearance: textfield;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
 }
 
 .danger-zone {

@@ -7,19 +7,29 @@
     (change)="setMode($event.value)"
     hideSingleSelectionIndicator
   >
-    <mat-button-toggle value="DEBIT" [disabled]="editing && mode() === 'TRANSFER'">
+    <mat-button-toggle
+      value="DEBIT"
+      [disabled]="editing && mode() === 'TRANSFER'"
+      [matTooltip]="editing && mode() === 'TRANSFER' ? transferLockedHint : ''"
+    >
       <mat-icon>remove_circle</mat-icon> Dépense
     </mat-button-toggle>
-    <mat-button-toggle value="CREDIT" [disabled]="editing && mode() === 'TRANSFER'">
+    <mat-button-toggle
+      value="CREDIT"
+      [disabled]="editing && mode() === 'TRANSFER'"
+      [matTooltip]="editing && mode() === 'TRANSFER' ? transferLockedHint : ''"
+    >
       <mat-icon>add_circle</mat-icon> Revenu
     </mat-button-toggle>
     <mat-button-toggle
       value="TRANSFER"
       [disabled]="(editing && mode() !== 'TRANSFER') || !canTransfer()"
       [matTooltip]="
-        canTransfer()
-          ? 'Déplacer de l\'argent entre deux de vos comptes'
-          : 'Il faut au moins deux comptes pour faire un virement'
+        editing && mode() !== 'TRANSFER'
+          ? transferLockedHint
+          : canTransfer()
+            ? 'Déplacer de l\'argent entre deux de vos comptes'
+            : 'Il faut au moins deux comptes pour faire un virement'
       "
     >
       <mat-icon>swap_horiz</mat-icon> Virement
@@ -44,14 +54,7 @@
       <span matTextPrefix
         >{{ mode() === 'DEBIT' ? '−' : mode() === 'CREDIT' ? '+' : '' }}&nbsp;</span
       >
-      <input
-        matInput
-        type="number"
-        min="0"
-        step="0.01"
-        formControlName="amount"
-        placeholder="0,00"
-      />
+      <input matInput appAmount formControlName="amount" placeholder="0,00" />
       <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
       <mat-error>Saisissez un montant supérieur à 0</mat-error>
     </mat-form-field>
@@ -87,7 +90,7 @@
         </button>
         <mat-form-field>
           <mat-label>Vers le compte</mat-label>
-          <mat-select formControlName="toAccountId">
+          <mat-select formControlName="toAccountId" required>
             @for (account of accounts(); track account.id) {
               @if (account.id !== form.controls.accountId.value) {
                 <mat-option [value]="account.id"
@@ -101,8 +104,8 @@
 
       @if (needsTargetAmount()) {
         <mat-form-field class="full">
-          <mat-label>Montant reçu sur « {{ toAccount()?.name }} »</mat-label>
-          <input matInput type="number" min="0" step="0.01" formControlName="targetAmount" />
+          <mat-label>Montant reçu sur « {{ toAccount()?.name }} » (facultatif)</mat-label>
+          <input matInput appAmount formControlName="targetAmount" />
           <span matTextSuffix>&nbsp;{{ toAccount()?.currency?.code }}</span>
           <mat-hint
             >Les deux comptes n'ont pas la même devise. Laissez vide pour convertir au taux
@@ -127,6 +130,7 @@
           formControlName="payee"
           [matAutocomplete]="payeeAuto"
           [placeholder]="mode() === 'DEBIT' ? 'Ex. Carrefour' : 'Ex. Employeur'"
+          [required]="payeeRequired()"
         />
         <mat-autocomplete #payeeAuto="matAutocomplete">
           @for (suggestion of payeeSuggestions | async; track suggestion.payee) {
@@ -135,9 +139,14 @@
             </mat-option>
           }
         </mat-autocomplete>
+        <mat-error>Indiquez un nom, ou un libellé dans les détails</mat-error>
       </mat-form-field>
 
-      <app-category-picker formControlName="categoryId" [type]="categoryType()" />
+      <app-category-picker
+        formControlName="categoryId"
+        [type]="categoryType()"
+        label="Catégorie (facultatif)"
+      />
 
       <mat-form-field>
         <mat-label>Compte</mat-label>
@@ -152,7 +161,7 @@
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label>Moyen de paiement</mat-label>
+        <mat-label>Moyen de paiement (facultatif)</mat-label>
         <mat-select formControlName="paymentMethod">
           <mat-option [value]="null">Non précisé</mat-option>
           @for (method of paymentMethods; track method.value) {
@@ -172,7 +181,7 @@
       </button>
     } @else {
       <mat-form-field class="full">
-        <mat-label>Libellé{{ mode() === 'TRANSFER' ? ' (facultatif)' : '' }}</mat-label>
+        <mat-label>Libellé (facultatif)</mat-label>
         <input
           matInput
           formControlName="label"
@@ -181,7 +190,7 @@
           "
         />
         @if (mode() !== 'TRANSFER') {
-          <mat-hint>Texte affiché dans la liste. Laissez vide pour reprendre le tiers.</mat-hint>
+          <mat-hint>Texte affiché dans la liste. Laissez vide pour reprendre le bénéficiaire.</mat-hint>
         }
       </mat-form-field>
 

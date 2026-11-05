@@ -13,6 +13,7 @@ import { CategoryApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { Category } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { DIALOG_SMALL } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 
 @Component({
@@ -64,7 +65,7 @@ export class CategoryDeleteDialogComponent {
     dialog: MatDialog,
     category: Category,
   ): MatDialogRef<CategoryDeleteDialogComponent, boolean> {
-    return dialog.open(CategoryDeleteDialogComponent, { data: category, width: '480px' });
+    return dialog.open(CategoryDeleteDialogComponent, { data: category, width: DIALOG_SMALL });
   }
 
   protected readonly category = inject<Category>(MAT_DIALOG_DATA);

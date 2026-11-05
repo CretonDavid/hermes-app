@@ -45,7 +45,7 @@ function shades(hex: string, count: number): string[] {
 export const DATE_AXIS = { ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 24 } };
 
 // Affiche le total au centre de l'anneau
-function donutTotal(label: string): Plugin<'doughnut'> {
+function donutTotal(label: string, amount: string): Plugin<'doughnut'> {
   return {
     id: 'donutTotal',
     afterDraw(chart) {
@@ -58,11 +58,11 @@ function donutTotal(label: string): Plugin<'doughnut'> {
       ctx.textAlign = 'center';
       ctx.fillStyle = String(Chart.defaults.color);
       ctx.font = '600 12px Nunito, sans-serif';
-      ctx.fillText('Total', arc.x, arc.y - 12);
+      ctx.fillText(label, arc.x, arc.y - 12);
       // Le canvas hérite de la couleur de texte de la carte
       ctx.fillStyle = getComputedStyle(chart.canvas).color;
       ctx.font = '800 18px Nunito, sans-serif';
-      ctx.fillText(label, arc.x, arc.y + 12);
+      ctx.fillText(amount, arc.x, arc.y + 12);
       ctx.restore();
     },
   };
@@ -137,12 +137,15 @@ function donutHint(text: string): Plugin<'doughnut'> {
 export function donutChart(
   items: CategoryStat[],
   currency: string,
-  { hint, legendTitle }: { hint?: string; legendTitle?: string } = {},
+  { hint, totalLabel = 'Total' }: { hint?: string; totalLabel?: string } = {},
 ): ChartConfiguration {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const config: ChartConfiguration<'doughnut'> = {
     type: 'doughnut',
-    plugins: [donutTotal(formatMoney(total, currency)), ...(hint ? [donutHint(hint)] : [])],
+    plugins: [
+      donutTotal(totalLabel, formatMoney(total, currency)),
+      ...(hint ? [donutHint(hint)] : []),
+    ],
     data: {
       labels: items.map((i) => i.name),
       datasets: [
@@ -168,13 +171,6 @@ export function donutChart(
       plugins: {
         legend: {
           position: 'right',
-          title: {
-            display: !!legendTitle,
-            text: legendTitle ?? '',
-            position: 'start',
-            font: { size: 12, weight: 600 },
-            padding: { bottom: 4 },
-          },
           labels: {
             // La légende donne aussi le montant de chaque catégorie
             generateLabels: (chart) =>

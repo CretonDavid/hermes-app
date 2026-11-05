@@ -23,6 +23,7 @@ import { fromIsoDate, toIsoDate } from '../../core/format';
 import { Account, AccountRequest } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 // Types proposés tant que l'utilisateur ne les a pas encore créés
 const SUGGESTED_TYPES: { name: string; savings: boolean }[] = [
@@ -281,6 +282,7 @@ export class AccountFormDialogComponent {
   });
 
   constructor() {
+    protectDirtyForm(this.form);
     // Pré-coche « épargne » quand le nom du nouveau type l'évoque
     this.form.controls.typeName.valueChanges.subscribe((name) => {
       if (!this.existingType()) {

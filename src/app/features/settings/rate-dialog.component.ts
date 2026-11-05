@@ -17,6 +17,7 @@ import { fromIsoDate, toIsoDate } from '../../core/format';
 import { ExchangeRate } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 @Component({
   selector: 'app-rate-dialog',
@@ -102,6 +103,10 @@ export class RateDialogComponent {
       Validators.required,
     ),
   });
+
+  constructor() {
+    protectDirtyForm(this.form);
+  }
 
   protected save(): void {
     if (this.form.invalid) {

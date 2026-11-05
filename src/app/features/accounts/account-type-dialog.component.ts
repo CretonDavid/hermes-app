@@ -15,6 +15,7 @@ import { DataStore } from '../../core/data.store';
 import { AccountType } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 @Component({
   selector: 'app-account-type-dialog',
@@ -72,6 +73,10 @@ export class AccountTypeDialogComponent {
     }),
     savings: new FormControl(this.data?.savings ?? false, { nonNullable: true }),
   });
+
+  constructor() {
+    protectDirtyForm(this.form);
+  }
 
   protected save(): void {
     if (this.form.invalid) {

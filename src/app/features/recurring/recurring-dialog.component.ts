@@ -36,6 +36,7 @@ import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
 import { formatMoney } from '../../shared/money.pipe';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -378,8 +379,13 @@ export class RecurringDialogComponent {
     return !this.data && !!start && toIsoDate(start)! < toIsoDate(new Date())!;
   });
 
+  constructor() {
+    protectDirtyForm(this.form);
+  }
+
   protected setMode(mode: Mode): void {
     this.mode.set(mode);
+    this.form.markAsDirty();
     this.form.controls.categoryId.setValue(null);
     if (mode === 'TRANSFER' && !this.form.controls.targetAccountId.value) {
       const other = this.store
@@ -390,6 +396,7 @@ export class RecurringDialogComponent {
   }
 
   protected setRepeat(value: string): void {
+    this.form.markAsDirty();
     if (value === 'custom') {
       this.customRepeat.set(true);
       return;

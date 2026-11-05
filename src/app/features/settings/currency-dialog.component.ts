@@ -14,6 +14,7 @@ import { DataStore } from '../../core/data.store';
 import { Currency } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 @Component({
   selector: 'app-currency-dialog',
@@ -79,6 +80,10 @@ export class CurrencyDialogComponent {
       validators: Validators.required,
     }),
   });
+
+  constructor() {
+    protectDirtyForm(this.form);
+  }
 
   protected save(): void {
     if (this.form.invalid) {

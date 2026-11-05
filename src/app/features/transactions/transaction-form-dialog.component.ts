@@ -43,6 +43,7 @@ import { CategoryPickerComponent } from '../../shared/category-picker.component'
 import { confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -142,6 +143,10 @@ export class TransactionFormDialogComponent implements OnInit {
   });
   private readonly payee = toSignal(this.form.controls.payee.valueChanges, { initialValue: '' });
 
+  constructor() {
+    protectDirtyForm(this.form);
+  }
+
   protected readonly accounts = computed(() =>
     this.store.accounts().filter((a) => !a.closed || a.id === this.data.transaction?.accountId),
   );
@@ -230,6 +235,7 @@ export class TransactionFormDialogComponent implements OnInit {
       return;
     }
     this.mode.set(mode);
+    this.form.markAsDirty();
     this.form.controls.categoryId.setValue(null);
     if (mode === 'TRANSFER' && !this.form.controls.toAccountId.value) {
       const other = this.store

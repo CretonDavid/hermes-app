@@ -17,6 +17,7 @@ import { DataStore } from '../../core/data.store';
 import { Category, CategoryRequest, CategoryType } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 export interface CategoryDialogData {
   category?: Category;
@@ -226,6 +227,7 @@ export class CategoryDialogComponent {
   });
 
   constructor() {
+    protectDirtyForm(this.form);
     this.syncType(this.form.controls.parentId.value);
     this.form.controls.parentId.valueChanges.subscribe((parentId) => this.syncType(parentId));
   }

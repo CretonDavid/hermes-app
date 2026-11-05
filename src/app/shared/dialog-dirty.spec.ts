@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Type } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -10,7 +11,7 @@ import { TransactionFormDialogComponent } from '../features/transactions/transac
 
 // Accès aux membres protégés nécessaires au test
 interface ModeDialog {
-  form: { dirty: boolean };
+  form: FormGroup;
   setMode(mode: string): void;
 }
 
@@ -49,5 +50,49 @@ describe('fenêtres avec un choix Dépense, Revenu ou Virement', () => {
     dialog.setMode('TRANSFER');
 
     expect(dialog.form.dirty).toBe(false);
+  });
+});
+
+describe('fenêtre Opération', () => {
+  function setup(): ModeDialog {
+    const dialog = create(TransactionFormDialogComponent, {});
+    dialog.form.patchValue({ accountId: 1, amount: 100 });
+    TestBed.tick();
+    return dialog;
+  }
+
+  it('exige un bénéficiaire pour une dépense sans libellé', () => {
+    expect(setup().form.controls['payee'].invalid).toBe(true);
+  });
+
+  it('accepte un libellé à la place du bénéficiaire', () => {
+    const dialog = setup();
+
+    dialog.form.patchValue({ label: 'Loyer' });
+    TestBed.tick();
+
+    expect(dialog.form.controls['payee'].valid).toBe(true);
+  });
+
+  it('ne bloque pas un virement à cause du bénéficiaire masqué', () => {
+    const dialog = setup();
+
+    dialog.setMode('TRANSFER');
+    dialog.form.patchValue({ toAccountId: 2 });
+    TestBed.tick();
+
+    expect(dialog.form.valid).toBe(true);
+  });
+
+  it('exige le compte bancaire cible d\'un virement, puis plus après être revenu à une dépense', () => {
+    const dialog = setup();
+
+    dialog.setMode('TRANSFER');
+    TestBed.tick();
+    expect(dialog.form.controls['toAccountId'].invalid).toBe(true);
+
+    dialog.setMode('DEBIT');
+    TestBed.tick();
+    expect(dialog.form.controls['toAccountId'].valid).toBe(true);
   });
 });

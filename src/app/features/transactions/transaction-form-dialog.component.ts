@@ -4,6 +4,7 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -54,6 +55,8 @@ import { DIALOG_LARGE, confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 import { protectDirtyForm } from '../../shared/dialog-guard';
+import { customTransferLabel } from './transfer-label';
+import { setRequired } from '../../shared/required';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -155,6 +158,12 @@ export class TransactionFormDialogComponent implements OnInit {
 
   constructor() {
     protectDirtyForm(this.form);
+    effect(() => {
+      const transfer = this.mode() === 'TRANSFER';
+      // Le bénéficiaire n'est obligatoire que si aucun libellé ne permet d'identifier l'opération
+      setRequired(this.form.controls.payee, !transfer && !this.label().trim());
+      setRequired(this.form.controls.toAccountId, transfer);
+    });
   }
 
   protected readonly accounts = computed(() =>
@@ -180,8 +189,6 @@ export class TransactionFormDialogComponent implements OnInit {
     () => this.payee().trim() || 'Par défaut : le bénéficiaire',
   );
   private readonly label = toSignal(this.form.controls.label.valueChanges, { initialValue: '' });
-  // Le bénéficiaire n'est obligatoire que si aucun libellé ne permet d'identifier l'opération
-  protected readonly payeeRequired = computed(() => !this.label().trim());
   protected readonly transferLockedHint =
     "Une opération et un virement ne sont pas interchangeables : supprimez celle-ci et créez-en une nouvelle pour changer de nature.";
 
@@ -233,7 +240,7 @@ export class TransactionFormDialogComponent implements OnInit {
           toAccountId: transfer.credit.accountId,
           amount: transfer.debit.amount,
           targetAmount: transfer.credit.amount,
-          label: transfer.debit.label,
+          label: customTransferLabel(transfer) ?? '',
         });
       });
     }
@@ -373,7 +380,7 @@ export class TransactionFormDialogComponent implements OnInit {
           toAccountId: transfer.credit.accountId,
           amount: transfer.debit.amount,
           targetAmount: transfer.credit.amount,
-          label: transfer.debit.label,
+          label: customTransferLabel(transfer),
           notes: transfer.debit.notes,
           operationDate: transfer.debit.operationDate,
         })

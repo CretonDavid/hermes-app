@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,6 +46,7 @@ import { AmountInputDirective } from '../../shared/amount-input.directive';
 import { DIALOG_LARGE } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 import { protectDirtyForm } from '../../shared/dialog-guard';
+import { setRequired } from '../../shared/required';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -114,7 +122,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
         @if (mode() === 'TRANSFER') {
           <mat-form-field>
             <mat-label>Vers le compte bancaire</mat-label>
-            <mat-select formControlName="targetAccountId" required>
+            <mat-select formControlName="targetAccountId">
               @for (account of store.openAccounts(); track account.id) {
                 @if (account.id !== form.controls.accountId.value) {
                   <mat-option [value]="account.id">{{ account.name }}</mat-option>
@@ -384,6 +392,7 @@ export class RecurringDialogComponent {
 
   constructor() {
     protectDirtyForm(this.form);
+    effect(() => setRequired(this.form.controls.targetAccountId, this.mode() === 'TRANSFER'));
   }
 
   protected setMode(mode: Mode): void {

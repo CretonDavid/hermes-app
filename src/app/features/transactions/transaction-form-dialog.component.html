@@ -90,7 +90,7 @@
         </button>
         <mat-form-field>
           <mat-label>Vers le compte bancaire</mat-label>
-          <mat-select formControlName="toAccountId" required>
+          <mat-select formControlName="toAccountId">
             @for (account of accounts(); track account.id) {
               @if (account.id !== form.controls.accountId.value) {
                 <mat-option [value]="account.id"
@@ -130,7 +130,6 @@
           formControlName="payee"
           [matAutocomplete]="payeeAuto"
           [placeholder]="mode() === 'DEBIT' ? 'Ex. Carrefour' : 'Ex. Employeur'"
-          [required]="payeeRequired()"
         />
         <mat-autocomplete #payeeAuto="matAutocomplete">
           @for (suggestion of payeeSuggestions | async; track suggestion.payee) {

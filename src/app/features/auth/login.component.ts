@@ -42,7 +42,8 @@ import { AuthVisualComponent } from './auth-visual.component';
             <input
               matInput
               formControlName="number"
-              autocomplete="off"
+              name="username"
+              autocomplete="username"
               inputmode="numeric"
               autofocus
               placeholder="000000 000000 000000 000000 000000"

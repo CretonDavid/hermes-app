@@ -172,4 +172,6 @@
 
 .content {
   background: var(--mat-sys-surface);
+  // Réserve la place de l'ascenseur : le contenu ne bouge plus d'une page à l'autre
+  scrollbar-gutter: stable;
 }

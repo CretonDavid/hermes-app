@@ -246,7 +246,7 @@ body {
   margin-bottom: 28px;
 
   // Le titre pousse les actions à droite, qu'il soit seul ou accompagné d'un sous-titre
-  > :first-child {
+  > div:first-child {
     flex: 1;
   }
 

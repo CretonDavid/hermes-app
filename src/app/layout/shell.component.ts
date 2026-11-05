@@ -1,11 +1,13 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSidenavContent, MatSidenavModule } from '@angular/material/sidenav';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { DataStore } from '../core/data.store';
 import { ThemeService } from '../core/theme.service';
@@ -41,6 +43,8 @@ export class ShellComponent implements OnInit {
   protected readonly theme = inject(ThemeService);
   private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
+  private readonly content = viewChild(MatSidenavContent);
 
   protected readonly navigation: NavItem[] = [
     { path: '/', label: 'Tableau de bord', icon: 'dashboard', exact: true },
@@ -52,6 +56,23 @@ export class ShellComponent implements OnInit {
     { path: '/stats', label: 'Statistiques', icon: 'monitoring' },
     { path: '/settings', label: 'Paramètres', icon: 'settings' },
   ];
+
+  constructor() {
+    // Chaque nouvelle page s'ouvre en haut ; un simple changement de filtre garde la position
+    const path = () => this.router.url.split(/[?#]/)[0];
+    let previous = path();
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => {
+        if (path() !== previous) {
+          previous = path();
+          this.content()?.scrollTo({ top: 0 });
+        }
+      });
+  }
 
   ngOnInit(): void {
     this.store.loadAll();

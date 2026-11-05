@@ -16,12 +16,14 @@ import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
 import { ExchangeRate } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { DialogCloseComponent } from '../../shared/dialog-close.component';
 
 @Component({
   selector: 'app-rate-dialog',
   imports: [
     ReactiveFormsModule,
     MatDialogModule,
+    DialogCloseComponent,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -67,6 +69,7 @@ import { NotifyService } from '../../core/notify.service';
       <button matButton mat-dialog-close>Annuler</button>
       <button matButton="filled" (click)="save()" [disabled]="saving()">Enregistrer</button>
     </mat-dialog-actions>
+    <app-dialog-close />
   `,
 })
 export class RateDialogComponent {

@@ -8,6 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
 import { DataStore } from '../core/data.store';
+import { ThemeService } from '../core/theme.service';
 import { TransactionFormDialogComponent } from '../features/transactions/transaction-form-dialog.component';
 import { MoneyPipe } from '../shared/money.pipe';
 
@@ -37,6 +38,7 @@ interface NavItem {
 })
 export class ShellComponent implements OnInit {
   protected readonly store = inject(DataStore);
+  protected readonly theme = inject(ThemeService);
   private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
 

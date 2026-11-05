@@ -11,6 +11,7 @@ import { Observable } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { Tokens } from '../../core/models';
 import { errorMessage } from '../../core/notify.service';
+import { AuthVisualComponent } from './auth-visual.component';
 
 @Component({
   selector: 'app-login',
@@ -22,52 +23,65 @@ import { errorMessage } from '../../core/notify.service';
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
+    AuthVisualComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './auth-layout.scss',
   template: `
-    <div class="auth-card">
-      <div class="brand"><mat-icon>account_balance_wallet</mat-icon> Hermès</div>
-      <h1>Connexion</h1>
-      <p class="intro">Saisissez votre numéro de compte à 30 chiffres.</p>
-
-      <form [formGroup]="form" (ngSubmit)="submit()">
-        <mat-form-field class="number-input">
-          <mat-label>Numéro de compte</mat-label>
-          <input
-            matInput
-            formControlName="number"
-            autocomplete="off"
-            inputmode="numeric"
-            autofocus
-            placeholder="000000 000000 000000 000000 000000"
-          />
-          <mat-hint align="end">{{ digits().length }} / 30</mat-hint>
-          @if (number.hasError('pattern')) {
-            <mat-error>Le numéro doit contenir exactement 30 chiffres</mat-error>
-          }
-        </mat-form-field>
-
-        @if (error()) {
-          <div class="error">{{ error() }}</div>
-        }
-
-        <div class="actions">
-          @if (disabled()) {
-            <button matButton="filled" type="button" (click)="reactivate()" [disabled]="loading()">
-              Réactiver mon compte
-            </button>
-          } @else {
-            <button matButton="filled" type="submit" [disabled]="loading()">Se connecter</button>
-          }
+    <main class="auth-side">
+      <div class="auth-card">
+        <div class="brand">
+          <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span> Hermès
         </div>
-        @if (loading()) {
-          <mat-progress-bar mode="indeterminate" />
-        }
-      </form>
+        <h1>Connexion</h1>
+        <p class="intro">Saisissez votre numéro de compte à 30 chiffres.</p>
 
-      <div class="switch">Pas encore de compte ? <a routerLink="/register">Créer un compte</a></div>
-    </div>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <mat-form-field class="number-input">
+            <mat-label>Numéro de compte</mat-label>
+            <input
+              matInput
+              formControlName="number"
+              autocomplete="off"
+              inputmode="numeric"
+              autofocus
+              placeholder="000000 000000 000000 000000 000000"
+            />
+            <mat-hint align="end">{{ digits().length }} / 30</mat-hint>
+            @if (number.hasError('pattern')) {
+              <mat-error>Le numéro doit contenir exactement 30 chiffres</mat-error>
+            }
+          </mat-form-field>
+
+          @if (error()) {
+            <div class="error">{{ error() }}</div>
+          }
+
+          <div class="actions">
+            @if (disabled()) {
+              <button
+                matButton="filled"
+                type="button"
+                (click)="reactivate()"
+                [disabled]="loading()"
+              >
+                Réactiver mon compte
+              </button>
+            } @else {
+              <button matButton="filled" type="submit" [disabled]="loading()">Se connecter</button>
+            }
+          </div>
+          @if (loading()) {
+            <mat-progress-bar mode="indeterminate" />
+          }
+        </form>
+
+        <div class="switch">
+          Pas encore de compte ? <a routerLink="/register">Créer un compte</a>
+        </div>
+      </div>
+    </main>
+    <app-auth-visual />
   `,
 })
 export class LoginComponent {

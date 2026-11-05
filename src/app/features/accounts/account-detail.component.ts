@@ -29,7 +29,7 @@ import { toIsoDate } from '../../core/format';
 import { BalancePoint, Transaction } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { ChartComponent } from '../../shared/chart.component';
-import { DATE_AXIS } from '../../shared/charts';
+import { DATE_AXIS, SAVINGS_COLOR, SAVINGS_FILL } from '../../shared/charts';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
 import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
@@ -233,8 +233,8 @@ export class AccountDetailComponent {
         datasets: [
           {
             data: points.map((p) => p.value),
-            borderColor: '#1565c0',
-            backgroundColor: 'rgba(21, 101, 192, 0.08)',
+            borderColor: SAVINGS_COLOR,
+            backgroundColor: SAVINGS_FILL,
             fill: true,
             tension: 0.25,
             pointRadius: 0,

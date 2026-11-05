@@ -1,11 +1,21 @@
+@use '@angular/material' as mat;
+
 .shell {
   height: 100vh;
 }
 
+// Panneau aubergine dans les deux thèmes : ses composants reçoivent leurs propres couleurs
 .sidenav {
-  width: 260px;
-  border-right: 1px solid var(--hermes-border);
-  background: var(--mat-sys-surface-container-low);
+  --panel-text: #ede6f7;
+  --panel-muted: #b9adcd;
+  --panel-hover: rgba(255, 255, 255, 0.07);
+  --panel-active: rgba(255, 255, 255, 0.11);
+
+  width: 264px;
+  border: none;
+  border-radius: 0;
+  background: var(--hermes-panel);
+  color: var(--panel-text);
   display: flex;
   flex-direction: column;
 
@@ -13,20 +23,64 @@
     display: flex;
     flex-direction: column;
   }
+
+  @include mat.list-overrides(
+    (
+      active-indicator-color: var(--panel-active),
+      active-indicator-shape: 12px,
+      list-item-label-text-color: var(--panel-muted),
+      list-item-hover-label-text-color: var(--panel-text),
+      list-item-focus-label-text-color: var(--panel-text),
+      list-item-leading-icon-color: var(--panel-muted),
+      list-item-hover-state-layer-color: #ffffff,
+      list-item-focus-state-layer-color: #ffffff,
+      list-item-one-line-container-height: 44px,
+      list-item-container-shape: 12px,
+    )
+  );
+
+  mat-nav-list {
+    padding: 0 12px;
+
+    a {
+      margin-bottom: 2px;
+    }
+
+    // Rubrique active : texte clair et icône safran
+    a.mdc-list-item--activated {
+      --mat-list-list-item-label-text-color: var(--panel-text);
+      --mat-list-list-item-hover-label-text-color: var(--panel-text);
+      --mat-list-list-item-focus-label-text-color: var(--panel-text);
+      --mat-list-list-item-leading-icon-color: var(--hermes-saffron);
+      --mat-list-list-item-hover-leading-icon-color: var(--hermes-saffron);
+    }
+  }
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 20px 20px 12px;
-  font: var(--mat-sys-title-large);
-  color: var(--mat-sys-primary);
+  gap: 12px;
+  padding: 24px 20px 20px;
+  font:
+    800 20px/28px Nunito,
+    sans-serif;
+  letter-spacing: -0.01em;
 
   .logo {
-    font-size: 30px;
-    width: 30px;
-    height: 30px;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--hermes-saffron);
+    color: #2a1846;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
   }
 }
 
@@ -36,21 +90,25 @@
 }
 
 .new-button {
-  margin: 8px 16px 12px;
+  margin: 0 16px 20px;
+  --mat-button-filled-container-color: var(--hermes-saffron);
+  --mat-button-filled-label-text-color: #2a1846;
+  --mat-button-filled-disabled-container-color: rgba(255, 255, 255, 0.1);
+  --mat-button-filled-disabled-label-text-color: var(--panel-muted);
 }
 
 .accounts-title {
-  font: var(--mat-sys-label-medium);
-  color: var(--hermes-muted);
+  font: var(--mat-sys-label-small);
+  color: var(--panel-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 16px 24px 4px;
+  letter-spacing: 0.08em;
+  padding: 24px 28px 8px;
 }
 
 .accounts {
   display: flex;
   flex-direction: column;
-  padding: 0 8px;
+  padding: 0 12px;
   overflow-y: auto;
 }
 
@@ -58,24 +116,34 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 16px;
-  border-radius: 999px;
+  padding: 8px 16px;
+  border-radius: 10px;
   text-decoration: none;
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
+  color: var(--panel-text);
+  font: var(--mat-sys-body-small);
 
   .name {
+    color: var(--panel-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  // Le rouge du thème clair serait illisible sur ce panneau
+  .negative {
+    color: #ff8fa8;
+  }
+
   &:hover {
-    background: var(--mat-sys-surface-container-high);
+    background: var(--panel-hover);
   }
 
   &.active {
-    background: var(--mat-sys-secondary-container);
+    background: var(--panel-active);
+
+    .name {
+      color: var(--panel-text);
+    }
   }
 }
 
@@ -83,9 +151,23 @@
   flex: 1;
 }
 
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-top: 1px solid var(--panel-active);
+  margin-top: 12px;
+}
+
 .logout {
-  margin: 12px 16px 16px;
-  justify-content: flex-start;
+  --mat-button-text-label-text-color: var(--panel-muted);
+  --mat-button-text-state-layer-color: #ffffff;
+}
+
+.theme-toggle {
+  --mat-icon-button-icon-color: var(--panel-muted);
+  --mat-icon-button-state-layer-color: #ffffff;
 }
 
 .content {

@@ -13,10 +13,18 @@ import { CategoryApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { Category } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { DialogCloseComponent } from '../../shared/dialog-close.component';
 
 @Component({
   selector: 'app-category-delete-dialog',
-  imports: [FormsModule, MatDialogModule, MatFormFieldModule, MatSelectModule, MatButtonModule],
+  imports: [
+    FormsModule,
+    MatDialogModule,
+    DialogCloseComponent,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatButtonModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>Supprimer « {{ category.name }} »</h2>
@@ -48,6 +56,7 @@ import { NotifyService } from '../../core/notify.service';
         Supprimer
       </button>
     </mat-dialog-actions>
+    <app-dialog-close />
   `,
 })
 export class CategoryDeleteDialogComponent {

@@ -35,6 +35,7 @@ import {
 import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
 import { formatMoney } from '../../shared/money.pipe';
+import { DialogCloseComponent } from '../../shared/dialog-close.component';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -43,6 +44,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
   imports: [
     ReactiveFormsModule,
     MatDialogModule,
+    DialogCloseComponent,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -207,6 +209,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
       <button matButton mat-dialog-close>Annuler</button>
       <button matButton="filled" (click)="save()" [disabled]="saving()">Enregistrer</button>
     </mat-dialog-actions>
+    <app-dialog-close />
   `,
   styles: `
     .mode {

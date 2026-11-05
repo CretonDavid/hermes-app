@@ -39,7 +39,7 @@
 .code {
   display: inline-block;
   min-width: 44px;
-  font-family: 'Roboto Mono', monospace;
+  font-variant-numeric: tabular-nums;
   font-weight: 500;
   color: var(--mat-sys-primary);
 }

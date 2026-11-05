@@ -1,24 +1,211 @@
+@use 'sass:list';
 @use '@angular/material' as mat;
+
+// Palette « aubergine et safran » : (valeur en thème clair, valeur en thème sombre)
+$hermes-colors: (
+  primary: (
+    #4b2a78,
+    #cdb8ff,
+  ),
+  on-primary: (
+    #ffffff,
+    #2e1460,
+  ),
+  primary-container: (
+    #eadffb,
+    #4b2a78,
+  ),
+  on-primary-container: (
+    #2e1753,
+    #eadffb,
+  ),
+  secondary: (
+    #6b5b7e,
+    #cfc2e0,
+  ),
+  on-secondary: (
+    #ffffff,
+    #33274a,
+  ),
+  secondary-container: (
+    #ece4f6,
+    #3d3350,
+  ),
+  on-secondary-container: (
+    #2b1f3a,
+    #ece4f6,
+  ),
+  tertiary: (
+    #8a5a00,
+    #f4b942,
+  ),
+  on-tertiary: (
+    #ffffff,
+    #3a2600,
+  ),
+  tertiary-container: (
+    #ffe3ae,
+    #5a3e00,
+  ),
+  on-tertiary-container: (
+    #3a2600,
+    #ffe3ae,
+  ),
+  error: (
+    #ba1a47,
+    #ff8fa8,
+  ),
+  on-error: (
+    #ffffff,
+    #4f0620,
+  ),
+  error-container: (
+    #ffdde3,
+    #7a1235,
+  ),
+  on-error-container: (
+    #5c0a23,
+    #ffdde3,
+  ),
+  background: (
+    #f7f3ec,
+    #15111c,
+  ),
+  on-background: (
+    #241b2f,
+    #efe9f5,
+  ),
+  surface: (
+    #f7f3ec,
+    #15111c,
+  ),
+  on-surface: (
+    #241b2f,
+    #efe9f5,
+  ),
+  surface-variant: (
+    #ede7de,
+    #2f283c,
+  ),
+  on-surface-variant: (
+    #635a6e,
+    #b8afc4,
+  ),
+  // En sombre aussi, les cartes sont plus claires que le fond
+  surface-container-lowest: (
+      #ffffff,
+      #201a2a,
+    ),
+  surface-container-low: (
+    #f2ede5,
+    #1b1624,
+  ),
+  surface-container: (
+    #ede7de,
+    #262032,
+  ),
+  surface-container-high: (
+    #e7e0d6,
+    #2f283c,
+  ),
+  surface-container-highest: (
+    #e1d9ce,
+    #393146,
+  ),
+  outline: (
+    #8c8396,
+    #857c92,
+  ),
+  outline-variant: (
+    #e6dfd6,
+    #342c41,
+  ),
+  inverse-surface: (
+    #2f2739,
+    #efe9f5,
+  ),
+  inverse-on-surface: (
+    #f7f3ec,
+    #241b2f,
+  ),
+  inverse-primary: (
+    #cdb8ff,
+    #4b2a78,
+  ),
+);
 
 html {
   color-scheme: light;
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$violet-palette,
+        primary: mat.$violet-palette,
+        tertiary: mat.$orange-palette,
       ),
-      typography: Roboto,
-      density: 0,
+      typography: (
+        plain-family: Nunito,
+        brand-family: Nunito,
+        regular-weight: 400,
+        medium-weight: 600,
+        bold-weight: 700,
+      ),
+      density: -2,
+    )
+  );
+
+  @each $role, $values in $hermes-colors {
+    --mat-sys-#{$role}: light-dark(#{list.nth($values, 1)}, #{list.nth($values, 2)});
+  }
+
+  @include mat.button-overrides(
+    (
+      filled-container-shape: 12px,
+      outlined-container-shape: 12px,
+      protected-container-shape: 12px,
+      text-container-shape: 12px,
+      tonal-container-shape: 12px,
+      filled-container-height: 40px,
+      outlined-container-height: 40px,
+      protected-container-height: 40px,
+      text-container-height: 40px,
+      tonal-container-height: 40px,
+    )
+  );
+  @include mat.form-field-overrides(
+    (
+      outlined-container-shape: 12px,
+      outlined-outline-color: light-dark(#c9c1b6, #54495f),
+    )
+  );
+  @include mat.table-overrides(
+    (
+      background-color: transparent,
+      header-headline-color: var(--mat-sys-on-surface-variant),
+      header-headline-size: 12px,
+      row-item-outline-color: var(--mat-sys-outline-variant),
+    )
+  );
+  @include mat.dialog-overrides(
+    (
+      container-color: var(--mat-sys-surface-container-lowest),
+      container-shape: 20px,
+      // Réserve à droite la place de la croix de fermeture
+      headline-padding: 6px 56px 13px 24px,
     )
   );
 
   // Couleurs sémantiques de l'application
-  --hermes-positive: #2e7d32;
-  --hermes-negative: #c62828;
+  --hermes-positive: light-dark(#0b7a65, #4fd1b5);
+  --hermes-negative: light-dark(#c2264f, #ff8fa8);
   --hermes-muted: var(--mat-sys-on-surface-variant);
   --hermes-surface: var(--mat-sys-surface-container-low);
   --hermes-border: var(--mat-sys-outline-variant);
+  --hermes-panel: light-dark(#2a1846, #0f0b15);
+  --hermes-saffron: #f4b942;
+}
+
+html.dark-theme {
+  color-scheme: dark;
 }
 
 html,
@@ -28,16 +215,25 @@ body {
 
 body {
   margin: 0;
-  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font: var(--mat-sys-body-medium);
   background: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
+}
+
+// Icônes plus fines
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300,
+    'GRAD' 0,
+    'opsz' 24;
 }
 
 // ---------- Mise en page ----------
 
 .page {
-  padding: 24px 32px 48px;
-  max-width: 1400px;
+  padding: 36px 40px 56px;
+  max-width: 1360px;
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -47,10 +243,18 @@ body {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+
+  // Le titre pousse les actions à droite, qu'il soit seul ou accompagné d'un sous-titre
+  > :first-child {
+    flex: 1;
+  }
 
   h1 {
-    font: var(--mat-sys-headline-small);
+    font:
+      700 28px/36px Nunito,
+      sans-serif;
+    letter-spacing: -0.01em;
     margin: 0;
     flex: 1;
   }
@@ -64,9 +268,9 @@ body {
 
 .card {
   background: var(--mat-sys-surface-container-lowest);
-  border: 1px solid var(--hermes-border);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 3px light-dark(rgba(42, 24, 70, 0.06), transparent);
   box-sizing: border-box;
 
   h2 {
@@ -75,6 +279,10 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+
+    > mat-icon {
+      color: var(--hermes-muted);
+    }
   }
 }
 
@@ -144,6 +352,7 @@ mat-form-field {
 // ---------- Montants et indicateurs ----------
 
 .amount {
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -167,9 +376,12 @@ mat-form-field {
   }
 
   .value {
-    font: var(--mat-sys-headline-medium);
+    font:
+      700 28px/36px Nunito,
+      sans-serif;
     font-variant-numeric: tabular-nums;
-    margin-top: 4px;
+    letter-spacing: -0.01em;
+    margin-top: 8px;
   }
 
   .delta {
@@ -223,10 +435,6 @@ mat-form-field {
 
 // ---------- Tableaux ----------
 
-table.mat-mdc-table {
-  background: transparent;
-}
-
 .table-wrapper {
   overflow-x: auto;
 }
@@ -235,7 +443,7 @@ tr.clickable {
   cursor: pointer;
 
   &:hover {
-    background: var(--mat-sys-surface-container);
+    background: var(--mat-sys-surface-container-low);
   }
 }
 
@@ -255,7 +463,7 @@ th.mat-column-balance {
 }
 
 .danger-zone {
-  border-color: var(--mat-sys-error);
+  border: 1px solid var(--mat-sys-error);
 }
 
 // Petite icône d'aide à côté d'un libellé

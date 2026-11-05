@@ -1,5 +1,97 @@
 .kpis {
   margin-bottom: 16px;
+
+  @media (min-width: 1101px) {
+    grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
+  }
+}
+
+// Le chiffre principal : carte pleine aubergine, avec un disque safran
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: light-dark(#4b2a78, #3a2160);
+  color: #ffffff;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -36px;
+    bottom: -60px;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: var(--hermes-saffron);
+  }
+
+  .label,
+  .delta.muted {
+    color: #d9ccee;
+  }
+
+  .value {
+    font-size: 34px;
+    line-height: 40px;
+    position: relative;
+    z-index: 1;
+
+    &.negative {
+      color: #ffb3c4;
+    }
+  }
+}
+
+.operation {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 8px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-low);
+  }
+
+  .icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    color: #ffffff;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .small {
+    font: var(--mat-sys-body-small);
+  }
 }
 
 .onboarding {

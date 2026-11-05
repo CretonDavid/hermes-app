@@ -1,7 +1,7 @@
 <mat-sidenav-container class="shell">
   <mat-sidenav mode="side" opened class="sidenav">
     <div class="brand">
-      <mat-icon class="logo">account_balance_wallet</mat-icon>
+      <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span>
       <span>Hermès</span>
     </div>
 
@@ -55,10 +55,21 @@
     }
 
     <div class="spacer"></div>
-    <button matButton class="logout" (click)="logout()">
-      <mat-icon>logout</mat-icon>
-      Se déconnecter
-    </button>
+    <div class="footer">
+      <button matButton class="logout" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Se déconnecter
+      </button>
+      <button
+        matIconButton
+        class="theme-toggle"
+        (click)="theme.toggle()"
+        [matTooltip]="theme.isDark() ? 'Passer au thème clair' : 'Passer au thème sombre'"
+        [attr.aria-label]="theme.isDark() ? 'Passer au thème clair' : 'Passer au thème sombre'"
+      >
+        <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+    </div>
   </mat-sidenav>
 
   <mat-sidenav-content class="content">

@@ -30,7 +30,6 @@ import { donutChart, incomeExpenseChart } from '../../shared/charts';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { AccountFormDialogComponent } from '../accounts/account-form-dialog.component';
 import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
-import { TransactionTableComponent } from '../transactions/transaction-table.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -42,7 +41,6 @@ import { TransactionTableComponent } from '../transactions/transaction-table.com
     MatIconModule,
     MoneyPipe,
     ChartComponent,
-    TransactionTableComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
@@ -103,6 +101,21 @@ export class DashboardComponent {
 
   protected newTransaction(): void {
     TransactionFormDialogComponent.open(this.dialog, {});
+  }
+
+  protected editTransaction(transaction: Transaction): void {
+    TransactionFormDialogComponent.open(this.dialog, { transaction });
+  }
+
+  protected operationColor(t: Transaction): string {
+    return t.transfer ? '#78909c' : (this.store.categoryOption(t.category?.id)?.color ?? '#9e9e9e');
+  }
+
+  protected operationIcon(t: Transaction): string {
+    if (t.transfer) {
+      return 'swap_horiz';
+    }
+    return this.store.categoryOption(t.category?.id)?.icon ?? 'sell';
   }
 
   // Ouvre les dépenses du mois de la catégorie cliquée

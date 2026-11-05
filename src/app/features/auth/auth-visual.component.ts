@@ -26,7 +26,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     </svg>
     <div class="caption">
       <h2>Vos comptes, en toute clarté.</h2>
-      <p>Aucun e-mail, aucun mot de passe : un simple numéro de compte.</p>
+      <p>Aucun e-mail, aucun mot de passe : un simple numéro d'accès.</p>
     </div>
   `,
   styles: `

@@ -30,9 +30,9 @@ import { AuthVisualComponent } from './auth-visual.component';
         </div>
 
         @if (!accountNumber()) {
-          <h1>Créer un compte</h1>
+          <h1>Créer mon espace</h1>
           <p class="intro">
-            Pas d'e-mail ni de mot de passe : un numéro de compte unique de 30 chiffres vous est
+            Pas d'e-mail ni de mot de passe : un numéro d'accès unique de 30 chiffres vous est
             attribué. C'est votre seul identifiant.
           </p>
           @if (error()) {
@@ -40,15 +40,15 @@ import { AuthVisualComponent } from './auth-visual.component';
           }
           <div class="actions">
             <button matButton="filled" (click)="register()" [disabled]="loading()">
-              Générer mon numéro de compte
+              Générer mon numéro d'accès
             </button>
           </div>
           @if (loading()) {
             <mat-progress-bar mode="indeterminate" />
           }
-          <div class="switch">Déjà un compte ? <a routerLink="/login">Se connecter</a></div>
+          <div class="switch">Déjà un espace ? <a routerLink="/login">Se connecter</a></div>
         } @else {
-          <h1>Votre numéro de compte</h1>
+          <h1>Votre numéro d'accès</h1>
           <div class="account-number">{{ formatted() }}</div>
 
           <div class="row" style="justify-content: center">
@@ -70,7 +70,7 @@ import { AuthVisualComponent } from './auth-visual.component';
           </div>
 
           <mat-checkbox [(ngModel)]="saved" style="margin-top: 16px; display: block">
-            J'ai conservé mon numéro de compte
+            J'ai conservé mon numéro d'accès
           </mat-checkbox>
 
           <div class="actions">
@@ -123,11 +123,11 @@ export class RegisterComponent {
   }
 
   protected download(): void {
-    const content = `Hermès - numéro de compte\n\n${this.accountNumber()}\n\nCe numéro est votre unique identifiant. Il ne peut pas être récupéré.\n`;
+    const content = `Hermès - numéro d'accès\n\n${this.accountNumber()}\n\nCe numéro est votre unique identifiant. Il ne peut pas être récupéré.\n`;
     const url = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'hermes-numero-de-compte.txt';
+    link.download = 'hermes-numero-d-acces.txt';
     link.click();
     URL.revokeObjectURL(url);
   }

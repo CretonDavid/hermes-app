@@ -45,7 +45,13 @@
           </mat-form-field>
 
           <label class="dropzone" (dragover)="$event.preventDefault()" (drop)="drop($event)">
-            <input type="file" accept=".csv,.txt,.ofx,.qfx" (change)="selectFile($event)" hidden />
+            <input
+              class="file-input"
+              type="file"
+              accept=".csv,.txt,.ofx,.qfx"
+              aria-label="Choisir le fichier du relevé"
+              (change)="selectFile($event)"
+            />
             <mat-icon>upload_file</mat-icon>
             @if (file(); as f) {
               <strong>{{ f.name }}</strong>

@@ -115,9 +115,9 @@ export class SettingsComponent {
 
   protected disable(): void {
     confirm(this.dialog, {
-      title: 'Désactiver le compte',
+      title: 'Désactiver mon espace',
       message:
-        'Vous serez déconnecté et ne pourrez plus vous connecter tant que le compte est désactivé. Vos données sont conservées : vous pourrez le réactiver depuis la page de connexion avec votre numéro.',
+        'Vous serez déconnecté et ne pourrez plus vous connecter tant que votre espace est désactivé. Vos données sont conservées : vous pourrez le réactiver depuis la page de connexion avec votre numéro.',
       confirmLabel: 'Désactiver',
       danger: true,
     }).subscribe((ok) => {
@@ -136,9 +136,9 @@ export class SettingsComponent {
   protected deleteAccount(): void {
     const number = this.deleteNumber.replace(/\D/g, '');
     confirm(this.dialog, {
-      title: 'Supprimer définitivement',
+      title: 'Supprimer définitivement mon espace',
       message:
-        'Toutes vos données (comptes, opérations, catégories, statistiques) seront effacées. Cette action est irréversible.',
+        'Toutes vos données (comptes bancaires, opérations, catégories, statistiques) seront effacées. Cette action est irréversible.',
       confirmLabel: 'Tout supprimer',
       danger: true,
     }).subscribe((ok) => {

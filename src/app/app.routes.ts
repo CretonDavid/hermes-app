@@ -11,7 +11,7 @@ export const routes: Routes = [
   {
     path: 'register',
     canActivate: [guestGuard],
-    title: 'Créer un compte · Hermès',
+    title: 'Créer mon espace · Hermès',
     loadComponent: () =>
       import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },

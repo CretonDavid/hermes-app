@@ -40,7 +40,21 @@
   gap: 16px;
 }
 
+// Masqué à l'écran mais atteignable au clavier, contrairement à l'attribut hidden
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.dropzone:focus-within {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
 .dropzone {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;

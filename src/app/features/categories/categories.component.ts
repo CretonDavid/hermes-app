@@ -70,12 +70,15 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
           </mat-form-field>
           <span class="spacer"></span>
           @if (!query()) {
-            <button matButton (click)="expandAll()">
-              <mat-icon>unfold_more</mat-icon> Tout déplier
-            </button>
-            <button matButton (click)="collapseAll()">
-              <mat-icon>unfold_less</mat-icon> Tout replier
-            </button>
+            @if (allExpanded()) {
+              <button matButton (click)="collapseAll()">
+                <mat-icon>unfold_less</mat-icon> Tout replier
+              </button>
+            } @else {
+              <button matButton (click)="expandAll()">
+                <mat-icon>unfold_more</mat-icon> Tout déplier
+              </button>
+            }
           }
         </div>
 
@@ -99,9 +102,16 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
             } @else {
               <span class="toggle-placeholder"></span>
             }
-            <span class="icon" [style.background]="option.color ?? '#9e9e9e'">
-              <mat-icon>{{ option.icon ?? 'sell' }}</mat-icon>
-            </span>
+            <!-- Une sous-catégorie sans icône propre n'affiche qu'un point à la couleur héritée -->
+            @if (option.depth > 0 && !option.category.icon) {
+              <span class="dot-slot">
+                <span class="category-dot" [style.background]="option.color ?? '#9e9e9e'"></span>
+              </span>
+            } @else {
+              <span class="icon" [style.background]="option.color ?? '#9e9e9e'">
+                <mat-icon>{{ option.icon ?? 'sell' }}</mat-icon>
+              </span>
+            }
             <span
               class="name"
               (click)="hasChildren(option.category.id) && toggle(option.category.id)"
@@ -120,6 +130,7 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
               <a
                 matIconButton
                 matTooltip="Voir les opérations"
+                [attr.aria-label]="'Voir les opérations de ' + option.category.name"
                 routerLink="/transactions"
                 [queryParams]="{ categoryId: option.category.id }"
               >
@@ -128,14 +139,25 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
               <button
                 matIconButton
                 matTooltip="Ajouter une sous-catégorie"
+                [attr.aria-label]="'Ajouter une sous-catégorie à ' + option.category.name"
                 (click)="create(option.category)"
               >
                 <mat-icon>add</mat-icon>
               </button>
-              <button matIconButton matTooltip="Modifier" (click)="edit(option.category)">
+              <button
+                matIconButton
+                matTooltip="Modifier"
+                [attr.aria-label]="'Modifier ' + option.category.name"
+                (click)="edit(option.category)"
+              >
                 <mat-icon>edit</mat-icon>
               </button>
-              <button matIconButton matTooltip="Supprimer" (click)="remove(option.category)">
+              <button
+                matIconButton
+                matTooltip="Supprimer"
+                [attr.aria-label]="'Supprimer ' + option.category.name"
+                (click)="remove(option.category)"
+              >
                 <mat-icon>delete</mat-icon>
               </button>
             </span>
@@ -158,7 +180,7 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
-      margin-bottom: 8px;
+      margin-bottom: 16px;
       .search {
         width: 280px;
       }
@@ -176,6 +198,9 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
           opacity: 1;
         }
       }
+      &:focus-within .actions {
+        opacity: 1;
+      }
       &.root {
         margin-top: 4px;
         .name {
@@ -186,6 +211,14 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
     }
     .toggle-placeholder {
       width: 40px;
+    }
+    .dot-slot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
     }
     .icon {
       width: 30px;
@@ -210,9 +243,16 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
       font-size: 13px;
       margin-left: 8px;
     }
+    // Les actions n'apparaissent que sur la ligne visée, ou en permanence sur un écran tactile
     .actions {
-      opacity: 0.45;
+      opacity: 0;
       transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    @media (hover: none) {
+      .actions {
+        opacity: 1;
+      }
     }
   `,
 })
@@ -235,6 +275,8 @@ export class CategoriesComponent {
     }
     return counts;
   });
+
+  protected readonly allExpanded = computed(() => this.collapsed().size === 0);
 
   protected readonly visible = computed<CategoryOption[]>(() => {
     const options = this.store.categoryOptions(this.type());

@@ -185,6 +185,11 @@ html {
       row-item-outline-color: var(--mat-sys-outline-variant),
     )
   );
+  @include mat.paginator-overrides(
+    (
+      container-background-color: transparent,
+    )
+  );
   @include mat.dialog-overrides(
     (
       container-color: var(--mat-sys-surface-container-lowest),
@@ -515,7 +520,11 @@ mat-icon.info {
 
 // Icône dans une ligne de texte : centrée sur la hauteur des lettres
 mat-icon.mat-icon-inline {
-  vertical-align: -0.15em;
+  width: 1.15em;
+  height: 1.15em;
+  font-size: 1.15em;
+  line-height: 1;
+  vertical-align: -0.2em;
 }
 
 // Lignes de tableau cliquables : le focus clavier doit se voir

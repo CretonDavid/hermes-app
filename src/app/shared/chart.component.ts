@@ -39,6 +39,11 @@ function quietScales(config: ChartConfiguration): NonNullable<ChartConfiguration
   }
   const horizontal = (options as { indexAxis?: string }).indexAxis === 'y';
   const [categoryAxis, valueAxis] = horizontal ? ['y', 'x'] : ['x', 'y'];
+  // Des courbes rattachées à leurs propres axes n'ont pas besoin de l'axe par défaut, qui
+  // s'afficherait vide
+  const usesDefaultAxis = config.data.datasets.some(
+    (dataset) => !(dataset as { yAxisID?: string }).yAxisID,
+  );
   return {
     ...options,
     scales: {
@@ -48,7 +53,9 @@ function quietScales(config: ChartConfiguration): NonNullable<ChartConfiguration
         border: { display: false },
         ...options.scales?.[categoryAxis],
       },
-      [valueAxis]: { border: { display: false }, ...options.scales?.[valueAxis] },
+      ...(usesDefaultAxis
+        ? { [valueAxis]: { border: { display: false }, ...options.scales?.[valueAxis] } }
+        : {}),
     },
   };
 }
@@ -59,7 +66,7 @@ function quietScales(config: ChartConfiguration): NonNullable<ChartConfiguration
 @Component({
   selector: 'app-chart',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div class="chart-box" [style.height.px]="height()">
+  template: `<div class="chart-box">
     <canvas #canvas role="img" [attr.aria-label]="label()"></canvas>
   </div>`,
   styles: `
@@ -90,7 +97,11 @@ export class ChartComponent implements OnDestroy {
       Chart.defaults.borderColor = themeColor('--mat-sys-outline-variant');
       Chart.defaults.elements.arc.borderColor = themeColor('--mat-sys-surface-container-lowest');
       this.chart?.destroy();
-      this.chart = new Chart(this.canvas().nativeElement, {
+      // Le cadre doit avoir sa hauteur avant la création : sinon le graphique garde les 150 px
+      // d'un canvas par défaut
+      const canvas = this.canvas().nativeElement;
+      canvas.parentElement!.style.height = `${this.height()}px`;
+      this.chart = new Chart(canvas, {
         ...config,
         options: {
           responsive: true,

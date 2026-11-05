@@ -91,7 +91,7 @@ export function fitLegendLabel(
 }
 
 // Écrit la valeur au bout de chaque barre d'un graphique horizontal
-export function barValues(format: (value: number) => string): Plugin<'bar'> {
+export function barValues(format: (value: number) => string): Plugin {
   return {
     id: 'barValues',
     afterDatasetsDraw(chart) {

@@ -59,6 +59,19 @@ const LINE_COLORS = [
   '#78909c',
 ];
 
+// Avant l'ouverture du premier compte, l'historique ne contient que des zéros sans signification
+function withoutLeadingZeros(history: BalanceHistory): BalanceHistory {
+  const first = history.points.findIndex((p) => p.value !== 0);
+  if (first <= 0) {
+    return history;
+  }
+  return {
+    ...history,
+    points: history.points.slice(first),
+    accounts: history.accounts.map((a) => ({ ...a, points: a.points.slice(first) })),
+  };
+}
+
 @Component({
   selector: 'app-stats',
   imports: [
@@ -440,7 +453,7 @@ export class StatsComponent {
         this.monthly.set(
           trimLeadingEmpty(r.monthly.items, (m) => !!(m.income || m.expenses || m.savings)),
         );
-        this.history.set(r.history);
+        this.history.set(withoutLeadingZeros(r.history));
         this.savings.set({
           ...r.savings,
           months: trimLeadingEmpty(

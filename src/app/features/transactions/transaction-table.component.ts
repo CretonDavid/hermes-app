@@ -197,8 +197,11 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
         background: var(--mat-sys-surface-container-lowest);
       }
     }
-    th.mat-column-amount ::ng-deep .mat-sort-header-container {
-      justify-content: flex-end;
+    // Écran étroit : le montant reste visible, le compte est la colonne la moins indispensable
+    @media (max-width: 1000px) {
+      .mat-column-account {
+        display: none;
+      }
     }
     .date {
       white-space: nowrap;

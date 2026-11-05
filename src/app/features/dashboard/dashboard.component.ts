@@ -16,7 +16,7 @@ import { endOfMonth, startOfMonth, subMonths } from 'date-fns';
 import { forkJoin } from 'rxjs';
 import { RecurringApi, StatsApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
-import { toIsoDate } from '../../core/format';
+import { toIsoDate, trimLeadingEmpty } from '../../core/format';
 import {
   CategoryStat,
   MonthlyStat,
@@ -86,12 +86,19 @@ export class DashboardComponent {
   protected readonly bars = computed(() =>
     this.months().length ? incomeExpenseChart(this.months(), this.currency()) : null,
   );
+  // Le mois en cours n'est comparé qu'au même nombre de jours du mois précédent
+  protected readonly previousMonth = subMonths(this.now, 1);
+  protected readonly comparison = signal<{
+    expenses: number;
+    previousIncome: number;
+    previousExpenses: number;
+  } | null>(null);
   protected readonly expenseDelta = computed(() => {
-    const s = this.summary();
-    if (!s || !s.previousExpenses) {
+    const c = this.comparison();
+    if (!c || !c.previousExpenses) {
       return null;
     }
-    return (s.expenses - s.previousExpenses) / s.previousExpenses;
+    return (c.expenses - c.previousExpenses) / c.previousExpenses;
   });
 
   constructor() {
@@ -144,6 +151,11 @@ export class DashboardComponent {
     const sixMonths = { from: toIsoDate(startOfMonth(subMonths(this.now, 5)))!, to: month.to };
     forkJoin({
       summary: this.statsApi.summary(month),
+      toDate: this.statsApi.summary({ from: month.from, to: toIsoDate(this.now)! }),
+      previousToDate: this.statsApi.summary({
+        from: toIsoDate(startOfMonth(this.previousMonth))!,
+        to: toIsoDate(this.previousMonth)!,
+      }),
       categories: this.statsApi.categories({ ...month, type: 'EXPENSE' }),
       months: this.statsApi.monthly(sixMonths),
       recent: this.transactionApi.search({}, 0, 8),
@@ -152,8 +164,13 @@ export class DashboardComponent {
       next: (r) => {
         this.dataLoaded.set(true);
         this.summary.set(r.summary);
+        this.comparison.set({
+          expenses: r.toDate.expenses,
+          previousIncome: r.previousToDate.income,
+          previousExpenses: r.previousToDate.expenses,
+        });
         this.categories.set(r.categories.items);
-        this.months.set(r.months.items);
+        this.months.set(trimLeadingEmpty(r.months.items, (m) => !!(m.income || m.expenses)));
         this.recent.set(r.recent.content);
         this.upcoming.set(r.upcoming.slice(0, 8));
       },

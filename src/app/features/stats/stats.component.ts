@@ -17,11 +17,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
 import { ChartConfiguration } from 'chart.js';
-import { format, parseISO } from 'date-fns';
 import { forkJoin } from 'rxjs';
 import { StatsApi, StatsQuery } from '../../core/api';
 import { DataStore } from '../../core/data.store';
-import { formatMonth } from '../../core/format';
+import { formatDay, formatMonth, today, trimLeadingEmpty } from '../../core/format';
 import {
   BalanceHistory,
   CategoryStat,
@@ -40,11 +39,12 @@ import {
   INCOME_COLOR,
   SAVINGS_COLOR,
   SAVINGS_FILL,
+  barValues,
   categoryColors,
   donutChart,
   incomeExpenseChart,
 } from '../../shared/charts';
-import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
+import { MoneyPipe, formatAxisMoney, formatMoney } from '../../shared/money.pipe';
 import { NoAccountComponent } from '../../shared/no-account.component';
 import { Period, PeriodPickerComponent, presetPeriod } from '../../shared/period-picker.component';
 
@@ -112,6 +112,11 @@ export class StatsComponent {
       !!s && s.income === 0 && s.expenses === 0 && s.savings === 0 && this.categories().length === 0
     );
   });
+  // Sans aucune donnée, un 0,00 € de comparaison serait trompeur
+  protected readonly hasPrevious = computed(() => {
+    const s = this.summary();
+    return !!s && (s.previousIncome !== 0 || s.previousExpenses !== 0);
+  });
   private readonly query = computed<StatsQuery>(() => ({
     ...this.period(),
     accountIds: this.accountIds(),
@@ -155,7 +160,7 @@ export class StatsComponent {
           legend: { display: false },
           tooltip: { callbacks: { label: (c) => formatMoney(c.parsed.y, currency) } },
         },
-        scales: { y: { ticks: { callback: (v) => formatMoney(Number(v), currency) } } },
+        scales: { y: { ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } } },
       },
     };
   });
@@ -169,7 +174,7 @@ export class StatsComponent {
     return {
       type: 'line',
       data: {
-        labels: history.points.map((p) => format(parseISO(p.date), 'dd/MM/yy')),
+        labels: history.points.map((p) => formatDay(p.date)),
         datasets: [
           {
             label: 'Patrimoine total',
@@ -177,7 +182,6 @@ export class StatsComponent {
             borderColor: SAVINGS_COLOR,
             backgroundColor: SAVINGS_FILL,
             fill: true,
-            tension: 0.25,
             pointRadius: 0,
           },
         ],
@@ -190,7 +194,7 @@ export class StatsComponent {
         },
         scales: {
           x: DATE_AXIS,
-          y: { ticks: { callback: (v) => formatMoney(Number(v), currency) } },
+          y: { ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } },
         },
       },
     };
@@ -201,16 +205,28 @@ export class StatsComponent {
     if (!history || history.points.length < 2 || history.accounts.length === 0) {
       return null;
     }
+    const currencies = [...new Set(history.accounts.map((a) => a.currencyCode))];
+    const currencyAxes = Object.fromEntries(
+      currencies.map((code, i) => [
+        code,
+        {
+          position: i === 0 ? 'left' : 'right',
+          grid: { drawOnChartArea: i === 0 },
+          border: { display: false },
+          ticks: { callback: (v: string | number) => formatAxisMoney(Number(v), code) },
+        },
+      ]),
+    );
     return {
       type: 'line',
       data: {
-        labels: history.points.map((p) => format(parseISO(p.date), 'dd/MM/yy')),
+        labels: history.points.map((p) => formatDay(p.date)),
         datasets: history.accounts.map((a, i) => ({
           label: `${a.name} (${a.currencyCode})`,
           data: a.points.map((p) => p.value),
+          yAxisID: a.currencyCode,
           borderColor: LINE_COLORS[i % LINE_COLORS.length],
           backgroundColor: LINE_COLORS[i % LINE_COLORS.length],
-          tension: 0.25,
           pointRadius: 0,
         })),
       },
@@ -224,9 +240,9 @@ export class StatsComponent {
             },
           },
         },
-        scales: { x: DATE_AXIS },
+        scales: { x: DATE_AXIS, ...currencyAxes },
       },
-    };
+    } as ChartConfiguration;
   });
 
   protected readonly monthLabel = formatMonth;
@@ -237,6 +253,7 @@ export class StatsComponent {
       return null;
     }
     const currency = savings.currencyCode;
+    const hasWithdrawals = savings.months.some((m) => m.withdrawals !== 0);
     return {
       type: 'bar',
       data: {
@@ -247,24 +264,17 @@ export class StatsComponent {
             data: savings.months.map((m) => m.deposits),
             backgroundColor: INCOME_COLOR,
             borderRadius: 4,
-            yAxisID: 'y',
           },
-          {
-            label: 'Retraits',
-            data: savings.months.map((m) => -m.withdrawals),
-            backgroundColor: EXPENSE_COLOR,
-            borderRadius: 4,
-            yAxisID: 'y',
-          },
-          {
-            type: 'line',
-            label: 'Encours épargne',
-            data: savings.months.map((m) => m.balance),
-            borderColor: SAVINGS_COLOR,
-            backgroundColor: SAVINGS_COLOR,
-            tension: 0.3,
-            yAxisID: 'balance',
-          },
+          ...(hasWithdrawals
+            ? [
+                {
+                  label: 'Retraits',
+                  data: savings.months.map((m) => -m.withdrawals),
+                  backgroundColor: EXPENSE_COLOR,
+                  borderRadius: 4,
+                },
+              ]
+            : []),
         ],
       },
       options: {
@@ -276,16 +286,41 @@ export class StatsComponent {
           },
         },
         scales: {
-          y: { stacked: true, ticks: { callback: (v) => formatMoney(Number(v), currency) } },
+          y: { stacked: true, ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } },
           x: { stacked: true },
-          balance: {
-            position: 'right',
-            grid: { drawOnChartArea: false },
-            ticks: { callback: (v) => formatMoney(Number(v), currency) },
-          },
         },
       },
     } as ChartConfiguration;
+  });
+
+  protected readonly savingsBalanceChart = computed<ChartConfiguration | null>(() => {
+    const savings = this.savings();
+    if (!savings || !savings.months.length) {
+      return null;
+    }
+    const currency = savings.currencyCode;
+    return {
+      type: 'line',
+      data: {
+        labels: savings.months.map((m) => formatMonth(m.month)),
+        datasets: [
+          {
+            label: "Encours d'épargne",
+            data: savings.months.map((m) => m.balance),
+            borderColor: SAVINGS_COLOR,
+            backgroundColor: SAVINGS_FILL,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (c) => formatMoney(c.parsed.y, currency) } },
+        },
+        scales: { y: { ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } } },
+      },
+    };
   });
 
   protected readonly savingsRateChart = computed<ChartConfiguration | null>(() => {
@@ -299,13 +334,12 @@ export class StatsComponent {
         labels: savings.months.map((m) => formatMonth(m.month)),
         datasets: [
           {
-            label: "Taux d'épargne",
+            label: 'Part des revenus non dépensée',
             data: savings.months.map((m) =>
               m.savingsRate === null ? null : Math.round(m.savingsRate * 1000) / 10,
             ),
             borderColor: INCOME_COLOR,
             backgroundColor: INCOME_COLOR,
-            tension: 0.3,
             spanGaps: true,
           },
         ],
@@ -328,6 +362,7 @@ export class StatsComponent {
     const currency = this.currency();
     return {
       type: 'bar',
+      plugins: [barValues((value) => formatMoney(value, currency))],
       data: {
         labels: payees.map((p) => p.payee),
         datasets: [
@@ -336,11 +371,13 @@ export class StatsComponent {
       },
       options: {
         indexAxis: 'y',
+        // Réserve la place du montant écrit au bout de la barre la plus longue
+        layout: { padding: { right: 96 } },
         plugins: {
           legend: { display: false },
           tooltip: { callbacks: { label: (c) => formatMoney(c.parsed.x, currency) } },
         },
-        scales: { x: { ticks: { callback: (v) => formatMoney(Number(v), currency) } } },
+        scales: { x: { ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } } },
       },
     };
   });
@@ -390,15 +427,27 @@ export class StatsComponent {
     forkJoin({
       summary: this.api.summary(query),
       monthly: this.api.monthly(query),
-      history: this.api.balanceHistory(query),
+      // L'historique s'arrête aujourd'hui : un solde futur n'est pas encore connu
+      history: this.api.balanceHistory({
+        ...query,
+        to: query.to && query.to > today() ? today() : query.to,
+      }),
       savings: this.api.savings({ from: query.from, to: query.to }),
       payees: this.api.payees({ ...query, limit: 15 }),
     }).subscribe({
       next: (r) => {
         this.summary.set(r.summary);
-        this.monthly.set(r.monthly.items);
+        this.monthly.set(
+          trimLeadingEmpty(r.monthly.items, (m) => !!(m.income || m.expenses || m.savings)),
+        );
         this.history.set(r.history);
-        this.savings.set(r.savings);
+        this.savings.set({
+          ...r.savings,
+          months: trimLeadingEmpty(
+            r.savings.months,
+            (m) => !!(m.deposits || m.withdrawals || m.balance),
+          ),
+        });
         this.payees.set(r.payees.items);
         this.missingRates.set([...new Set([...r.summary.missingRates, ...r.history.missingRates])]);
       },

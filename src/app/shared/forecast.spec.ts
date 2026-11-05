@@ -1,0 +1,67 @@
+import { UpcomingOccurrence } from '../core/models';
+import { formatAxisMoney, formatMoney } from './money.pipe';
+import { upcomingNet } from './forecast';
+
+const occurrence = (values: Partial<UpcomingOccurrence>): UpcomingOccurrence => ({
+  recurringTransactionId: 1,
+  date: '2026-12-01',
+  label: 'Test',
+  direction: 'DEBIT',
+  amount: 100,
+  accountId: 1,
+  accountName: 'A',
+  currencyCode: 'EUR',
+  transfer: false,
+  targetAccountId: null,
+  targetAccountName: null,
+  targetAmount: null,
+  ...values,
+});
+
+describe('upcomingNet', () => {
+  it('soustrait les débits et ajoute les crédits du compte', () => {
+    const items = [occurrence({ amount: 850 }), occurrence({ direction: 'CREDIT', amount: 2500 })];
+
+    expect(upcomingNet(items, 1, 'EUR')).toBe(1650);
+  });
+
+  it('ignore les échéances des autres comptes', () => {
+    expect(upcomingNet([occurrence({ accountId: 2 })], 1, 'EUR')).toBe(0);
+  });
+
+  it('compte un virement en sortie sur la source et en entrée sur la cible', () => {
+    const transfer = occurrence({ transfer: true, targetAccountId: 2 });
+
+    expect(upcomingNet([transfer], 1, 'EUR')).toBe(-100);
+    expect(upcomingNet([transfer], 2, 'EUR')).toBe(100);
+  });
+
+  it('utilise le montant reçu pour un virement entre devises', () => {
+    const transfer = occurrence({ transfer: true, targetAccountId: 2, targetAmount: 110 });
+
+    expect(upcomingNet([transfer], 2, 'USD')).toBe(110);
+  });
+
+  it('ne chiffre pas une entrée entre devises sans montant reçu', () => {
+    const transfer = occurrence({ transfer: true, targetAccountId: 2 });
+
+    expect(upcomingNet([transfer], 2, 'USD')).toBe(0);
+  });
+});
+
+describe('formatMoney', () => {
+  it('utilise le vrai signe moins', () => {
+    expect(formatMoney(-12.5, 'EUR')).toContain('−');
+    expect(formatMoney(-12.5, 'EUR')).not.toContain('-');
+  });
+
+  it('garde les centimes dans les montants et les retire des axes', () => {
+    expect(formatMoney(4000, 'EUR')).toContain(',00');
+    expect(formatAxisMoney(4000, 'EUR')).not.toContain(',');
+  });
+
+  it('reste lisible avec un code devise inconnu du navigateur', () => {
+    expect(formatMoney(-5, 'XXXX')).toContain('XXXX');
+    expect(formatAxisMoney(-5, 'XXXX')).toContain('XXXX');
+  });
+});

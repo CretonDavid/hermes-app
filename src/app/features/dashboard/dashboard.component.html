@@ -70,29 +70,39 @@
         </div>
         <div class="card kpi">
           <div class="label">Revenus du mois</div>
-          <div class="value amount positive">{{ s.income | money: s.currencyCode }}</div>
-          <div class="delta muted">
-            Mois précédent : {{ s.previousIncome | money: s.currencyCode }}
+          <div class="value amount" [class.positive]="s.income > 0">
+            {{ s.income | money: s.currencyCode }}
           </div>
-        </div>
-        <div class="card kpi">
-          <div class="label">Dépenses du mois</div>
-          <div class="value amount negative">{{ s.expenses | money: s.currencyCode }}</div>
-          @if (expenseDelta(); as delta) {
-            <div class="delta" [class.negative]="delta > 0" [class.positive]="delta < 0">
-              {{ delta > 0 ? '+' : '' }}{{ delta | percent: '1.0-0' }} vs mois précédent
-            </div>
-          } @else {
+          @if (comparison(); as c) {
             <div class="delta muted">
-              Mois précédent : {{ s.previousExpenses | money: s.currencyCode }}
+              À la même date en {{ previousMonth | date: 'MMMM' }} :
+              {{ c.previousIncome ? (c.previousIncome | money: s.currencyCode) : '—' }}
             </div>
           }
         </div>
         <div class="card kpi">
-          <div class="label">Épargne du mois</div>
+          <div class="label">Dépenses du mois</div>
+          <div class="value amount">{{ s.expenses | money: s.currencyCode }}</div>
+          @if (comparison(); as c) {
+            @if (expenseDelta(); as delta) {
+              <div class="delta" [class.negative]="delta > 0" [class.positive]="delta < 0">
+                {{ delta > 0 ? '+' : '' }}{{ delta | percent: '1.0-0' }} par rapport à la même date
+                en {{ previousMonth | date: 'MMMM' }}
+              </div>
+            } @else {
+              <div class="delta muted">
+                À la même date en {{ previousMonth | date: 'MMMM' }} :
+                {{ c.previousExpenses ? (c.previousExpenses | money: s.currencyCode) : '—' }}
+              </div>
+            }
+          }
+        </div>
+        <div class="card kpi">
+          <div class="label">Virements vers l'épargne</div>
           <div class="value amount">{{ s.savings | money: s.currencyCode }}</div>
           <div class="delta muted">
-            Taux d'épargne : {{ s.savingsRate === null ? '—' : (s.savingsRate | percent: '1.0-1') }}
+            Part des revenus non dépensée :
+            {{ s.savingsRate === null ? '—' : (s.savingsRate | percent: '1.0-1') }}
           </div>
         </div>
       </div>
@@ -106,6 +116,7 @@
             [config]="config"
             [height]="284"
             [clickable]="true"
+            label="Répartition des dépenses du mois par catégorie. Cliquez sur une catégorie pour voir ses opérations."
             (elementClick)="openCategory($event)"
           />
         } @else {
@@ -115,7 +126,11 @@
       <div class="card">
         <h2><mat-icon>bar_chart</mat-icon> Revenus et dépenses sur 6 mois</h2>
         @if (bars(); as config) {
-          <app-chart [config]="config" [height]="260" />
+          <app-chart
+            [config]="config"
+            [height]="260"
+            label="Barres des revenus et des dépenses sur les 6 derniers mois"
+          />
         }
       </div>
     </div>
@@ -136,7 +151,7 @@
               <span class="title">{{ t.label }}</span>
               <span class="muted small">
                 {{ t.transfer ? 'Virement interne' : (t.category?.name ?? 'Non catégorisée') }} ·
-                {{ t.operationDate | date: 'dd MMM' }}
+                {{ t.operationDate | date: 'dd/MM/yyyy' }}
               </span>
             </span>
             <span class="amount" [class.positive]="t.direction === 'CREDIT'">
@@ -155,7 +170,7 @@
         </h2>
         @for (o of upcoming(); track o.recurringTransactionId + o.date) {
           <div class="upcoming">
-            <div class="date">{{ o.date | date: 'dd MMM' }}</div>
+            <div class="date">{{ o.date | date: 'dd/MM/yyyy' }}</div>
             <div class="label">
               <div>{{ o.label }}</div>
               <div class="muted small">

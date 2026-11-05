@@ -2,6 +2,18 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
+function formatter(key: string, options: Intl.NumberFormatOptions): Intl.NumberFormat {
+  let result = formatters.get(key);
+  if (!result) {
+    result = new Intl.NumberFormat('fr-FR', options);
+    formatters.set(key, result);
+  }
+  return result;
+}
+
+// Le vrai signe moins, aligné avec le « + » et plus lisible qu'un tiret
+const trueMinus = (text: string) => text.replace('-', '−');
+
 export function formatMoney(
   amount: number | null | undefined,
   currency = 'EUR',
@@ -10,26 +22,34 @@ export function formatMoney(
   if (amount === null || amount === undefined) {
     return '—';
   }
-  const key = `${currency}|${signed}`;
-  let formatter = formatters.get(key);
-  if (!formatter) {
-    try {
-      formatter = new Intl.NumberFormat('fr-FR', {
+  try {
+    return trueMinus(
+      formatter(`${currency}|${signed}`, {
         style: 'currency',
         currency,
         signDisplay: signed ? 'exceptZero' : 'auto',
-      });
-    } catch {
-      // Code devise non reconnu par le navigateur : affichage numérique suivi du code
-      const number = new Intl.NumberFormat('fr-FR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-      return `${signed && amount > 0 ? '+' : ''}${number.format(amount)} ${currency}`;
-    }
-    formatters.set(key, formatter);
+      }).format(amount),
+    );
+  } catch {
+    // Code devise non reconnu par le navigateur : affichage numérique suivi du code
+    const number = formatter('number', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return trueMinus(`${signed && amount > 0 ? '+' : ''}${number.format(amount)} ${currency}`);
   }
-  return formatter.format(amount);
+}
+
+// Graduation d'un axe de graphique : les centimes n'y apportent rien
+export function formatAxisMoney(amount: number, currency = 'EUR'): string {
+  try {
+    return trueMinus(
+      formatter(`axis|${currency}`, {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 0,
+      }).format(amount),
+    );
+  } catch {
+    return trueMinus(`${formatter('axis', { maximumFractionDigits: 0 }).format(amount)} ${currency}`);
+  }
 }
 
 /**

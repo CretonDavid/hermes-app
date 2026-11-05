@@ -1,7 +1,7 @@
 import { Chart, ChartConfiguration, Plugin } from 'chart.js';
 import { formatMonth } from '../core/format';
 import { CategoryStat, MonthlyStat } from '../core/models';
-import { formatMoney } from './money.pipe';
+import { formatAxisMoney, formatMoney } from './money.pipe';
 
 // Tons moyens, contrastés (au moins 3:1) sur les fonds clair et sombre
 export const INCOME_COLOR = '#0f9d82';
@@ -68,7 +68,48 @@ function donutTotal(amount: string): Plugin<'doughnut'> {
   };
 }
 
-const HINT_FONT = '12px Nunito, sans-serif';
+const LEGEND_FONT = '12px Nunito, sans-serif';
+// Pastille, marges : ce qui reste de la moitié du graphique accordée à la légende va au texte
+const LEGEND_RESERVED_WIDTH = 40;
+
+// Raccourcit le nom pour que le montant de la légende ne soit jamais coupé
+export function fitLegendLabel(
+  name: string,
+  amount: string,
+  maxWidth: number,
+  measure: (s: string) => number,
+): string {
+  const full = `${name} · ${amount}`;
+  if (measure(full) <= maxWidth) {
+    return full;
+  }
+  let length = name.length;
+  while (length > 1 && measure(`${name.slice(0, length).trimEnd()}… · ${amount}`) > maxWidth) {
+    length--;
+  }
+  return `${name.slice(0, length).trimEnd()}… · ${amount}`;
+}
+
+// Écrit la valeur au bout de chaque barre d'un graphique horizontal
+export function barValues(format: (value: number) => string): Plugin<'bar'> {
+  return {
+    id: 'barValues',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      const data = chart.data.datasets[0].data as number[];
+      ctx.save();
+      ctx.font = LEGEND_FONT;
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = getComputedStyle(chart.canvas).color;
+      chart.getDatasetMeta(0).data.forEach((bar, i) => {
+        ctx.fillText(format(data[i]), bar.x + 8, bar.y);
+      });
+      ctx.restore();
+    },
+  };
+}
+
+const HINT_FONT = '13px Nunito, sans-serif';
 const HINT_LINE_HEIGHT = 16;
 const HINT_GAP = 8;
 
@@ -170,13 +211,24 @@ export function donutChart(
           position: 'right',
           labels: {
             // La légende donne aussi le montant de chaque catégorie
-            generateLabels: (chart) =>
-              Chart.overrides.doughnut.plugins.legend.labels
+            generateLabels: (chart) => {
+              const { ctx } = chart;
+              ctx.save();
+              ctx.font = LEGEND_FONT;
+              const labels = Chart.overrides.doughnut.plugins.legend.labels
                 .generateLabels(chart)
                 .map((label, i) => ({
                   ...label,
-                  text: `${label.text} · ${formatMoney(items[i].amount, currency)}`,
-                })),
+                  text: fitLegendLabel(
+                    String(label.text),
+                    formatMoney(items[i].amount, currency),
+                    chart.width / 2 - LEGEND_RESERVED_WIDTH,
+                    (s) => ctx.measureText(s).width,
+                  ),
+                }));
+              ctx.restore();
+              return labels;
+            },
           },
         },
         tooltip: {
@@ -224,7 +276,6 @@ export function incomeExpenseChart(
                 data: months.map((m) => m.net),
                 borderColor: SAVINGS_COLOR,
                 backgroundColor: SAVINGS_COLOR,
-                tension: 0.3,
               },
             ]
           : []),
@@ -238,7 +289,7 @@ export function incomeExpenseChart(
           },
         },
       },
-      scales: { y: { ticks: { callback: (v) => formatMoney(Number(v), currency) } } },
+      scales: { y: { ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } } },
     },
   } as ChartConfiguration;
 }

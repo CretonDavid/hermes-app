@@ -48,25 +48,30 @@
       <div class="grid grid-4" style="margin-bottom: 16px">
         <div class="card kpi">
           <div class="label">Revenus</div>
-          <div class="value amount positive">{{ s.income | money: s.currencyCode }}</div>
+          <div class="value amount" [class.positive]="s.income > 0">
+            {{ s.income | money: s.currencyCode }}
+          </div>
           <div class="delta muted">
-            Période précédente : {{ s.previousIncome | money: s.currencyCode }}
+            Période précédente :
+            {{ hasPrevious() ? (s.previousIncome | money: s.currencyCode) : '—' }}
           </div>
         </div>
         <div class="card kpi">
           <div class="label">Dépenses</div>
-          <div class="value amount negative">{{ s.expenses | money: s.currencyCode }}</div>
+          <div class="value amount">{{ s.expenses | money: s.currencyCode }}</div>
           <div class="delta muted">
-            Période précédente : {{ s.previousExpenses | money: s.currencyCode }}
+            Période précédente :
+            {{ hasPrevious() ? (s.previousExpenses | money: s.currencyCode) : '—' }}
           </div>
         </div>
         <div class="card kpi">
           <div class="label">Solde de la période</div>
-          <div class="value amount" [class.positive]="s.net >= 0" [class.negative]="s.net < 0">
+          <div class="value amount" [class.positive]="s.net > 0" [class.negative]="s.net < 0">
             {{ s.net | money: s.currencyCode : true }}
           </div>
           <div class="delta muted">
-            Taux d'épargne : {{ s.savingsRate === null ? '—' : (s.savingsRate | percent: '1.0-1') }}
+            Part des revenus non dépensée :
+            {{ s.savingsRate === null ? '—' : (s.savingsRate | percent: '1.0-1') }}
           </div>
         </div>
         <div class="card kpi">
@@ -85,7 +90,11 @@
           <div class="card">
             <h2><mat-icon>bar_chart</mat-icon> Évolution mensuelle</h2>
             @if (monthlyChart(); as config) {
-              <app-chart [config]="config" [height]="340" />
+              <app-chart
+                [config]="config"
+                [height]="340"
+                label="Barres mensuelles des revenus et des dépenses, détaillées dans le tableau suivant"
+              />
             }
           </div>
           <div class="card" style="margin-top: 16px">
@@ -96,16 +105,24 @@
                   <th class="right">Revenus</th>
                   <th class="right">Dépenses</th>
                   <th class="right">Solde</th>
-                  <th class="right">Épargne</th>
+                  <th class="right">Vers l'épargne</th>
                 </tr>
               </thead>
               <tbody>
                 @for (m of monthly(); track m.month) {
                   <tr>
                     <td>{{ monthLabel(m.month) }}</td>
-                    <td class="right amount positive">{{ m.income | money: currency() }}</td>
-                    <td class="right amount negative">{{ m.expenses | money: currency() }}</td>
-                    <td class="right amount">{{ m.net | money: currency() : true }}</td>
+                    <td class="right amount" [class.positive]="m.income > 0">
+                      {{ m.income | money: currency() }}
+                    </td>
+                    <td class="right amount">{{ m.expenses | money: currency() }}</td>
+                    <td
+                      class="right amount"
+                      [class.positive]="m.net > 0"
+                      [class.negative]="m.net < 0"
+                    >
+                      {{ m.net | money: currency() : true }}
+                    </td>
                     <td class="right amount">{{ m.savings | money: currency() }}</td>
                   </tr>
                 }
@@ -144,6 +161,7 @@
                   [config]="config"
                   [height]="364"
                   [clickable]="true"
+                  label="Répartition par catégorie, détaillée dans le tableau voisin"
                   (elementClick)="openCategory($event)"
                 />
               } @else {
@@ -154,7 +172,13 @@
               <table class="simple">
                 <tbody>
                   @for (c of categories(); track c.categoryId; let i = $index) {
-                    <tr class="clickable" (click)="openCategory(i)">
+                    <tr
+                      class="clickable"
+                      tabindex="0"
+                      (click)="openCategory(i)"
+                      (keydown.enter)="openCategory(i)"
+                      (keydown.space)="$event.preventDefault(); openCategory(i)"
+                    >
                       <td>
                         <span class="category-dot" [style.background]="colors()[i]"></span>
                         {{ c.name }}{{ c.direct ? ' (direct)' : '' }}
@@ -175,7 +199,11 @@
           @if (trendChart(); as config) {
             <div class="card" style="margin-top: 16px">
               <h2><mat-icon>trending_up</mat-icon> Évolution — {{ trendTarget()?.name }}</h2>
-              <app-chart [config]="config" [height]="240" />
+              <app-chart
+                [config]="config"
+                [height]="240"
+                [label]="'Barres mensuelles de la catégorie ' + trendTarget()?.name"
+              />
             </div>
           }
         </div>
@@ -186,13 +214,21 @@
           <div class="card">
             <h2><mat-icon>show_chart</mat-icon> Patrimoine total ({{ currency() }})</h2>
             @if (netWorthChart(); as config) {
-              <app-chart [config]="config" [height]="300" />
+              <app-chart
+                [config]="config"
+                [height]="300"
+                label="Courbe de l'évolution du patrimoine total"
+              />
             }
           </div>
           <div class="card" style="margin-top: 16px">
             <h2><mat-icon>stacked_line_chart</mat-icon> Solde par compte</h2>
             @if (accountsChart(); as config) {
-              <app-chart [config]="config" [height]="320" />
+              <app-chart
+                [config]="config"
+                [height]="320"
+                label="Courbes de l'évolution du solde de chaque compte, avec une échelle par devise"
+              />
             }
           </div>
         </div>
@@ -210,18 +246,18 @@
               </div>
               <div class="card kpi">
                 <div class="label">Versements</div>
-                <div class="value amount positive">
+                <div class="value amount" [class.positive]="sv.totalDeposits > 0">
                   {{ sv.totalDeposits | money: sv.currencyCode }}
                 </div>
               </div>
               <div class="card kpi">
                 <div class="label">Retraits</div>
-                <div class="value amount negative">
+                <div class="value amount">
                   {{ sv.totalWithdrawals | money: sv.currencyCode }}
                 </div>
               </div>
               <div class="card kpi">
-                <div class="label">Taux d'épargne</div>
+                <div class="label">Part des revenus non dépensée</div>
                 <div class="value">
                   {{ sv.savingsRate === null ? '—' : (sv.savingsRate | percent: '1.0-1') }}
                 </div>
@@ -237,28 +273,50 @@
             }
             <div class="grid grid-2">
               <div class="card">
-                <h2><mat-icon>savings</mat-icon> Versements et encours</h2>
+                <h2><mat-icon>savings</mat-icon> Versements et retraits</h2>
                 @if (savingsChart(); as config) {
-                  <app-chart [config]="config" [height]="300" />
+                  <app-chart
+                    [config]="config"
+                    [height]="300"
+                    label="Barres mensuelles des versements et des retraits d'épargne"
+                  />
                 }
               </div>
               <div class="card">
-                <h2><mat-icon>percent</mat-icon> Taux d'épargne mensuel</h2>
+                <h2><mat-icon>percent</mat-icon> Part des revenus non dépensée, par mois</h2>
                 @if (savingsRateChart(); as config) {
-                  <app-chart [config]="config" [height]="300" />
+                  <app-chart
+                    [config]="config"
+                    [height]="300"
+                    label="Courbe mensuelle de la part des revenus non dépensée"
+                  />
                 }
               </div>
             </div>
+            @if (savingsBalanceChart(); as config) {
+              <div class="card" style="margin-top: 16px">
+                <h2><mat-icon>show_chart</mat-icon> Encours d'épargne</h2>
+                <app-chart
+                  [config]="config"
+                  [height]="260"
+                  label="Courbe mensuelle de l'encours d'épargne"
+                />
+              </div>
+            }
           }
         </div>
       </mat-tab>
 
-      <mat-tab label="Tiers">
+      <mat-tab label="Bénéficiaires">
         <div class="tab">
           <div class="card">
             <h2><mat-icon>storefront</mat-icon> Principaux bénéficiaires de vos dépenses</h2>
             @if (payeesChart(); as config) {
-              <app-chart [config]="config" [height]="420" />
+              <app-chart
+                [config]="config"
+                [height]="420"
+                label="Barres des principaux bénéficiaires, avec le montant dépensé pour chacun"
+              />
             } @else {
               <div class="empty"><p>Aucune dépense sur la période</p></div>
             }

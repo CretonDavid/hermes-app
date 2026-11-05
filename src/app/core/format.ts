@@ -64,5 +64,16 @@ export function frequencyLabel(frequency: RecurrenceFrequency, interval: number)
 }
 
 export function formatMonth(month: string): string {
-  return format(parseISO(`${month}-01`), 'MMM yy', { locale: fr });
+  return format(parseISO(`${month}-01`), 'MMM yyyy', { locale: fr });
+}
+
+// Format unique des dates dans l'application, y compris sur les axes des graphiques
+export function formatDay(date: string): string {
+  return format(parseISO(date), 'dd/MM/yyyy');
+}
+
+// Retire les mois vides situés avant les premières données : ce ne sont pas de vrais zéros
+export function trimLeadingEmpty<T>(items: T[], hasData: (item: T) => boolean): T[] {
+  const first = items.findIndex(hasData);
+  return first === -1 ? items : items.slice(first);
 }

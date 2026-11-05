@@ -1,7 +1,7 @@
 .kpis {
   margin-bottom: 16px;
 
-  @media (min-width: 1101px) {
+  @media (min-width: 1321px) {
     grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
   }
 }
@@ -22,6 +22,16 @@
     height: 150px;
     border-radius: 50%;
     background: var(--hermes-saffron);
+  }
+
+  // Le disque reste décoratif : il se réduit avant de pouvoir toucher le texte
+  @media (max-width: 1500px) {
+    &::after {
+      right: -40px;
+      bottom: -52px;
+      width: 96px;
+      height: 96px;
+    }
   }
 
   .label,
@@ -130,7 +140,8 @@
   }
 
   .date {
-    width: 56px;
+    width: 84px;
+    flex-shrink: 0;
     font: var(--mat-sys-label-large);
     color: var(--mat-sys-primary);
   }

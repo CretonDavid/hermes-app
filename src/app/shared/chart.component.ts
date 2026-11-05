@@ -59,7 +59,9 @@ function quietScales(config: ChartConfiguration): NonNullable<ChartConfiguration
 @Component({
   selector: 'app-chart',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div class="chart-box" [style.height.px]="height()"><canvas #canvas></canvas></div>`,
+  template: `<div class="chart-box" [style.height.px]="height()">
+    <canvas #canvas role="img" [attr.aria-label]="label()"></canvas>
+  </div>`,
   styles: `
     .chart-box {
       position: relative;
@@ -71,6 +73,8 @@ export class ChartComponent implements OnDestroy {
   readonly config = input.required<ChartConfiguration>();
   readonly height = input(280);
   readonly clickable = input(false);
+  // Description lue par les lecteurs d'écran, le canvas n'ayant pas de texte accessible
+  readonly label = input.required<string>();
   // Index de l'élément cliqué (part de camembert, barre...)
   readonly elementClick = output<number>();
 

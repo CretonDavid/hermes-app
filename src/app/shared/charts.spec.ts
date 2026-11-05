@@ -1,8 +1,25 @@
-import { layoutHint } from './charts';
+import { fitLegendLabel, layoutHint } from './charts';
 
 // Chaque caractère mesure 10 px : « un deux trois » fait donc 130 px
 const measure = (text: string) => text.length * 10;
 const TEXT = 'un deux trois';
+
+describe('fitLegendLabel', () => {
+  it('garde le texte complet quand il tient', () => {
+    expect(fitLegendLabel('Loyer', '10 €', 200, measure)).toBe('Loyer · 10 €');
+  });
+
+  it('raccourcit le nom sans jamais couper le montant', () => {
+    const label = fitLegendLabel('Abonnements et télécoms', '3 616,70 €', 200, measure);
+
+    expect(label.endsWith('… · 3 616,70 €')).toBe(true);
+    expect(measure(label)).toBeLessThanOrEqual(200);
+  });
+
+  it('garde le montant même si la place manque', () => {
+    expect(fitLegendLabel('Abonnements', '3 616,70 €', 10, measure)).toContain('3 616,70 €');
+  });
+});
 
 describe('layoutHint', () => {
   it("centre le texte sur l'anneau quand il a la place", () => {

@@ -108,6 +108,12 @@ import { TransactionTableComponent } from './transaction-table.component';
             <mat-icon>download</mat-icon> Exporter en CSV
           </button>
         }
+        <!-- Sans opération ni filtre, l'écran vide propose déjà « Saisir une opération » -->
+        @if (store.openAccounts().length > 0 && (total() > 0 || hasFilters())) {
+          <button matButton="filled" (click)="create()">
+            <mat-icon>add</mat-icon> Nouvelle opération
+          </button>
+        }
       </div>
 
       @if (store.loaded() && store.accounts().length === 0) {

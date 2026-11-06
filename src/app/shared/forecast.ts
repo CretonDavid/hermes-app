@@ -1,3 +1,4 @@
+import { endOfMonth, format } from 'date-fns';
 import { Transaction, UpcomingOccurrence } from '../core/models';
 
 /**
@@ -47,4 +48,13 @@ export function withFutureTransactions(
   return [...occurrences, ...future].sort(
     (a, b) => a.date.localeCompare(b.date) || a.label.localeCompare(b.label),
   );
+}
+
+// Ne garde que les échéances du mois en cours : l'API, elle, compte toujours au moins un jour
+export function untilEndOfMonth(
+  occurrences: UpcomingOccurrence[],
+  today = new Date(),
+): UpcomingOccurrence[] {
+  const limit = format(endOfMonth(today), 'yyyy-MM-dd');
+  return occurrences.filter((o) => o.date <= limit);
 }

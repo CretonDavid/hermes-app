@@ -1,6 +1,6 @@
 import { Transaction, UpcomingOccurrence } from '../core/models';
 import { formatAxisMoney, formatMoney, formatPercent } from './money.pipe';
-import { upcomingNet, withFutureTransactions } from './forecast';
+import { untilEndOfMonth, upcomingNet, withFutureTransactions } from './forecast';
 
 const occurrence = (values: Partial<UpcomingOccurrence>): UpcomingOccurrence => ({
   recurringTransactionId: 1,
@@ -74,6 +74,22 @@ describe('withFutureTransactions', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].targetAccountName).toBe('Livret');
+  });
+});
+
+describe('untilEndOfMonth', () => {
+  const items = ['2026-11-06', '2026-11-30', '2026-12-01'].map((date) => occurrence({ date }));
+
+  it('garde les échéances jusqu’au dernier jour du mois inclus', () => {
+    const result = untilEndOfMonth(items, new Date(2026, 10, 6));
+
+    expect(result.map((o) => o.date)).toEqual(['2026-11-06', '2026-11-30']);
+  });
+
+  it('n’inclut pas le mois suivant le dernier jour du mois', () => {
+    const result = untilEndOfMonth(items, new Date(2026, 10, 30));
+
+    expect(result.map((o) => o.date)).not.toContain('2026-12-01');
   });
 });
 

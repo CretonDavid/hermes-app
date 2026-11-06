@@ -93,6 +93,7 @@ import { TransactionTableComponent } from './transaction-table.component';
               <mat-label>Comptes bancaires</mat-label>
               <mat-select
                 multiple
+                [panelWidth]="null"
                 [ngModel]="accountIds()"
                 (ngModelChange)="update(accountIds, $event)"
                 placeholder="Tous"

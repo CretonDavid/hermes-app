@@ -32,7 +32,7 @@ import { AuthVisualComponent } from './auth-visual.component';
         @if (!accountNumber()) {
           <h1>Créer un compte</h1>
           <p class="intro">
-            Pas d'e-mail ni de mot de passe : un numéro de compte unique de 30 chiffres vous est
+            Pas d'e-mail ni de mot de passe : un numéro de compte unique composé de chiffres vous est
             attribué. C'est votre seul identifiant.
           </p>
           @if (error()) {

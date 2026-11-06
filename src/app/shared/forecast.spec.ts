@@ -1,6 +1,6 @@
-import { UpcomingOccurrence } from '../core/models';
-import { formatAxisMoney, formatMoney } from './money.pipe';
-import { upcomingNet } from './forecast';
+import { Transaction, UpcomingOccurrence } from '../core/models';
+import { formatAxisMoney, formatMoney, formatPercent } from './money.pipe';
+import { upcomingNet, withFutureTransactions } from './forecast';
 
 const occurrence = (values: Partial<UpcomingOccurrence>): UpcomingOccurrence => ({
   recurringTransactionId: 1,
@@ -46,6 +46,44 @@ describe('upcomingNet', () => {
     const transfer = occurrence({ transfer: true, targetAccountId: 2 });
 
     expect(upcomingNet([transfer], 2, 'USD')).toBe(0);
+  });
+});
+
+describe('withFutureTransactions', () => {
+  const future = (values: Partial<Transaction>) =>
+    ({ id: 7, label: 'Achat', direction: 'DEBIT', amount: 10, transfer: null, ...values }) as Transaction;
+
+  it('classe les opérations futures et les échéances par date', () => {
+    const result = withFutureTransactions(
+      [occurrence({ date: '2026-12-05', label: 'Loyer' })],
+      [future({ operationDate: '2026-12-01' })],
+    );
+
+    expect(result.map((o) => o.label)).toEqual(['Achat', 'Loyer']);
+  });
+
+  it('ne montre un virement qu’une fois, côté débit', () => {
+    const transfer = { peerTransactionId: 8, accountId: 2, accountName: 'Livret' };
+    const result = withFutureTransactions(
+      [],
+      [
+        future({ operationDate: '2026-12-01', transfer }),
+        future({ id: 8, operationDate: '2026-12-01', direction: 'CREDIT', transfer }),
+      ],
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].targetAccountName).toBe('Livret');
+  });
+});
+
+describe('formatPercent', () => {
+  it('utilise le vrai signe moins et une virgule', () => {
+    expect(formatPercent(-0.054)).toMatch(/^\u22125,4\s%$/u);
+  });
+
+  it('respecte le nombre de décimales demandé', () => {
+    expect(formatPercent(1.17, 0)).toMatch(/^117\s%$/u);
   });
 });
 

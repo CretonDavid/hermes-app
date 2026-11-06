@@ -52,6 +52,23 @@ export function formatAxisMoney(amount: number, currency = 'EUR'): string {
   }
 }
 
+// Part exprimée entre 0 et 1 : -0.054 → −5,4 %
+export function formatPercent(value: number, maxDecimals = 1): string {
+  return trueMinus(
+    formatter(`percent|${maxDecimals}`, {
+      style: 'percent',
+      maximumFractionDigits: maxDecimals,
+    }).format(value),
+  );
+}
+
+@Pipe({ name: 'percentage' })
+export class PercentagePipe implements PipeTransform {
+  transform(value: number, maxDecimals = 1): string {
+    return formatPercent(value, maxDecimals);
+  }
+}
+
 /**
  * Affiche un montant dans une devise : {{ 12.5 | money: 'EUR' }} → 12,50 €.
  * Avec signed = true, le signe est toujours affiché (+12,50 €).

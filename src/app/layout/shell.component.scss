@@ -163,6 +163,8 @@ main:focus {
   flex-direction: column;
   padding: 0 12px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-muted) transparent;
 }
 
 .account-link {

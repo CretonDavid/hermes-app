@@ -57,9 +57,11 @@ interface AccountGroup {
             Afficher les comptes bancaires clôturés
           </mat-slide-toggle>
         }
-        <button matButton="filled" (click)="create()">
-          <mat-icon>add</mat-icon> Nouveau compte bancaire
-        </button>
+        @if (store.accounts().length > 0) {
+          <button matButton="filled" (click)="create()">
+            <mat-icon>add</mat-icon> Nouveau compte bancaire
+          </button>
+        }
       </div>
 
       @if (store.loaded() && store.accounts().length === 0) {

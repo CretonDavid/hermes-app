@@ -1,4 +1,4 @@
-import { DatePipe, PercentPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,7 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
-import { endOfMonth, startOfMonth, subMonths } from 'date-fns';
+import { addDays, endOfMonth, startOfMonth, subMonths } from 'date-fns';
 import { forkJoin } from 'rxjs';
 import { RecurringApi, StatsApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
@@ -27,7 +27,8 @@ import {
 import { NotifyService } from '../../core/notify.service';
 import { ChartComponent } from '../../shared/chart.component';
 import { donutChart, incomeExpenseChart } from '../../shared/charts';
-import { MoneyPipe } from '../../shared/money.pipe';
+import { withFutureTransactions } from '../../shared/forecast';
+import { MoneyPipe, PercentagePipe } from '../../shared/money.pipe';
 import { AccountFormDialogComponent } from '../accounts/account-form-dialog.component';
 import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
 
@@ -36,7 +37,7 @@ import { TransactionFormDialogComponent } from '../transactions/transaction-form
   imports: [
     RouterLink,
     DatePipe,
-    PercentPipe,
+    PercentagePipe,
     MatButtonModule,
     MatIconModule,
     MoneyPipe,
@@ -64,7 +65,8 @@ export class DashboardComponent {
   private readonly dataLoaded = signal(false);
 
   protected readonly hasAccount = computed(() => this.store.accounts().length > 0);
-  protected readonly hasTransactions = computed(() => this.recent().length > 0);
+  // Des opérations uniquement futures comptent aussi pour le guide de démarrage
+  protected readonly hasTransactions = signal(false);
   // Guide de démarrage tant qu'il n'y a ni compte ni opération
   protected readonly showOnboarding = computed(
     () =>
@@ -80,6 +82,7 @@ export class DashboardComponent {
           this.categories(),
           this.currency(),
           'Cliquez sur une catégorie pour voir ses opérations du mois.',
+          this.summary()?.expenses,
         )
       : null,
   );
@@ -158,7 +161,14 @@ export class DashboardComponent {
       }),
       categories: this.statsApi.categories({ ...month, type: 'EXPENSE' }),
       months: this.statsApi.monthly(sixMonths),
-      recent: this.transactionApi.search({}, 0, 8),
+      // « Dernières opérations » s'arrête à aujourd'hui, le futur va dans « À venir »
+      recent: this.transactionApi.search({ to: toIsoDate(this.now)! }, 0, 8),
+      any: this.transactionApi.search({}, 0, 1),
+      future: this.transactionApi.search(
+        { from: toIsoDate(addDays(this.now, 1))!, to: toIsoDate(addDays(this.now, 30))! },
+        0,
+        100,
+      ),
       upcoming: this.recurringApi.upcoming(30),
     }).subscribe({
       next: (r) => {
@@ -172,7 +182,8 @@ export class DashboardComponent {
         this.categories.set(r.categories.items);
         this.months.set(trimLeadingEmpty(r.months.items, (m) => !!(m.income || m.expenses)));
         this.recent.set(r.recent.content);
-        this.upcoming.set(r.upcoming.slice(0, 8));
+        this.hasTransactions.set(r.any.totalElements > 0);
+        this.upcoming.set(withFutureTransactions(r.upcoming, r.future.content).slice(0, 8));
       },
       error: (error) => this.notify.error(error),
     });

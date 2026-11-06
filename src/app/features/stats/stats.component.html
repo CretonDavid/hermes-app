@@ -71,7 +71,7 @@
           </div>
           <div class="delta muted">
             Part des revenus non dépensée :
-            {{ s.savingsRate === null ? '—' : (s.savingsRate | percent: '1.0-1') }}
+            {{ s.savingsRate === null ? '—' : (s.savingsRate | percentage) }}
           </div>
         </div>
         <div class="card kpi">
@@ -187,7 +187,7 @@
                         }
                       </td>
                       <td class="muted right">{{ c.count }} op.</td>
-                      <td class="right">{{ c.share | percent: '1.0-1' }}</td>
+                      <td class="right">{{ c.share | percentage }}</td>
                       <td class="right amount">{{ c.amount | money: currency() }}</td>
                     </tr>
                   }
@@ -222,12 +222,34 @@
             }
           </div>
           <div class="card" style="margin-top: 16px">
-            <h2><mat-icon>stacked_line_chart</mat-icon> Solde par compte bancaire</h2>
+            <div class="row" style="margin-bottom: 12px">
+              <h2 style="margin: 0; flex: 1">
+                <mat-icon>stacked_line_chart</mat-icon> Solde par compte bancaire
+              </h2>
+              @if (accountCurrencies().length > 1) {
+                <mat-button-toggle-group
+                  aria-label="Devise affichée"
+                  [value]="accountCurrency()"
+                  (change)="selectedAccountCurrency.set($event.value)"
+                  hideSingleSelectionIndicator
+                >
+                  @for (code of accountCurrencies(); track code) {
+                    <mat-button-toggle [value]="code">{{ code }}</mat-button-toggle>
+                  }
+                </mat-button-toggle-group>
+              }
+            </div>
+            @if (accountSeries().length > 6) {
+              <p class="muted series-hint">
+                Les 6 soldes les plus élevés sont affichés : cliquez sur un nom dans la légende pour
+                afficher ou masquer une courbe.
+              </p>
+            }
             @if (accountsChart(); as config) {
               <app-chart
                 [config]="config"
                 [height]="320"
-                label="Courbes de l'évolution du solde de chaque compte bancaire, avec une échelle par devise"
+                [label]="'Courbes de l\'évolution du solde des comptes bancaires en ' + accountCurrency()"
               />
             }
           </div>
@@ -259,7 +281,7 @@
               <div class="card kpi">
                 <div class="label">Part des revenus non dépensée</div>
                 <div class="value">
-                  {{ sv.savingsRate === null ? '—' : (sv.savingsRate | percent: '1.0-1') }}
+                  {{ sv.savingsRate === null ? '—' : (sv.savingsRate | percentage) }}
                 </div>
                 <div class="delta muted">(revenus − dépenses) / revenus</div>
               </div>

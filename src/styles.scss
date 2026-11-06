@@ -474,7 +474,15 @@ tr.clickable {
   }
 }
 
+// Un nom très long est raccourci plutôt que d'élargir tout le tableau
 td.mat-column-account {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+th.mat-column-account {
   white-space: nowrap;
 }
 

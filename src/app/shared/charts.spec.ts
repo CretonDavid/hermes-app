@@ -1,8 +1,43 @@
-import { fitLegendLabel, layoutHint } from './charts';
+import { fitLegendLabel, layoutHint, selectAccountSeries, shortLabel } from './charts';
 
 // Chaque caractère mesure 10 px : « un deux trois » fait donc 130 px
 const measure = (text: string) => text.length * 10;
 const TEXT = 'un deux trois';
+
+describe('selectAccountSeries', () => {
+  const series = (name: string, currencyCode: string, value: number) =>
+    ({ name, currencyCode, points: [{ date: '2026-11-01', value }] }) as never;
+
+  it('ne garde que la devise demandée, les plus gros soldes d’abord', () => {
+    const result = selectAccountSeries(
+      [series('A', 'EUR', 10), series('B', 'USD', 99), series('C', 'EUR', -50)],
+      'EUR',
+    );
+
+    expect(result.map((s) => s.name)).toEqual(['C', 'A']);
+  });
+
+  it('retire les comptes bancaires restés à zéro', () => {
+    expect(selectAccountSeries([series('A', 'EUR', 0)], 'EUR')).toEqual([]);
+  });
+
+  it('masque les courbes au-delà du maximum', () => {
+    const result = selectAccountSeries(
+      [series('A', 'EUR', 3), series('B', 'EUR', 2), series('C', 'EUR', 1)],
+      'EUR',
+      2,
+    );
+
+    expect(result.map((s) => s.hidden)).toEqual([false, false, true]);
+  });
+});
+
+describe('shortLabel', () => {
+  it('garde un texte court et raccourcit un texte long', () => {
+    expect(shortLabel('Livret A')).toBe('Livret A');
+    expect(shortLabel('x'.repeat(50), 10)).toBe(`${'x'.repeat(9)}…`);
+  });
+});
 
 describe('fitLegendLabel', () => {
   it('garde le texte complet quand il tient', () => {

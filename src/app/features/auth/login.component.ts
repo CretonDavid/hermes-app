@@ -33,8 +33,7 @@ import { AuthVisualComponent } from './auth-visual.component';
         <div class="brand">
           <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span> Hermès
         </div>
-        <h1>Connexion</h1>
-        <p class="intro">Saisissez votre numéro de compte à 30 chiffres.</p>
+        <h1 style="margin-bottom: 24px">Connexion</h1>
 
         <form [formGroup]="form" (ngSubmit)="submit()">
           <mat-form-field class="number-input">
@@ -46,12 +45,7 @@ import { AuthVisualComponent } from './auth-visual.component';
               autocomplete="username"
               inputmode="numeric"
               autofocus
-              placeholder="000000 000000 000000 000000 000000"
             />
-            <mat-hint align="end">{{ digits().length }} / 30</mat-hint>
-            @if (number.hasError('pattern')) {
-              <mat-error>Le numéro doit contenir exactement 30 chiffres</mat-error>
-            }
           </mat-form-field>
 
           @if (error()) {
@@ -123,7 +117,7 @@ export class LoginComponent {
 
   private run(request$: Observable<Tokens>): void {
     if (this.digits().length !== 30) {
-      this.error.set('Le numéro doit contenir exactement 30 chiffres');
+      this.error.set('Numéro de compte inconnu');
       return;
     }
     this.loading.set(true);

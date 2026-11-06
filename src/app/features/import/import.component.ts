@@ -81,8 +81,10 @@ export class ImportComponent {
   protected readonly preview = signal<ImportPreview | null>(null);
   protected readonly rows = signal<PreviewRow[]>([]);
   protected readonly imported = signal(0);
+  protected readonly headerVisible = signal(true);
   protected readonly actionsVisible = signal(true);
 
+  private readonly previewHeader = viewChild<ElementRef<HTMLElement>>('previewHeader');
   private readonly previewActions = viewChild<ElementRef<HTMLElement>>('previewActions');
 
   // Mapping CSV
@@ -114,18 +116,27 @@ export class ImportComponent {
         this.accountId.set(accounts[0].id);
       }
     });
-    // La flèche vers les boutons d'import ne s'affiche que s'ils sont hors de l'écran
+    // Chaque flèche ne s'affiche que si sa destination est hors de l'écran
     effect((onCleanup) => {
+      const header = this.previewHeader()?.nativeElement;
       const actions = this.previewActions()?.nativeElement;
-      if (!actions) {
+      if (!header || !actions) {
         return;
       }
-      const observer = new IntersectionObserver(([entry]) =>
-        this.actionsVisible.set(entry.isIntersecting),
-      );
+      const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          const visible = entry.target === header ? this.headerVisible : this.actionsVisible;
+          visible.set(entry.isIntersecting);
+        }
+      });
+      observer.observe(header);
       observer.observe(actions);
       onCleanup(() => observer.disconnect());
     });
+  }
+
+  protected goToHeader(): void {
+    this.previewHeader()?.nativeElement.scrollIntoView({ block: 'start' });
   }
 
   protected goToActions(): void {

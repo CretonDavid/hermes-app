@@ -240,7 +240,7 @@
 
       @case ('preview') {
         <div class="card">
-          <div class="row" style="margin-bottom: 12px">
+          <div #previewHeader class="row" style="margin-bottom: 12px; scroll-margin-top: 40px">
             <h2 style="margin: 0">
               <mat-icon>checklist</mat-icon> {{ rows().length }} opération(s) lue(s) vers
               {{ account()?.name }}
@@ -328,18 +328,30 @@
             </table>
           </div>
 
-          @if (!actionsVisible()) {
-            <button
-              matFab
-              class="go-to-actions"
-              matTooltip="Aller aux boutons d'import"
-              matTooltipPosition="left"
-              aria-label="Aller aux boutons d'import"
-              (click)="goToActions()"
-            >
-              <mat-icon>arrow_downward</mat-icon>
-            </button>
-          }
+          <div class="preview-nav">
+            @if (!headerVisible()) {
+              <button
+                matFab
+                matTooltip="Remonter en haut de la liste"
+                matTooltipPosition="left"
+                aria-label="Remonter en haut de la liste"
+                (click)="goToHeader()"
+              >
+                <mat-icon>arrow_upward</mat-icon>
+              </button>
+            }
+            @if (!actionsVisible()) {
+              <button
+                matFab
+                matTooltip="Aller aux boutons d'import"
+                matTooltipPosition="left"
+                aria-label="Aller aux boutons d'import"
+                (click)="goToActions()"
+              >
+                <mat-icon>arrow_downward</mat-icon>
+              </button>
+            }
+          </div>
 
           <div #previewActions class="row" style="margin-top: 16px; scroll-margin-bottom: 40px">
             <button matButton (click)="restart()">

@@ -1,4 +1,3 @@
-import { PercentPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -43,8 +42,16 @@ import {
   categoryColors,
   donutChart,
   incomeExpenseChart,
+  selectAccountSeries,
+  shortLabel,
 } from '../../shared/charts';
-import { MoneyPipe, formatAxisMoney, formatMoney } from '../../shared/money.pipe';
+import {
+  MoneyPipe,
+  PercentagePipe,
+  formatAxisMoney,
+  formatMoney,
+  formatPercent,
+} from '../../shared/money.pipe';
 import { NoAccountComponent } from '../../shared/no-account.component';
 import { Period, PeriodPickerComponent, presetPeriod } from '../../shared/period-picker.component';
 
@@ -77,7 +84,7 @@ function withoutLeadingZeros(history: BalanceHistory): BalanceHistory {
   imports: [
     FormsModule,
     RouterLink,
-    PercentPipe,
+    PercentagePipe,
     MatTabsModule,
     MatButtonModule,
     MatButtonToggleModule,
@@ -139,12 +146,22 @@ export class StatsComponent {
     this.monthly().length ? incomeExpenseChart(this.monthly(), this.currency()) : null,
   );
 
+  // Au niveau principal, le total est celui de la synthèse ; une sous-catégorie additionne ses parts
+  private readonly categoryTotal = computed(() => {
+    const s = this.summary();
+    if (!s || this.drill().length > 0) {
+      return undefined;
+    }
+    return this.categoryType() === 'EXPENSE' ? s.expenses : s.income;
+  });
+
   protected readonly categoryChart = computed(() =>
     this.categories().length
       ? donutChart(
           this.categories(),
           this.currency(),
           'Cliquez sur une catégorie pour voir le détail de ses sous-catégories.',
+          this.categoryTotal(),
         )
       : null,
   );
@@ -213,31 +230,43 @@ export class StatsComponent {
     };
   });
 
+  // Une seule devise à la fois : des montants de devises différentes ne se comparent pas sur un axe
+  protected readonly selectedAccountCurrency = signal<string | null>(null);
+  protected readonly accountCurrencies = computed(() => {
+    const codes = new Set(
+      (this.history()?.accounts ?? [])
+        .filter((a) => a.points.some((p) => p.value !== 0))
+        .map((a) => a.currencyCode),
+    );
+    const reference = this.currency();
+    return [...codes].sort(
+      (a, b) => Number(b === reference) - Number(a === reference) || a.localeCompare(b),
+    );
+  });
+  protected readonly accountCurrency = computed(() => {
+    const codes = this.accountCurrencies();
+    const selected = this.selectedAccountCurrency();
+    return selected && codes.includes(selected) ? selected : (codes[0] ?? this.currency());
+  });
+  protected readonly accountSeries = computed(() =>
+    selectAccountSeries(this.history()?.accounts ?? [], this.accountCurrency()),
+  );
+
   protected readonly accountsChart = computed<ChartConfiguration | null>(() => {
     const history = this.history();
-    if (!history || history.points.length < 2 || history.accounts.length === 0) {
+    const series = this.accountSeries();
+    if (!history || history.points.length < 2 || series.length === 0) {
       return null;
     }
-    const currencies = [...new Set(history.accounts.map((a) => a.currencyCode))];
-    const currencyAxes = Object.fromEntries(
-      currencies.map((code, i) => [
-        code,
-        {
-          position: i === 0 ? 'left' : 'right',
-          grid: { drawOnChartArea: i === 0 },
-          border: { display: false },
-          ticks: { callback: (v: string | number) => formatAxisMoney(Number(v), code) },
-        },
-      ]),
-    );
+    const currency = this.accountCurrency();
     return {
       type: 'line',
       data: {
         labels: history.points.map((p) => formatDay(p.date)),
-        datasets: history.accounts.map((a, i) => ({
-          label: `${a.name} (${a.currencyCode})`,
+        datasets: series.map((a, i) => ({
+          label: shortLabel(a.name),
           data: a.points.map((p) => p.value),
-          yAxisID: a.currencyCode,
+          hidden: a.hidden,
           borderColor: LINE_COLORS[i % LINE_COLORS.length],
           backgroundColor: LINE_COLORS[i % LINE_COLORS.length],
           pointRadius: 0,
@@ -249,11 +278,14 @@ export class StatsComponent {
           tooltip: {
             callbacks: {
               label: (c) =>
-                ` ${c.dataset.label} : ${formatMoney(c.parsed.y, history.accounts[c.datasetIndex].currencyCode)}`,
+                ` ${series[c.datasetIndex].name} : ${formatMoney(c.parsed.y, currency)}`,
             },
           },
         },
-        scales: { x: DATE_AXIS, ...currencyAxes },
+        scales: {
+          x: DATE_AXIS,
+          y: { ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } },
+        },
       },
     } as ChartConfiguration;
   });
@@ -360,9 +392,9 @@ export class StatsComponent {
       options: {
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} %` } },
+          tooltip: { callbacks: { label: (c) => ` ${formatPercent((c.parsed.y ?? 0) / 100)}` } },
         },
-        scales: { y: { ticks: { callback: (v) => `${v} %` } } },
+        scales: { y: { ticks: { callback: (v) => formatPercent(Number(v) / 100, 0) } } },
       },
     };
   });

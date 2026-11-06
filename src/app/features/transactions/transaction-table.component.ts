@@ -144,7 +144,9 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
 
         <ng-container matColumnDef="account">
           <th mat-header-cell *matHeaderCellDef mat-sort-header="account">Compte bancaire</th>
-          <td mat-cell *matCellDef="let t" class="muted">{{ t.accountName }}</td>
+          <td mat-cell *matCellDef="let t" class="muted" [title]="t.accountName">
+            {{ t.accountName }}
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="amount">
@@ -212,6 +214,8 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
       align-items: center;
       gap: 6px;
       font-weight: 500;
+      min-width: 200px;
+      overflow-wrap: anywhere;
     }
     .kind {
       font-size: 18px;
@@ -222,6 +226,7 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
     .sub {
       font: var(--mat-sys-body-small);
       color: var(--hermes-muted);
+      overflow-wrap: anywhere;
     }
     .select-cell {
       width: 40px;

@@ -1,4 +1,4 @@
-import { UpcomingOccurrence } from '../core/models';
+import { Transaction, UpcomingOccurrence } from '../core/models';
 
 /**
  * Effet net des échéances à venir sur un compte. Un virement sort du compte source et entre sur
@@ -18,4 +18,33 @@ export function upcomingNet(
     }
   }
   return Math.round(net * 100) / 100;
+}
+
+// Ajoute aux échéances les opérations déjà saisies avec une date future. Un virement n'apparaît
+// qu'une fois, par son côté débit.
+export function withFutureTransactions(
+  occurrences: UpcomingOccurrence[],
+  transactions: Transaction[],
+): UpcomingOccurrence[] {
+  const future = transactions
+    .filter((t) => !(t.transfer && t.direction === 'CREDIT'))
+    .map(
+      (t): UpcomingOccurrence => ({
+        recurringTransactionId: -t.id,
+        date: t.operationDate,
+        label: t.label,
+        direction: t.direction,
+        amount: t.amount,
+        accountId: t.accountId,
+        accountName: t.accountName,
+        currencyCode: t.currencyCode,
+        transfer: !!t.transfer,
+        targetAccountId: t.transfer?.accountId ?? null,
+        targetAccountName: t.transfer?.accountName ?? null,
+        targetAmount: null,
+      }),
+    );
+  return [...occurrences, ...future].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.label.localeCompare(b.label),
+  );
 }

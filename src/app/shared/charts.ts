@@ -1,7 +1,7 @@
 import { Chart, ChartConfiguration, Plugin } from 'chart.js';
 import { formatMonth } from '../core/format';
-import { CategoryStat, MonthlyStat } from '../core/models';
-import { formatAxisMoney, formatMoney } from './money.pipe';
+import { BalanceHistory, CategoryStat, MonthlyStat } from '../core/models';
+import { formatAxisMoney, formatMoney, formatPercent } from './money.pipe';
 
 // Tons moyens, contrastés (au moins 3:1) sur les fonds clair et sombre
 export const INCOME_COLOR = '#0f9d82';
@@ -179,8 +179,10 @@ export function donutChart(
   items: CategoryStat[],
   currency: string,
   hint?: string,
+  // Total officiel de la période : additionner des parts arrondies peut l'écarter d'un centime
+  knownTotal?: number,
 ): ChartConfiguration {
-  const total = items.reduce((sum, item) => sum + item.amount, 0);
+  const total = knownTotal ?? items.reduce((sum, item) => sum + item.amount, 0);
   const config: ChartConfiguration<'doughnut'> = {
     type: 'doughnut',
     plugins: [donutTotal(formatMoney(total, currency)), ...(hint ? [donutHint(hint)] : [])],
@@ -235,7 +237,7 @@ export function donutChart(
           callbacks: {
             label: (ctx) => {
               const item = items[ctx.dataIndex];
-              return ` ${formatMoney(item.amount, currency)} (${Math.round(item.share * 1000) / 10} %)`;
+              return ` ${formatMoney(item.amount, currency)} (${formatPercent(item.share)})`;
             },
           },
         },
@@ -243,6 +245,26 @@ export function donutChart(
     },
   };
   return config as unknown as ChartConfiguration;
+}
+
+type AccountSeries = BalanceHistory['accounts'][number];
+
+// Courbes d'une devise, les plus gros soldes d'abord. Celles qui restent à zéro sont retirées et,
+// au-delà de maxVisible, masquées au départ (on les affiche depuis la légende).
+export function selectAccountSeries(
+  accounts: AccountSeries[],
+  currency: string,
+  maxVisible = 6,
+): (AccountSeries & { hidden: boolean })[] {
+  const last = (a: AccountSeries) => Math.abs(a.points.at(-1)?.value ?? 0);
+  return accounts
+    .filter((a) => a.currencyCode === currency && a.points.some((p) => p.value !== 0))
+    .sort((a, b) => last(b) - last(a))
+    .map((a, i) => ({ ...a, hidden: i >= maxVisible }));
+}
+
+export function shortLabel(text: string, max = 32): string {
+  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
 }
 
 export function incomeExpenseChart(

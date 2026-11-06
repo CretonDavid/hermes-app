@@ -143,7 +143,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
             <mat-label>Montant reçu (facultatif)</mat-label>
             <input matInput appAmount formControlName="targetAmount" />
             <span matTextSuffix>&nbsp;{{ targetCurrency() }}</span>
-            <mat-hint>Vide : conversion au taux du jour</mat-hint>
+            <mat-hint>Vide : conversion au dernier taux enregistré</mat-hint>
           </mat-form-field>
         } @else if (mode() !== 'TRANSFER') {
           <mat-form-field>

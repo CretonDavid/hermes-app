@@ -13,6 +13,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
@@ -48,6 +49,7 @@ import { TransactionTableComponent } from './transaction-table.component';
     MatDatepickerModule,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     MatPaginatorModule,
     MatProgressBarModule,
     MoneyPipe,
@@ -66,9 +68,50 @@ import { TransactionTableComponent } from './transaction-table.component';
             modifier
           </div>
         </div>
+        @if (hasFilters()) {
+          <button matButton (click)="reset()">
+            <mat-icon>filter_alt_off</mat-icon> Effacer les filtres
+          </button>
+        }
         @if (total() > 0) {
+          <button matButton="tonal" [matMenuTriggerFor]="totalsMenu">
+            <mat-icon>functions</mat-icon> Totaux
+          </button>
+          <mat-menu #totalsMenu="matMenu" class="totals-menu" xPosition="before">
+            <div class="totals">
+              <strong>Total {{ hasFilters() ? 'filtré' : 'général' }}</strong>
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Devise</th>
+                    <th scope="col">Entrées</th>
+                    <th scope="col">Sorties</th>
+                    <th scope="col">Net</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (t of totals(); track t.currencyCode) {
+                    <tr>
+                      <th scope="row">{{ t.currencyCode }}</th>
+                      <td class="amount positive">{{ t.credits | money: t.currencyCode : true }}</td>
+                      <td class="amount">{{ -t.debits | money: t.currencyCode : true }}</td>
+                      <td class="amount" [class.positive]="t.net > 0" [class.negative]="t.net < 0">
+                        {{ t.net | money: t.currencyCode : true }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </mat-menu>
           <button matButton="tonal" (click)="export()" [disabled]="exporting()">
             <mat-icon>download</mat-icon> Exporter en CSV
+          </button>
+        }
+        <!-- Sans opération ni filtre, l'écran vide propose déjà « Saisir une opération » -->
+        @if (store.openAccounts().length > 0 && (total() > 0 || hasFilters())) {
+          <button matButton="filled" (click)="create()">
+            <mat-icon>add</mat-icon> Nouvelle opération
           </button>
         }
       </div>
@@ -89,7 +132,7 @@ import { TransactionTableComponent } from './transaction-table.component';
               />
             </mat-form-field>
 
-            <mat-form-field class="wide">
+            <mat-form-field class="accounts">
               <mat-label>Comptes bancaires</mat-label>
               <mat-select
                 multiple
@@ -114,7 +157,7 @@ import { TransactionTableComponent } from './transaction-table.component';
               </mat-select>
             </mat-form-field>
 
-            <mat-form-field class="wide">
+            <mat-form-field class="category">
               <mat-label>Catégorie</mat-label>
               <mat-select [ngModel]="categoryId()" (ngModelChange)="update(categoryId, $event)">
                 <mat-option [value]="null">Toutes</mat-option>
@@ -132,7 +175,7 @@ import { TransactionTableComponent } from './transaction-table.component';
               }
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field class="status">
               <mat-label>Pointage</mat-label>
               <mat-select [ngModel]="status()" (ngModelChange)="update(status, $event)">
                 <mat-option [value]="null">Toutes</mat-option>
@@ -161,12 +204,6 @@ import { TransactionTableComponent } from './transaction-table.component';
               <mat-datepicker-toggle matIconSuffix [for]="range" />
               <mat-date-range-picker #range />
             </mat-form-field>
-
-            @if (hasFilters()) {
-              <button matButton (click)="reset()" class="reset">
-                <mat-icon>filter_alt_off</mat-icon> Effacer les filtres
-              </button>
-            }
           </div>
 
           @if (selectedIds().size > 0) {
@@ -195,23 +232,6 @@ import { TransactionTableComponent } from './transaction-table.component';
             (sortChange)="changeSort($event)"
             (selectedIdsChange)="selectedIds.set($event)"
           />
-          @if (total() > 0) {
-            <div class="totals" aria-label="Total des opérations affichées par les filtres">
-              <span class="muted">Total {{ hasFilters() ? 'filtré' : 'général' }}</span>
-              @for (t of totals(); track t.currencyCode) {
-                <span class="currency">
-                  <span>Entrées <strong class="amount positive">{{ t.credits | money: t.currencyCode : true }}</strong></span>
-                  <span>Sorties <strong class="amount">{{ -t.debits | money: t.currencyCode : true }}</strong></span>
-                  <span>
-                    Net
-                    <strong class="amount" [class.positive]="t.net > 0" [class.negative]="t.net < 0">{{
-                      t.net | money: t.currencyCode : true
-                    }}</strong>
-                  </span>
-                </span>
-              }
-            </div>
-          }
           @if (!loading() && total() === 0) {
             <div class="row" style="justify-content: center; margin-bottom: 16px">
               @if (hasFilters()) {
@@ -237,17 +257,25 @@ import { TransactionTableComponent } from './transaction-table.component';
     </div>
   `,
   styles: `
+    // Largeurs minimales : chaque étiquette reste entière et les six filtres tiennent sur une ligne
+    .filters mat-form-field {
+      flex: 1 1 100px;
+    }
     .filters .search {
-      flex: 2 1 230px;
+      flex: 2 1 150px;
     }
-    .filters .wide {
-      flex: 1.5 1 200px;
+    .filters .accounts {
+      flex: 1.5 1 205px;
     }
+    .filters .category {
+      flex: 1.5 1 140px;
+    }
+    .filters .status {
+      flex: 1 1 135px;
+    }
+    // Juste la largeur des deux dates : la place restante va aux autres filtres
     .filters .period {
-      flex: 2 1 270px;
-    }
-    .reset {
-      margin-top: 8px;
+      flex: 0 0 240px;
     }
     .selection {
       display: flex;
@@ -261,16 +289,24 @@ import { TransactionTableComponent } from './transaction-table.component';
       color: var(--mat-sys-on-secondary-container);
     }
     .totals {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: flex-end;
-      gap: 4px 20px;
-      padding: 12px 16px 0;
-      .currency {
-        display: inline-flex;
-        flex-wrap: wrap;
-        gap: 4px 16px;
+      padding: 8px 16px;
+      table {
+        margin-top: 8px;
+        border-collapse: collapse;
+        white-space: nowrap;
+      }
+      th,
+      td {
+        padding: 4px 0 4px 20px;
+        text-align: right;
+        font-weight: 400;
+      }
+      th:first-child {
+        padding-left: 0;
+        text-align: left;
+      }
+      thead th {
+        color: var(--hermes-muted);
       }
     }
   `,

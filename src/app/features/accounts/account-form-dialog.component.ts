@@ -68,10 +68,17 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
           <input
             matInput
             formControlName="name"
+            maxlength="25"
             placeholder="Ex. Compte courant BNP"
             cdkFocusInitial
           />
-          <mat-error>Donnez un nom à ce compte bancaire</mat-error>
+          <mat-error>
+            {{
+              form.controls.name.hasError('maxlength')
+                ? 'Le nom ne doit pas dépasser 25 caractères'
+                : 'Donnez un nom à ce compte bancaire'
+            }}
+          </mat-error>
         </mat-form-field>
 
         <mat-form-field>

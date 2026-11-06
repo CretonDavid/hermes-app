@@ -46,7 +46,6 @@ import { AuthVisualComponent } from './auth-visual.component';
               autocomplete="username"
               inputmode="numeric"
               autofocus
-              placeholder="000000 000000 000000 000000 000000"
             />
             <mat-hint align="end">{{ digits().length }} / 30</mat-hint>
             @if (number.hasError('pattern')) {

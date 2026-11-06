@@ -376,6 +376,11 @@ mat-form-field {
   }
 }
 
+// Le menu des totaux contient un tableau : il prend la largeur de ses colonnes
+.totals-menu.mat-mdc-menu-panel {
+  max-width: none;
+}
+
 // ---------- Montants et indicateurs ----------
 
 .amount {

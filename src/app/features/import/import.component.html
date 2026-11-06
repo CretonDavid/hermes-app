@@ -328,7 +328,20 @@
             </table>
           </div>
 
-          <div class="row" style="margin-top: 16px">
+          @if (!actionsVisible()) {
+            <button
+              matFab
+              class="go-to-actions"
+              matTooltip="Aller aux boutons d'import"
+              matTooltipPosition="left"
+              aria-label="Aller aux boutons d'import"
+              (click)="goToActions()"
+            >
+              <mat-icon>arrow_downward</mat-icon>
+            </button>
+          }
+
+          <div #previewActions class="row" style="margin-top: 16px; scroll-margin-bottom: 40px">
             <button matButton (click)="restart()">
               <mat-icon>arrow_back</mat-icon> Recommencer
             </button>

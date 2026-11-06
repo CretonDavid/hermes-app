@@ -4,9 +4,11 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -79,6 +81,9 @@ export class ImportComponent {
   protected readonly preview = signal<ImportPreview | null>(null);
   protected readonly rows = signal<PreviewRow[]>([]);
   protected readonly imported = signal(0);
+  protected readonly actionsVisible = signal(true);
+
+  private readonly previewActions = viewChild<ElementRef<HTMLElement>>('previewActions');
 
   // Mapping CSV
   protected options: CsvImportOptions = this.defaultOptions();
@@ -109,6 +114,22 @@ export class ImportComponent {
         this.accountId.set(accounts[0].id);
       }
     });
+    // La flèche vers les boutons d'import ne s'affiche que s'ils sont hors de l'écran
+    effect((onCleanup) => {
+      const actions = this.previewActions()?.nativeElement;
+      if (!actions) {
+        return;
+      }
+      const observer = new IntersectionObserver(([entry]) =>
+        this.actionsVisible.set(entry.isIntersecting),
+      );
+      observer.observe(actions);
+      onCleanup(() => observer.disconnect());
+    });
+  }
+
+  protected goToActions(): void {
+    this.previewActions()?.nativeElement.scrollIntoView({ block: 'end' });
   }
 
   protected selectFile(event: Event): void {

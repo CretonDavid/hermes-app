@@ -75,7 +75,7 @@ import { AuthVisualComponent } from './auth-visual.component';
 
           <div class="actions">
             <button matButton="filled" [disabled]="!saved || loading()" (click)="continue()">
-              Accéder à mon espace
+              Accéder à mon compte
             </button>
           </div>
         }

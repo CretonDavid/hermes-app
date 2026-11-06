@@ -4,10 +4,16 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/d
 import { Observable } from 'rxjs';
 import { DialogCloseComponent } from './dialog-close.component';
 
+// Largeurs communes des fenêtres : confirmation ou champ unique, formulaire simple, formulaire complet
+export const DIALOG_SMALL = '480px';
+export const DIALOG_MEDIUM = '560px';
+export const DIALOG_LARGE = '680px';
+
 export interface ConfirmData {
   title: string;
   message: string;
   confirmLabel?: string;
+  cancelLabel?: string;
   danger?: boolean;
 }
 
@@ -21,7 +27,7 @@ export interface ConfirmData {
       <p style="white-space: pre-line">{{ data.message }}</p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton mat-dialog-close>Annuler</button>
+      <button matButton mat-dialog-close>{{ data.cancelLabel ?? 'Annuler' }}</button>
       <button matButton="filled" [class.danger]="data.danger" [mat-dialog-close]="true">
         {{ data.confirmLabel ?? 'Confirmer' }}
       </button>
@@ -40,5 +46,5 @@ export class ConfirmDialogComponent {
 }
 
 export function confirm(dialog: MatDialog, data: ConfirmData): Observable<boolean | undefined> {
-  return dialog.open(ConfirmDialogComponent, { data, width: '440px' }).afterClosed();
+  return dialog.open(ConfirmDialogComponent, { data, width: DIALOG_SMALL }).afterClosed();
 }

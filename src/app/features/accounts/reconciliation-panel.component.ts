@@ -158,6 +158,11 @@ import { MoneyPipe } from '../../shared/money.pipe';
       gap: 16px;
       align-items: center;
     }
+    @media (max-width: 1320px) {
+      .form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
     .status,
     .last {
       margin: 8px 0 0;

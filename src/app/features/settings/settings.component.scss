@@ -1,8 +1,6 @@
+// Même largeur de contenu dans tous les onglets
 .tab {
   padding-top: 16px;
-}
-
-.narrow {
   max-width: 820px;
 }
 
@@ -17,6 +15,26 @@
   &:first-of-type {
     border-top: none;
   }
+}
+
+.delete {
+  display: block;
+}
+
+.delete-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+.delete-progress {
+  margin-top: 4px;
+  font: var(--mat-sys-body-small);
 }
 
 .danger {

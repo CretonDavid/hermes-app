@@ -182,6 +182,26 @@ export interface TransactionFilter {
   maxAmount?: number;
 }
 
+export interface TransactionTotals {
+  currencyCode: string;
+  count: number;
+  credits: number;
+  debits: number;
+  net: number;
+}
+
+export type TransactionSortField = 'date' | 'label' | 'account' | 'amount';
+
+export interface TransactionSort {
+  field: TransactionSortField;
+  direction: 'asc' | 'desc';
+}
+
+export interface BulkCategoryResult {
+  updated: number;
+  skippedTransfers: number;
+}
+
 export interface Page<T> {
   content: T[];
   page: number;
@@ -263,7 +283,9 @@ export interface UpcomingOccurrence {
   accountName: string;
   currencyCode: string;
   transfer: boolean;
+  targetAccountId: number | null;
   targetAccountName: string | null;
+  targetAmount: number | null;
 }
 
 export interface CsvInspection {

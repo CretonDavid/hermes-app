@@ -16,7 +16,9 @@ import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
 import { ExchangeRate } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { DIALOG_MEDIUM } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 @Component({
   selector: 'app-rate-dialog',
@@ -74,7 +76,7 @@ import { DialogCloseComponent } from '../../shared/dialog-close.component';
 })
 export class RateDialogComponent {
   static open(dialog: MatDialog, rate?: ExchangeRate): MatDialogRef<RateDialogComponent> {
-    return dialog.open(RateDialogComponent, { data: rate ?? null, width: '560px' });
+    return dialog.open(RateDialogComponent, { data: rate ?? null, width: DIALOG_MEDIUM });
   }
 
   protected readonly data = inject<ExchangeRate | null>(MAT_DIALOG_DATA);
@@ -102,6 +104,10 @@ export class RateDialogComponent {
       Validators.required,
     ),
   });
+
+  constructor() {
+    protectDirtyForm(this.form);
+  }
 
   protected save(): void {
     if (this.form.invalid) {

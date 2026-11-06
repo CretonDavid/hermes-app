@@ -25,7 +25,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
       <path d="M400 300H300V200a100 100 0 0 1 100 100z" fill="#4b2a78" />
     </svg>
     <div class="caption">
-      <h2>Vos comptes, en toute clarté.</h2>
+      <h2>Vos comptes bancaires, en toute clarté.</h2>
       <p>Aucun e-mail, aucun mot de passe : un simple numéro de compte.</p>
     </div>
   `,

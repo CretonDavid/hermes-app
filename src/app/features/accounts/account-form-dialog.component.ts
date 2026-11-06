@@ -22,7 +22,10 @@ import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
 import { Account, AccountRequest } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { AmountInputDirective } from '../../shared/amount-input.directive';
+import { DIALOG_LARGE } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 // Types proposés tant que l'utilisateur ne les a pas encore créés
 const SUGGESTED_TYPES: { name: string; savings: boolean }[] = [
@@ -44,6 +47,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     ReactiveFormsModule,
     MatDialogModule,
     DialogCloseComponent,
+    AmountInputDirective,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -56,22 +60,22 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data ? 'Modifier le compte' : 'Nouveau compte' }}</h2>
+    <h2 mat-dialog-title>{{ data ? 'Modifier le compte bancaire' : 'Nouveau compte bancaire' }}</h2>
     <mat-dialog-content>
       <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
         <mat-form-field class="full">
-          <mat-label>Nom du compte</mat-label>
+          <mat-label>Nom du compte bancaire</mat-label>
           <input
             matInput
             formControlName="name"
             placeholder="Ex. Compte courant BNP"
             cdkFocusInitial
           />
-          <mat-error>Donnez un nom à ce compte</mat-error>
+          <mat-error>Donnez un nom à ce compte bancaire</mat-error>
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>Type de compte</mat-label>
+          <mat-label>Type de compte bancaire</mat-label>
           <input
             matInput
             formControlName="typeName"
@@ -92,7 +96,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
             }
           </mat-autocomplete>
           @if (isNewType()) {
-            <mat-hint>Nouveau type : il sera créé avec le compte</mat-hint>
+            <mat-hint>Nouveau type : il sera créé avec le compte bancaire</mat-hint>
           }
           <mat-error>Choisissez ou saisissez un type</mat-error>
         </mat-form-field>
@@ -112,7 +116,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
           <div class="full savings">
             <mat-checkbox formControlName="savings">C'est un compte d'épargne</mat-checkbox>
             <span class="muted"
-              >Les virements vers ce compte seront comptés comme de l'épargne dans les
+              >Les virements vers ce compte bancaire seront comptés comme de l'épargne dans les
               statistiques.</span
             >
           </div>
@@ -120,8 +124,9 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
 
         <mat-form-field>
           <mat-label>Solde de départ</mat-label>
-          <input matInput type="number" step="0.01" formControlName="initialBalance" />
+          <input matInput appAmount formControlName="initialBalance" />
           <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
+          <mat-error>Indiquez le solde, 0 s'il est vide</mat-error>
         </mat-form-field>
 
         <mat-form-field>
@@ -129,10 +134,11 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
           <input matInput [matDatepicker]="picker" formControlName="openingDate" />
           <mat-datepicker-toggle matIconSuffix [for]="picker" />
           <mat-datepicker #picker />
+          <mat-error>Date obligatoire (jj/mm/aaaa)</mat-error>
         </mat-form-field>
         <p class="full help">
           <mat-icon inline>info</mat-icon>
-          Indiquez le solde de votre compte à cette date : inutile de saisir les opérations plus
+          Indiquez le solde de votre compte bancaire à cette date : inutile de saisir les opérations plus
           anciennes. Le solde affiché ensuite est calculé automatiquement à partir de vos
           opérations.
         </p>
@@ -149,7 +155,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
 
         @if (data) {
           <div class="full savings">
-            <mat-checkbox formControlName="closed">Compte clôturé</mat-checkbox>
+            <mat-checkbox formControlName="closed">Compte bancaire clôturé</mat-checkbox>
             <span class="muted"
               >Il reste visible dans l'historique et les statistiques, mais on ne peut plus y
               ajouter d'opérations.</span
@@ -165,7 +171,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     <mat-dialog-actions align="end">
       <button matButton mat-dialog-close>Annuler</button>
       <button matButton="filled" (click)="save()" [disabled]="saving()">
-        {{ data ? 'Enregistrer' : 'Créer le compte' }}
+        {{ data ? 'Enregistrer' : 'Créer le compte bancaire' }}
       </button>
     </mat-dialog-actions>
     <app-dialog-close />
@@ -183,7 +189,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     .help {
       font: var(--mat-sys-body-small);
       color: var(--hermes-muted);
-      margin: -6px 0 4px;
+      margin: -12px 0 10px;
     }
     .chip.new {
       margin-left: 8px;
@@ -197,8 +203,7 @@ export class AccountFormDialogComponent {
   ): MatDialogRef<AccountFormDialogComponent, Account> {
     return dialog.open(AccountFormDialogComponent, {
       data: account ?? null,
-      width: '640px',
-      maxHeight: '92vh',
+      width: DIALOG_LARGE,
     });
   }
 
@@ -233,8 +238,14 @@ export class AccountFormDialogComponent {
       Validators.required,
     ),
     bankName: new FormControl(this.data?.bankName ?? '', { nonNullable: true }),
-    openingDate: new FormControl<Date | null>(fromIsoDate(this.data?.openingDate) ?? new Date()),
-    initialBalance: new FormControl<number | null>(this.data?.initialBalance ?? 0),
+    openingDate: new FormControl<Date | null>(
+      fromIsoDate(this.data?.openingDate) ?? new Date(),
+      Validators.required,
+    ),
+    initialBalance: new FormControl<number | null>(
+      this.data?.initialBalance ?? 0,
+      Validators.required,
+    ),
     description: new FormControl(this.data?.description ?? '', { nonNullable: true }),
     closed: new FormControl(this.data?.closed ?? false, { nonNullable: true }),
   });
@@ -275,6 +286,7 @@ export class AccountFormDialogComponent {
   });
 
   constructor() {
+    protectDirtyForm(this.form);
     // Pré-coche « épargne » quand le nom du nouveau type l'évoque
     this.form.controls.typeName.valueChanges.subscribe((name) => {
       if (!this.existingType()) {
@@ -311,8 +323,8 @@ export class AccountFormDialogComponent {
             bankName: v.bankName.trim() || null,
             accountTypeId,
             currencyId: v.currencyId!,
-            initialBalance: v.initialBalance ?? 0,
-            openingDate: toIsoDate(v.openingDate) ?? toIsoDate(new Date())!,
+            initialBalance: v.initialBalance!,
+            openingDate: toIsoDate(v.openingDate)!,
             closed: v.closed,
           };
           return this.data ? this.api.update(this.data.id, request) : this.api.create(request);
@@ -320,7 +332,7 @@ export class AccountFormDialogComponent {
       )
       .subscribe({
         next: (account) => {
-          this.notify.success(this.data ? 'Compte modifié' : `Compte « ${account.name} » créé`);
+          this.notify.success(this.data ? 'Compte bancaire modifié' : `Compte bancaire « ${account.name} » créé`);
           this.store.reloadAccountTypes();
           this.store.transactionsChanged();
           this.dialogRef.close(account);

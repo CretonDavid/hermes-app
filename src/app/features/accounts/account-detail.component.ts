@@ -19,19 +19,27 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { ChartConfiguration } from 'chart.js';
-import { format, subMonths } from 'date-fns';
-import { Subject, debounceTime } from 'rxjs';
-import { AccountApi, StatsApi, TransactionApi } from '../../core/api';
+import { subMonths } from 'date-fns';
+import { Subject, debounceTime, forkJoin } from 'rxjs';
+import { AccountApi, RecurringApi, StatsApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
-import { toIsoDate } from '../../core/format';
-import { BalancePoint, Transaction } from '../../core/models';
+import { formatDay, toIsoDate } from '../../core/format';
+import {
+  Account,
+  BalancePoint,
+  Transaction,
+  TransactionTotals,
+  UpcomingOccurrence,
+} from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { ChartComponent } from '../../shared/chart.component';
 import { DATE_AXIS, SAVINGS_COLOR, SAVINGS_FILL } from '../../shared/charts';
 import { confirm } from '../../shared/confirm-dialog.component';
-import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
+import { upcomingNet } from '../../shared/forecast';
+import { MoneyPipe, formatAxisMoney, formatMoney } from '../../shared/money.pipe';
 import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
 import { TransactionTableComponent } from '../transactions/transaction-table.component';
 import { AccountFormDialogComponent } from './account-form-dialog.component';
@@ -60,7 +68,9 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
     @if (account(); as a) {
       <div class="page">
         <div class="page-header">
-          <button matIconButton routerLink="/accounts"><mat-icon>arrow_back</mat-icon></button>
+          <button matIconButton routerLink="/accounts" aria-label="Retour aux comptes bancaires">
+            <mat-icon>arrow_back</mat-icon>
+          </button>
           <div style="flex: 1">
             <h1>{{ a.name }}</h1>
             <div class="subtitle">
@@ -80,16 +90,18 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
           <button matButton="filled" (click)="newTransaction()" [disabled]="a.closed">
             <mat-icon>add</mat-icon> Opération
           </button>
-          <button matIconButton [matMenuTriggerFor]="menu"><mat-icon>more_vert</mat-icon></button>
+          <button matIconButton [matMenuTriggerFor]="menu" aria-label="Autres actions sur ce compte bancaire">
+            <mat-icon>more_vert</mat-icon>
+          </button>
           <mat-menu #menu>
             <button mat-menu-item (click)="edit()">
-              <mat-icon>edit</mat-icon> Modifier le compte
+              <mat-icon>edit</mat-icon> Modifier ce compte bancaire
             </button>
             <button mat-menu-item routerLink="/import" [queryParams]="{ accountId: a.id }">
               <mat-icon>upload_file</mat-icon> Importer un relevé
             </button>
             <button mat-menu-item (click)="remove()">
-              <mat-icon>delete</mat-icon> Supprimer le compte
+              <mat-icon>delete</mat-icon> Supprimer ce compte bancaire
             </button>
           </mat-menu>
         </div>
@@ -110,29 +122,49 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
           </div>
           <div class="card kpi">
             <div class="label">
-              Solde prévisionnel
-              <mat-icon class="info" matTooltip="Inclut aussi les opérations datées dans le futur"
+              Solde prévu à 30 jours
+              <mat-icon
+                class="info"
+                matTooltip="Solde avec les opérations datées dans le futur et les récurrences des 30 prochains jours"
                 >info</mat-icon
               >
             </div>
-            <div class="value amount">{{ a.forecastBalance | money: a.currency.code }}</div>
-            <div class="delta muted">Inclut les opérations à venir</div>
+            <div class="value amount" [class.negative]="forecast30(a) < 0">
+              {{ forecast30(a) | money: a.currency.code }}
+            </div>
+            <div class="delta muted">
+              @if (upcoming30(a) !== 0) {
+                Récurrences à venir : {{ upcoming30(a) | money: a.currency.code : true }}
+              } @else {
+                Aucune récurrence sur 30 jours
+              }
+            </div>
           </div>
           <div class="card kpi">
             <div class="label">
               Solde pointé
               <mat-icon
                 class="info"
-                matTooltip="Seulement les opérations pointées (vues sur votre relevé) : il doit correspondre au solde affiché par votre banque"
+                matTooltip="Solde de départ + opérations pointées ou rapprochées. Une fois celles de votre relevé pointées, il doit correspondre au solde de ce relevé."
                 >info</mat-icon
               >
             </div>
-            <div class="value amount">{{ a.clearedBalance | money: a.currency.code }}</div>
+            <div class="value amount" [class.negative]="a.clearedBalance < 0">
+              {{ a.clearedBalance | money: a.currency.code }}
+            </div>
+            <div class="delta muted">
+              @if (pending(); as p) {
+                {{ p.count }} non pointée{{ p.count > 1 ? 's' : '' }} :
+                {{ p.net | money: a.currency.code : true }}
+              } @else {
+                Toutes les opérations sont pointées
+              }
+            </div>
           </div>
           <div class="card kpi">
             <div class="label">
               Solde de départ
-              <mat-icon class="info" matTooltip="Solde indiqué à la création du compte"
+              <mat-icon class="info" matTooltip="Solde indiqué à la création du compte bancaire"
                 >info</mat-icon
               >
             </div>
@@ -143,7 +175,11 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
         @if (chart(); as config) {
           <div class="card" style="margin-bottom: 16px">
             <h2><mat-icon>show_chart</mat-icon> Évolution du solde sur 12 mois</h2>
-            <app-chart [config]="config" [height]="220" />
+            <app-chart
+              [config]="config"
+              [height]="220"
+              label="Courbe de l'évolution du solde du compte bancaire sur 12 mois"
+            />
           </div>
         }
 
@@ -181,7 +217,7 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
             [emptyMessage]="
               reconciling()
                 ? 'Toutes les opérations sont déjà rapprochées'
-                : 'Aucune opération sur ce compte pour l’instant'
+                : 'Aucune opération sur ce compte bancaire pour l’instant'
             "
           />
           @if (!reconciling() && total() > size()) {
@@ -205,6 +241,8 @@ export class AccountDetailComponent {
   private readonly transactionApi = inject(TransactionApi);
   private readonly accountApi = inject(AccountApi);
   private readonly statsApi = inject(StatsApi);
+  private readonly recurringApi = inject(RecurringApi);
+  private readonly title = inject(Title);
   private readonly notify = inject(NotifyService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
@@ -219,6 +257,17 @@ export class AccountDetailComponent {
   protected readonly searchInput = new Subject<string>();
   protected readonly reconciling = signal(false);
   protected readonly statementDate = signal<Date | null>(new Date());
+  private readonly upcoming = signal<UpcomingOccurrence[]>([]);
+  // Opérations non pointées : elles expliquent l'écart entre le solde à date et le solde pointé
+  protected readonly pending = signal<TransactionTotals | null>(null);
+
+  protected upcoming30(account: Account): number {
+    return upcomingNet(this.upcoming(), account.id, account.currency.code);
+  }
+
+  protected forecast30(account: Account): number {
+    return account.forecastBalance + this.upcoming30(account);
+  }
 
   protected readonly chart = computed<ChartConfiguration | null>(() => {
     const points = this.history();
@@ -229,14 +278,13 @@ export class AccountDetailComponent {
     return {
       type: 'line',
       data: {
-        labels: points.map((p) => format(new Date(p.date), 'dd/MM/yy')),
+        labels: points.map((p) => formatDay(p.date)),
         datasets: [
           {
             data: points.map((p) => p.value),
             borderColor: SAVINGS_COLOR,
             backgroundColor: SAVINGS_FILL,
             fill: true,
-            tension: 0.25,
             pointRadius: 0,
           },
         ],
@@ -248,7 +296,7 @@ export class AccountDetailComponent {
         },
         scales: {
           x: DATE_AXIS,
-          y: { ticks: { callback: (v) => formatMoney(Number(v), currency) } },
+          y: { ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } },
         },
       },
     };
@@ -268,7 +316,16 @@ export class AccountDetailComponent {
       untracked(() => {
         this.loadTransactions();
         this.loadHistory();
+        this.loadBalanceDetails();
       });
+    });
+
+    // L'onglet du navigateur indique le compte consulté
+    effect(() => {
+      const name = this.account()?.name;
+      if (name) {
+        this.title.setTitle(`${name} · Hermès`);
+      }
     });
   }
 
@@ -299,8 +356,8 @@ export class AccountDetailComponent {
   protected remove(): void {
     const account = this.account()!;
     confirm(this.dialog, {
-      title: 'Supprimer le compte',
-      message: `Le compte « ${account.name} », toutes ses opérations et ses récurrences seront définitivement supprimés.\nLes virements vers d'autres comptes y seront conservés comme opérations simples.\n\nPour garder l'historique, préférez clôturer le compte.`,
+      title: 'Supprimer ce compte bancaire',
+      message: `Le compte bancaire « ${account.name} », toutes ses opérations et ses récurrences seront définitivement supprimés.\nLes virements vers d'autres comptes bancaires y seront conservés comme opérations simples.\n\nPour garder l'historique, préférez clôturer ce compte bancaire.`,
       confirmLabel: 'Supprimer définitivement',
       danger: true,
     }).subscribe((ok) => {
@@ -309,7 +366,7 @@ export class AccountDetailComponent {
       }
       this.accountApi.delete(account.id).subscribe({
         next: () => {
-          this.notify.success('Compte supprimé');
+          this.notify.success('Compte bancaire supprimé');
           this.store.transactionsChanged();
           this.router.navigate(['/accounts']);
         },
@@ -357,6 +414,19 @@ export class AccountDetailComponent {
     const start = toIsoDate(subMonths(new Date(), 12))!;
     const opening = this.account()?.openingDate;
     return opening && opening > start ? opening : start;
+  }
+
+  private loadBalanceDetails(): void {
+    forkJoin({
+      upcoming: this.recurringApi.upcoming(30),
+      pending: this.transactionApi.totals({ accountIds: [this.id()], status: 'PENDING' }),
+    }).subscribe({
+      next: ({ upcoming, pending }) => {
+        this.upcoming.set(upcoming);
+        this.pending.set(pending[0] ?? null);
+      },
+      error: (error) => this.notify.error(error),
+    });
   }
 
   private loadHistory(): void {

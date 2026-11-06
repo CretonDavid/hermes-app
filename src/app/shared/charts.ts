@@ -1,7 +1,7 @@
 import { Chart, ChartConfiguration, Plugin } from 'chart.js';
 import { formatMonth } from '../core/format';
 import { CategoryStat, MonthlyStat } from '../core/models';
-import { formatMoney } from './money.pipe';
+import { formatAxisMoney, formatMoney } from './money.pipe';
 
 // Tons moyens, contrastés (au moins 3:1) sur les fonds clair et sombre
 export const INCOME_COLOR = '#0f9d82';
@@ -45,7 +45,7 @@ function shades(hex: string, count: number): string[] {
 export const DATE_AXIS = { ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 24 } };
 
 // Affiche le total au centre de l'anneau
-function donutTotal(label: string): Plugin<'doughnut'> {
+function donutTotal(amount: string): Plugin<'doughnut'> {
   return {
     id: 'donutTotal',
     afterDraw(chart) {
@@ -62,17 +62,128 @@ function donutTotal(label: string): Plugin<'doughnut'> {
       // Le canvas hérite de la couleur de texte de la carte
       ctx.fillStyle = getComputedStyle(chart.canvas).color;
       ctx.font = '800 18px Nunito, sans-serif';
-      ctx.fillText(label, arc.x, arc.y + 12);
+      ctx.fillText(amount, arc.x, arc.y + 12);
       ctx.restore();
     },
   };
 }
 
-export function donutChart(items: CategoryStat[], currency: string): ChartConfiguration {
+const LEGEND_FONT = '12px Nunito, sans-serif';
+// Pastille, marges : ce qui reste de la moitié du graphique accordée à la légende va au texte
+const LEGEND_RESERVED_WIDTH = 40;
+
+// Raccourcit le nom pour que le montant de la légende ne soit jamais coupé
+export function fitLegendLabel(
+  name: string,
+  amount: string,
+  maxWidth: number,
+  measure: (s: string) => number,
+): string {
+  const full = `${name} · ${amount}`;
+  if (measure(full) <= maxWidth) {
+    return full;
+  }
+  let length = name.length;
+  while (length > 1 && measure(`${name.slice(0, length).trimEnd()}… · ${amount}`) > maxWidth) {
+    length--;
+  }
+  return `${name.slice(0, length).trimEnd()}… · ${amount}`;
+}
+
+// Écrit la valeur au bout de chaque barre d'un graphique horizontal
+export function barValues(format: (value: number) => string): Plugin {
+  return {
+    id: 'barValues',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      const data = chart.data.datasets[0].data as number[];
+      ctx.save();
+      ctx.font = LEGEND_FONT;
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = getComputedStyle(chart.canvas).color;
+      chart.getDatasetMeta(0).data.forEach((bar, i) => {
+        ctx.fillText(format(data[i]), bar.x + 8, bar.y);
+      });
+      ctx.restore();
+    },
+  };
+}
+
+const HINT_FONT = '13px Nunito, sans-serif';
+const HINT_LINE_HEIGHT = 16;
+const HINT_GAP = 8;
+
+// Coupe aux espaces, seulement si le texte dépasse la largeur disponible
+function wrapText(text: string, width: number, measure: (s: string) => number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && measure(candidate) > width) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  lines.push(line);
+  return lines;
+}
+
+// Centre le texte sous l'anneau, en le décalant juste assez pour qu'il reste dans le cadre.
+// Sur plusieurs lignes, il occupe tout le cadre : il est donc centré sur celui-ci.
+export function layoutHint(
+  text: string,
+  ringCenter: number,
+  width: number,
+  measure: (s: string) => number,
+): { lines: string[]; x: number } {
+  const lines = wrapText(text, width, measure);
+  if (lines.length > 1) {
+    return { lines, x: width / 2 };
+  }
+  const half = measure(text) / 2;
+  return { lines, x: Math.min(Math.max(ringCenter, half), width - half) };
+}
+
+function chartHint(chart: Chart, text: string): { lines: string[]; x: number } {
+  const { ctx, chartArea, width } = chart;
+  ctx.save();
+  ctx.font = HINT_FONT;
+  const ringCenter = chartArea ? (chartArea.left + chartArea.right) / 2 : width / 2;
+  const layout = layoutHint(text, ringCenter, width, (s) => ctx.measureText(s).width);
+  ctx.restore();
+  return layout;
+}
+
+function donutHint(text: string): Plugin<'doughnut'> {
+  return {
+    id: 'donutHint',
+    afterDraw(chart) {
+      const { lines, x } = chartHint(chart as unknown as Chart, text);
+      const { ctx, height } = chart;
+      ctx.save();
+      ctx.font = HINT_FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = String(Chart.defaults.color);
+      lines.forEach((line, i) => {
+        ctx.fillText(line, x, height - (lines.length - i) * HINT_LINE_HEIGHT);
+      });
+      ctx.restore();
+    },
+  };
+}
+
+export function donutChart(
+  items: CategoryStat[],
+  currency: string,
+  hint?: string,
+): ChartConfiguration {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const config: ChartConfiguration<'doughnut'> = {
     type: 'doughnut',
-    plugins: [donutTotal(formatMoney(total, currency))],
+    plugins: [donutTotal(formatMoney(total, currency)), ...(hint ? [donutHint(hint)] : [])],
     data: {
       labels: items.map((i) => i.name),
       datasets: [
@@ -85,18 +196,39 @@ export function donutChart(items: CategoryStat[], currency: string): ChartConfig
     },
     options: {
       cutout: '72%',
+      // Réserve sous le graphique la hauteur des lignes du texte d'aide
+      ...(hint
+        ? {
+            layout: {
+              padding: ({ chart }: { chart: Chart }) => ({
+                bottom: chartHint(chart, hint).lines.length * HINT_LINE_HEIGHT + HINT_GAP,
+              }),
+            },
+          }
+        : {}),
       plugins: {
         legend: {
           position: 'right',
           labels: {
             // La légende donne aussi le montant de chaque catégorie
-            generateLabels: (chart) =>
-              Chart.overrides.doughnut.plugins.legend.labels
+            generateLabels: (chart) => {
+              const { ctx } = chart;
+              ctx.save();
+              ctx.font = LEGEND_FONT;
+              const labels = Chart.overrides.doughnut.plugins.legend.labels
                 .generateLabels(chart)
                 .map((label, i) => ({
                   ...label,
-                  text: `${label.text} · ${formatMoney(items[i].amount, currency)}`,
-                })),
+                  text: fitLegendLabel(
+                    String(label.text),
+                    formatMoney(items[i].amount, currency),
+                    chart.width / 2 - LEGEND_RESERVED_WIDTH,
+                    (s) => ctx.measureText(s).width,
+                  ),
+                }));
+              ctx.restore();
+              return labels;
+            },
           },
         },
         tooltip: {
@@ -144,7 +276,6 @@ export function incomeExpenseChart(
                 data: months.map((m) => m.net),
                 borderColor: SAVINGS_COLOR,
                 backgroundColor: SAVINGS_COLOR,
-                tension: 0.3,
               },
             ]
           : []),
@@ -158,7 +289,7 @@ export function incomeExpenseChart(
           },
         },
       },
-      scales: { y: { ticks: { callback: (v) => formatMoney(Number(v), currency) } } },
+      scales: { y: { ticks: { callback: (v) => formatAxisMoney(Number(v), currency) } } },
     },
   } as ChartConfiguration;
 }

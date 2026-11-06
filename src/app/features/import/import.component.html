@@ -28,13 +28,13 @@
   }
 
   @if (store.loaded() && store.openAccounts().length === 0) {
-    <app-no-account message="Le relevé importé est ajouté à l’un de vos comptes." />
+    <app-no-account message="Le relevé importé est ajouté à l’un de vos comptes bancaires." />
   } @else {
     @switch (step()) {
       @case ('file') {
         <div class="card file-step">
           <mat-form-field style="max-width: 420px">
-            <mat-label>Compte de destination</mat-label>
+            <mat-label>Compte bancaire de destination</mat-label>
             <mat-select [ngModel]="accountId()" (ngModelChange)="accountId.set($event)">
               @for (account of store.openAccounts(); track account.id) {
                 <mat-option [value]="account.id"
@@ -45,7 +45,13 @@
           </mat-form-field>
 
           <label class="dropzone" (dragover)="$event.preventDefault()" (drop)="drop($event)">
-            <input type="file" accept=".csv,.txt,.ofx,.qfx" (change)="selectFile($event)" hidden />
+            <input
+              class="file-input"
+              type="file"
+              accept=".csv,.txt,.ofx,.qfx"
+              aria-label="Choisir le fichier du relevé"
+              (change)="selectFile($event)"
+            />
             <mat-icon>upload_file</mat-icon>
             @if (file(); as f) {
               <strong>{{ f.name }}</strong>
@@ -61,14 +67,14 @@
             <mat-icon inline>help</mat-icon>
             Téléchargez votre relevé depuis l’espace client de votre banque (souvent « Exporter » ou
             « Télécharger mes opérations »). Préférez le format OFX quand il est proposé : il est
-            reconnu automatiquement. Les opérations déjà présentes dans le compte sont détectées.
+            reconnu automatiquement. Les opérations déjà présentes dans le compte bancaire sont détectées.
           </p>
 
           <div class="row">
             <span class="spacer"></span>
             @if (!accountId() || !file()) {
               <span class="muted">
-                {{ !accountId() ? 'Choisissez le compte de destination' : 'Choisissez le fichier du relevé' }}
+                {{ !accountId() ? 'Choisissez le compte bancaire de destination' : 'Choisissez le fichier du relevé' }}
               </span>
             }
             <button
@@ -89,7 +95,7 @@
             <p class="muted">
               Séparateur détecté : «
               {{ inspection.separator === '\t' ? 'tabulation' : inspection.separator }} » · encodage
-              {{ inspection.encoding }}. Le mapping est mémorisé pour ce compte.
+              {{ inspection.encoding }}. Le mapping est mémorisé pour ce compte bancaire.
             </p>
 
             <div class="mapping">
@@ -136,7 +142,7 @@
                 </mat-select>
               </mat-form-field>
               <mat-form-field>
-                <mat-label>Tiers (facultatif)</mat-label>
+                <mat-label>Bénéficiaire (facultatif)</mat-label>
                 <mat-select [(ngModel)]="options.payeeColumn">
                   <mat-option [value]="null">—</mat-option>
                   @for (c of columns(); track c) {
@@ -247,7 +253,7 @@
           @if (duplicateCount() > 0) {
             <div class="notice">
               <mat-icon>content_copy</mat-icon>
-              {{ duplicateCount() }} opération(s) semblent déjà présentes dans le compte et ont été
+              {{ duplicateCount() }} opération(s) semblent déjà présentes dans le compte bancaire et ont été
               décochées.
             </div>
           }
@@ -349,7 +355,7 @@
             <strong>{{ imported() }} opération(s) importée(s)</strong> et marquées comme pointées.
           </p>
           <div class="row" style="justify-content: center">
-            <a matButton="tonal" [routerLink]="['/accounts', accountId()]">Voir le compte</a>
+            <a matButton="tonal" [routerLink]="['/accounts', accountId()]">Voir le compte bancaire</a>
             <button matButton="filled" (click)="restart()">Importer un autre fichier</button>
           </div>
         </div>

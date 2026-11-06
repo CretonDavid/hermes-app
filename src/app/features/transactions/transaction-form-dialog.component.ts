@@ -4,6 +4,7 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -26,7 +27,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable, debounceTime, distinctUntilChanged, of, startWith, switchMap } from 'rxjs';
+import {
+  Observable,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  of,
+  startWith,
+  switchMap,
+} from 'rxjs';
 import { TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { PAYMENT_METHODS, fromIsoDate, toIsoDate } from '../../core/format';
@@ -36,13 +45,18 @@ import {
   Transaction,
   TransactionDirection,
   TransactionRequest,
+  Transfer,
   TransferRequest,
 } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
-import { confirm } from '../../shared/confirm-dialog.component';
+import { AmountInputDirective } from '../../shared/amount-input.directive';
+import { DIALOG_LARGE, confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
+import { customTransferLabel } from './transfer-label';
+import { setRequired } from '../../shared/required';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -59,6 +73,7 @@ export interface TransactionFormData {
     ReactiveFormsModule,
     MatDialogModule,
     DialogCloseComponent,
+    AmountInputDirective,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -86,8 +101,7 @@ export class TransactionFormDialogComponent implements OnInit {
     const autoFocus = data.transaction ? 'dialog' : 'input[formcontrolname="amount"]';
     return dialog.open(TransactionFormDialogComponent, {
       data,
-      width: '640px',
-      maxHeight: '92vh',
+      width: DIALOG_LARGE,
       autoFocus,
     });
   }
@@ -142,6 +156,16 @@ export class TransactionFormDialogComponent implements OnInit {
   });
   private readonly payee = toSignal(this.form.controls.payee.valueChanges, { initialValue: '' });
 
+  constructor() {
+    protectDirtyForm(this.form);
+    effect(() => {
+      const transfer = this.mode() === 'TRANSFER';
+      // Le bénéficiaire n'est obligatoire que si aucun libellé ne permet d'identifier l'opération
+      setRequired(this.form.controls.payee, !transfer && !this.label().trim());
+      setRequired(this.form.controls.toAccountId, transfer);
+    });
+  }
+
   protected readonly accounts = computed(() =>
     this.store.accounts().filter((a) => !a.closed || a.id === this.data.transaction?.accountId),
   );
@@ -162,8 +186,11 @@ export class TransactionFormDialogComponent implements OnInit {
   );
   protected readonly amountValue = computed(() => this.amount() ?? 0);
   protected readonly labelPlaceholder = computed(
-    () => this.payee().trim() || 'Par défaut : le tiers',
+    () => this.payee().trim() || 'Par défaut : le bénéficiaire',
   );
+  private readonly label = toSignal(this.form.controls.label.valueChanges, { initialValue: '' });
+  protected readonly transferLockedHint =
+    "Une opération et un virement ne sont pas interchangeables : supprimez celle-ci et créez-en une nouvelle pour changer de nature.";
 
   protected readonly payeeSuggestions: Observable<PayeeSuggestion[]> =
     this.form.controls.payee.valueChanges.pipe(
@@ -213,7 +240,7 @@ export class TransactionFormDialogComponent implements OnInit {
           toAccountId: transfer.credit.accountId,
           amount: transfer.debit.amount,
           targetAmount: transfer.credit.amount,
-          label: transfer.debit.label,
+          label: customTransferLabel(transfer) ?? '',
         });
       });
     }
@@ -263,7 +290,7 @@ export class TransactionFormDialogComponent implements OnInit {
     let request$: Observable<unknown>;
     if (this.mode() === 'TRANSFER') {
       if (!v.toAccountId) {
-        this.notify.error('Choisissez le compte qui reçoit le virement');
+        this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
         return;
       }
       const request: TransferRequest = {
@@ -281,7 +308,7 @@ export class TransactionFormDialogComponent implements OnInit {
     } else {
       const label = v.label.trim() || v.payee.trim();
       if (!label) {
-        this.notify.error('Indiquez au moins un tiers ou un libellé');
+        this.notify.error('Indiquez au moins un bénéficiaire ou un libellé');
         return;
       }
       const request: TransactionRequest = {
@@ -329,14 +356,53 @@ export class TransactionFormDialogComponent implements OnInit {
       if (!ok) {
         return;
       }
-      this.api.delete(t.id).subscribe({
-        next: () => {
-          this.notify.success('Opération supprimée');
-          this.store.transactionsChanged();
-          this.dialogRef.close(true);
-        },
-        error: (error) => this.notify.error(error),
-      });
+      // Le virement complet doit être lu avant sa suppression pour pouvoir le recréer
+      const transfer$: Observable<Transfer | null> = t.transfer
+        ? this.api.getTransfer(t.id)
+        : of(null);
+      transfer$
+        .pipe(switchMap((transfer) => this.api.delete(t.id).pipe(map(() => transfer))))
+        .subscribe({
+          next: (transfer) => {
+            this.notify.successWithUndo('Opération supprimée', () => this.restore(t, transfer));
+            this.store.transactionsChanged();
+            this.dialogRef.close(true);
+          },
+          error: (error) => this.notify.error(error),
+        });
+    });
+  }
+
+  private restore(t: Transaction, transfer: Transfer | null): void {
+    const request$: Observable<unknown> = transfer
+      ? this.api.createTransfer({
+          fromAccountId: transfer.debit.accountId,
+          toAccountId: transfer.credit.accountId,
+          amount: transfer.debit.amount,
+          targetAmount: transfer.credit.amount,
+          label: customTransferLabel(transfer),
+          notes: transfer.debit.notes,
+          operationDate: transfer.debit.operationDate,
+        })
+      : this.api.create({
+          accountId: t.accountId,
+          direction: t.direction,
+          amount: t.amount,
+          label: t.label,
+          payee: t.payee,
+          notes: t.notes,
+          categoryId: t.category?.id ?? null,
+          paymentMethod: t.paymentMethod,
+          operationDate: t.operationDate,
+          valueDate: t.valueDate,
+          status: t.status === 'CLEARED' ? 'CLEARED' : 'PENDING',
+        });
+    request$.subscribe({
+      next: () => {
+        this.notify.success('Opération rétablie');
+        this.store.transactionsChanged();
+      },
+      error: (error) => this.notify.error(error),
     });
   }
 }

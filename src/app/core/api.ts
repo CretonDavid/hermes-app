@@ -8,6 +8,7 @@ import {
   AccountType,
   AccountTypeRequest,
   BalanceHistory,
+  BulkCategoryResult,
   Category,
   CategoryRequest,
   CategoryStat,
@@ -36,7 +37,9 @@ import {
   Transaction,
   TransactionFilter,
   TransactionRequest,
+  TransactionSort,
   TransactionStatus,
+  TransactionTotals,
   Transfer,
   TransferRequest,
   UpcomingOccurrence,
@@ -227,9 +230,30 @@ export class CategoryApi {
 export class TransactionApi {
   private readonly http = inject(HttpClient);
 
-  search(filter: TransactionFilter, page = 0, size = 50): Observable<Page<Transaction>> {
+  search(
+    filter: TransactionFilter,
+    page = 0,
+    size = 50,
+    sort?: TransactionSort,
+  ): Observable<Page<Transaction>> {
     return this.http.get<Page<Transaction>>(`${API}/transactions`, {
-      params: toParams({ ...filter, page, size }),
+      params: toParams({ ...filter, page, size, sort: sort?.field, direction: sort?.direction }),
+    });
+  }
+
+  totals(filter: TransactionFilter): Observable<TransactionTotals[]> {
+    return this.http.get<TransactionTotals[]>(`${API}/transactions/totals`, {
+      params: toParams({ ...filter }),
+    });
+  }
+
+  updateCategory(
+    transactionIds: number[],
+    categoryId: number | null,
+  ): Observable<BulkCategoryResult> {
+    return this.http.patch<BulkCategoryResult>(`${API}/transactions/category`, {
+      transactionIds,
+      categoryId,
     });
   }
 

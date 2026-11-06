@@ -31,6 +31,11 @@ export class NotifyService {
     this.snackBar.open(message, 'OK');
   }
 
+  // Message plus long, avec un bouton pour revenir en arrière
+  successWithUndo(message: string, undo: () => void): void {
+    this.snackBar.open(message, 'Annuler', { duration: 8000 }).onAction().subscribe(undo);
+  }
+
   error(error: unknown): void {
     this.snackBar.open(typeof error === 'string' ? error : errorMessage(error), 'Fermer', {
       duration: 7000,

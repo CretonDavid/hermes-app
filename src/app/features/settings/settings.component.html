@@ -10,7 +10,7 @@
     mat-stretch-tabs="false"
   >
     <mat-tab label="Profil">
-      <div class="tab narrow">
+      <div class="tab">
         <div class="card">
           <h2><mat-icon>person</mat-icon> Mon compte</h2>
           @if (store.user(); as user) {
@@ -43,42 +43,56 @@
           <h2><mat-icon>warning</mat-icon> Zone sensible</h2>
           <div class="danger-row">
             <div>
-              <strong>Désactiver le compte</strong>
+              <strong>Désactiver mon compte</strong>
               <div class="muted">
                 Bloque la connexion. Les données sont conservées et le compte peut être réactivé.
               </div>
             </div>
             <button matButton="outlined" (click)="disable()">Désactiver</button>
           </div>
-          <div class="danger-row">
-            <div style="flex: 1">
-              <strong>Supprimer définitivement</strong>
-              <div class="muted">
-                Efface toutes vos données. Saisissez votre numéro de compte pour confirmer.
-              </div>
-              <mat-form-field style="margin-top: 8px; max-width: 420px">
-                <mat-label>Numéro de compte</mat-label>
-                <input matInput [(ngModel)]="deleteNumber" autocomplete="off" />
-              </mat-form-field>
+          <div class="danger-row delete">
+            <strong>Supprimer définitivement mon compte</strong>
+            <div class="muted">
+              Efface tous vos comptes bancaires, opérations et catégories. Saisissez votre numéro
+              de compte pour confirmer.
             </div>
-            <button
-              matButton="filled"
-              class="danger"
-              [disabled]="deleteDigits() !== 30"
-              (click)="deleteAccount()"
-            >
-              Supprimer
-            </button>
+            <div class="delete-action">
+              <mat-form-field>
+                <mat-label>Numéro de compte</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="deleteNumber"
+                  autocomplete="off"
+                  inputmode="numeric"
+                  aria-describedby="delete-progress"
+                />
+              </mat-form-field>
+              <button
+                matButton="filled"
+                class="danger"
+                [disabled]="deleteDigits() !== 30"
+                (click)="deleteAccount()"
+              >
+                Supprimer
+              </button>
+            </div>
+            <div class="delete-progress muted" id="delete-progress">
+              @if (deleteDigits() === 30) {
+                Numéro complet : le bouton est activé.
+              } @else {
+                {{ deleteDigits() }} / 30 chiffres : le bouton s'active une fois le numéro complet.
+              }
+            </div>
           </div>
         </div>
       </div>
     </mat-tab>
 
-    <mat-tab label="Types de compte">
-      <div class="tab narrow">
+    <mat-tab label="Types de compte bancaire">
+      <div class="tab">
         <div class="card">
           <div class="row" style="margin-bottom: 12px">
-            <h2 style="margin: 0; flex: 1"><mat-icon>category</mat-icon> Types de compte</h2>
+            <h2 style="margin: 0; flex: 1"><mat-icon>category</mat-icon> Types de compte bancaire</h2>
             <button matButton="tonal" (click)="createType()">
               <mat-icon>add</mat-icon> Ajouter
             </button>
@@ -90,12 +104,26 @@
               @if (type.savings) {
                 <span class="chip">Épargne</span>
               }
-              <button matIconButton (click)="editType(type)"><mat-icon>edit</mat-icon></button>
-              <button matIconButton (click)="deleteType(type)"><mat-icon>delete</mat-icon></button>
+              <button
+                matIconButton
+                matTooltip="Modifier"
+                [attr.aria-label]="'Modifier ' + type.name"
+                (click)="editType(type)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                matIconButton
+                matTooltip="Supprimer"
+                [attr.aria-label]="'Supprimer ' + type.name"
+                (click)="deleteType(type)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
             </div>
           } @empty {
             <p class="muted">
-              Aucun type de compte. Exemples : Compte courant, Livret A, Assurance vie, PEA…
+              Aucun type de compte bancaire. Exemples : Compte courant, Livret A, Assurance vie, PEA…
             </p>
           }
         </div>
@@ -103,7 +131,7 @@
     </mat-tab>
 
     <mat-tab label="Devises">
-      <div class="tab narrow">
+      <div class="tab">
         <div class="card">
           <div class="row" style="margin-bottom: 12px">
             <h2 style="margin: 0; flex: 1"><mat-icon>paid</mat-icon> Mes devises</h2>
@@ -115,8 +143,22 @@
             <div class="list-row">
               <span class="code">{{ c.code }}</span>
               <span class="flex">{{ c.name }} ({{ c.symbol }})</span>
-              <button matIconButton (click)="editCurrency(c)"><mat-icon>edit</mat-icon></button>
-              <button matIconButton (click)="deleteCurrency(c)"><mat-icon>delete</mat-icon></button>
+              <button
+                matIconButton
+                matTooltip="Modifier"
+                [attr.aria-label]="'Modifier ' + c.name"
+                (click)="editCurrency(c)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                matIconButton
+                matTooltip="Supprimer"
+                [attr.aria-label]="'Supprimer ' + c.name"
+                (click)="deleteCurrency(c)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
             </div>
           } @empty {
             <p class="muted">Aucune devise personnalisée (crypto-monnaie, devise rare…).</p>
@@ -141,11 +183,11 @@
           <h2><mat-icon>currency_exchange</mat-icon> Synchronisation BCE</h2>
           <p class="muted">
             Récupère les taux de référence de la Banque centrale européenne entre votre devise de
-            référence ({{ store.referenceCurrency() }}) et les devises de vos comptes
+            référence ({{ store.referenceCurrency() }}) et les devises de vos comptes bancaires
             @if (foreignCurrencies().length) {
               ({{ foreignCurrencies().join(', ') }}).
             } @else {
-              — tous vos comptes sont actuellement en {{ store.referenceCurrency() }}.
+              — tous vos comptes bancaires sont actuellement en {{ store.referenceCurrency() }}.
             }
           </p>
           <div class="row">
@@ -199,8 +241,20 @@
                     {{ r.baseCurrency.code }}
                   </td>
                   <td class="right">
-                    <button matIconButton (click)="editRate(r)"><mat-icon>edit</mat-icon></button>
-                    <button matIconButton (click)="deleteRate(r)">
+                    <button
+                      matIconButton
+                      matTooltip="Modifier"
+                      [attr.aria-label]="'Modifier le taux ' + r.baseCurrency.code + ' ' + r.quoteCurrency.code"
+                      (click)="editRate(r)"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                      matIconButton
+                      matTooltip="Supprimer"
+                      [attr.aria-label]="'Supprimer le taux ' + r.baseCurrency.code + ' ' + r.quoteCurrency.code"
+                      (click)="deleteRate(r)"
+                    >
                       <mat-icon>delete</mat-icon>
                     </button>
                   </td>

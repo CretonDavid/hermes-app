@@ -13,7 +13,9 @@ import { CurrencyApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { Currency } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { DIALOG_SMALL } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
 
 @Component({
   selector: 'app-currency-dialog',
@@ -55,7 +57,7 @@ import { DialogCloseComponent } from '../../shared/dialog-close.component';
 })
 export class CurrencyDialogComponent {
   static open(dialog: MatDialog, currency?: Currency): MatDialogRef<CurrencyDialogComponent> {
-    return dialog.open(CurrencyDialogComponent, { data: currency ?? null, width: '460px' });
+    return dialog.open(CurrencyDialogComponent, { data: currency ?? null, width: DIALOG_SMALL });
   }
 
   protected readonly data = inject<Currency | null>(MAT_DIALOG_DATA);
@@ -79,6 +81,10 @@ export class CurrencyDialogComponent {
       validators: Validators.required,
     }),
   });
+
+  constructor() {
+    protectDirtyForm(this.form);
+  }
 
   protected save(): void {
     if (this.form.invalid) {

@@ -40,9 +40,9 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
     <div class="page">
       <div class="page-header">
         <div>
-          <h1>Opérations récurrentes</h1>
+          <h1>Récurrences</h1>
           <div class="subtitle">
-            Loyer, salaire, abonnements, épargne automatique… générés automatiquement à échéance
+            Loyer, salaire, abonnements, épargne automatique… créés automatiquement à échéance
           </div>
         </div>
         @if (store.openAccounts().length > 0) {
@@ -54,45 +54,51 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
 
       @if (store.loaded() && store.accounts().length === 0) {
         <app-no-account
-          message="Les opérations récurrentes (loyer, salaire, abonnements…) sont rattachées à un compte."
+          message="Les récurrences (loyer, salaire, abonnements…) sont rattachées à un compte bancaire."
         />
       } @else {
         <div class="grid grid-3" style="margin-bottom: 16px">
           <div class="card kpi">
             <div class="label">Dépenses récurrentes / mois</div>
-            <div class="value amount negative">
+            <div class="value amount">
               {{ monthly().expenses | money: store.referenceCurrency() }}
             </div>
-            <div class="delta muted">Estimation, dans la devise des comptes</div>
+            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
           </div>
           <div class="card kpi">
             <div class="label">Revenus récurrents / mois</div>
-            <div class="value amount positive">
+            <div class="value amount" [class.positive]="monthly().income > 0">
               {{ monthly().income | money: store.referenceCurrency() }}
             </div>
+            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
           </div>
           <div class="card kpi">
-            <div class="label">Épargne programmée / mois</div>
+            <div class="label">Virements programmés / mois</div>
             <div class="value amount">
               {{ monthly().transfers | money: store.referenceCurrency() }}
             </div>
+            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
           </div>
         </div>
 
-        <div class="grid" style="grid-template-columns: 2fr 1fr">
+        <div class="grid layout">
           <div class="card">
             <table mat-table [dataSource]="items()">
               <ng-container matColumnDef="label">
                 <th mat-header-cell *matHeaderCellDef>Libellé</th>
                 <td mat-cell *matCellDef="let r">
                   <div class="label">
-                    <mat-icon class="muted">{{
-                      r.transfer
-                        ? 'swap_horiz'
-                        : r.direction === 'CREDIT'
-                          ? 'add_circle'
-                          : 'remove_circle'
-                    }}</mat-icon>
+                    <mat-icon
+                      class="muted"
+                      [matTooltip]="r.transfer ? 'Virement' : r.direction === 'CREDIT' ? 'Revenu' : 'Dépense'"
+                      >{{
+                        r.transfer
+                          ? 'swap_horiz'
+                          : r.direction === 'CREDIT'
+                            ? 'add_circle'
+                            : 'remove_circle'
+                      }}</mat-icon
+                    >
                     {{ r.label }}
                   </div>
                   <div class="muted small">
@@ -137,10 +143,20 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef></th>
                 <td mat-cell *matCellDef="let r" style="text-align: right; white-space: nowrap">
-                  <button matIconButton matTooltip="Modifier" (click)="edit(r)">
+                  <button
+                    matIconButton
+                    matTooltip="Modifier"
+                    [attr.aria-label]="'Modifier ' + r.label"
+                    (click)="edit(r)"
+                  >
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button matIconButton matTooltip="Supprimer" (click)="remove(r)">
+                  <button
+                    matIconButton
+                    matTooltip="Supprimer"
+                    [attr.aria-label]="'Supprimer ' + r.label"
+                    (click)="remove(r)"
+                  >
                     <mat-icon>delete</mat-icon>
                   </button>
                 </td>
@@ -156,7 +172,7 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
               <div class="empty">
                 <mat-icon>event_repeat</mat-icon>
                 <p>
-                  Aucune opération récurrente.<br />Ajoutez votre loyer, votre salaire ou vos
+                  Aucune récurrence.<br />Ajoutez votre loyer, votre salaire ou vos
                   abonnements : ils seront créés automatiquement à chaque échéance.
                 </p>
                 <button matButton="filled" (click)="create()">
@@ -170,7 +186,7 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
             <h2><mat-icon>event_upcoming</mat-icon> Prochains 60 jours</h2>
             @for (o of upcoming(); track o.recurringTransactionId + o.date) {
               <div class="upcoming">
-                <span class="date">{{ o.date | date: 'dd MMM' }}</span>
+                <span class="date">{{ o.date | date: 'dd/MM/yyyy' }}</span>
                 <span class="flex">{{ o.label }}</span>
                 <span class="amount" [class.positive]="o.direction === 'CREDIT'">
                   {{
@@ -187,6 +203,14 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
     </div>
   `,
   styles: `
+    .layout {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    }
+    @media (max-width: 1320px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
     .label {
       display: flex;
       align-items: center;
@@ -211,7 +235,8 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
       padding: 8px 0;
       border-bottom: 1px solid var(--hermes-border);
       .date {
-        width: 56px;
+        width: 84px;
+        flex-shrink: 0;
         color: var(--mat-sys-primary);
         font: var(--mat-sys-label-large);
       }

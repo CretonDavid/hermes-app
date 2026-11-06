@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,7 +42,11 @@ import {
 import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
 import { formatMoney } from '../../shared/money.pipe';
+import { AmountInputDirective } from '../../shared/amount-input.directive';
+import { DIALOG_LARGE } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
+import { protectDirtyForm } from '../../shared/dialog-guard';
+import { setRequired } from '../../shared/required';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
@@ -45,6 +56,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
     ReactiveFormsModule,
     MatDialogModule,
     DialogCloseComponent,
+    AmountInputDirective,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -59,7 +71,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>
-      {{ data ? 'Modifier la récurrence' : 'Nouvelle opération récurrente' }}
+      {{ data ? 'Modifier la récurrence' : 'Nouvelle récurrence' }}
     </h2>
     <mat-dialog-content>
       <mat-button-toggle-group
@@ -77,7 +89,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
           [disabled]="store.openAccounts().length < 2"
           [matTooltip]="
             store.openAccounts().length < 2
-              ? 'Il faut au moins deux comptes'
+              ? 'Il faut au moins deux comptes bancaires'
               : 'Épargne programmée, virement mensuel…'
           "
           ><mat-icon>swap_horiz</mat-icon> Virement</mat-button-toggle
@@ -85,14 +97,21 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
       </mat-button-toggle-group>
 
       <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
-        <mat-form-field class="full">
+        <mat-form-field>
+          <mat-label>Montant</mat-label>
+          <input matInput appAmount formControlName="amount" placeholder="0,00" />
+          <span matTextSuffix>&nbsp;{{ currency() }}</span>
+          <mat-error>Saisissez un montant supérieur à 0</mat-error>
+        </mat-form-field>
+
+        <mat-form-field>
           <mat-label>Libellé</mat-label>
           <input matInput formControlName="label" placeholder="Ex. Loyer, Salaire, Netflix…" />
           <mat-error>Libellé obligatoire</mat-error>
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>{{ mode() === 'TRANSFER' ? 'Depuis le compte' : 'Compte' }}</mat-label>
+          <mat-label>{{ mode() === 'TRANSFER' ? 'Depuis le compte bancaire' : 'Compte bancaire' }}</mat-label>
           <mat-select formControlName="accountId">
             @for (account of store.openAccounts(); track account.id) {
               <mat-option [value]="account.id">{{ account.name }}</mat-option>
@@ -102,7 +121,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
         @if (mode() === 'TRANSFER') {
           <mat-form-field>
-            <mat-label>Vers le compte</mat-label>
+            <mat-label>Vers le compte bancaire</mat-label>
             <mat-select formControlName="targetAccountId">
               @for (account of store.openAccounts(); track account.id) {
                 @if (account.id !== form.controls.accountId.value) {
@@ -115,22 +134,16 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
           <app-category-picker
             formControlName="categoryId"
             [type]="mode() === 'CREDIT' ? 'INCOME' : 'EXPENSE'"
+            label="Catégorie (facultatif)"
           />
         }
 
-        <mat-form-field>
-          <mat-label>Montant</mat-label>
-          <input matInput type="number" min="0" step="0.01" formControlName="amount" />
-          <span matTextSuffix>&nbsp;{{ currency() }}</span>
-          <mat-error>Montant positif obligatoire</mat-error>
-        </mat-form-field>
-
         @if (mode() === 'TRANSFER' && targetCurrency() && targetCurrency() !== currency()) {
           <mat-form-field>
-            <mat-label>Montant reçu</mat-label>
-            <input matInput type="number" min="0" step="0.01" formControlName="targetAmount" />
+            <mat-label>Montant reçu (facultatif)</mat-label>
+            <input matInput appAmount formControlName="targetAmount" />
             <span matTextSuffix>&nbsp;{{ targetCurrency() }}</span>
-            <mat-hint>Vide : conversion au taux du jour</mat-hint>
+            <mat-hint>Vide : conversion au dernier taux enregistré</mat-hint>
           </mat-form-field>
         } @else if (mode() !== 'TRANSFER') {
           <mat-form-field>
@@ -185,7 +198,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
         @if (mode() !== 'TRANSFER') {
           <mat-form-field>
-            <mat-label>Moyen de paiement</mat-label>
+            <mat-label>Moyen de paiement (facultatif)</mat-label>
             <mat-select formControlName="paymentMethod">
               <mat-option [value]="null">—</mat-option>
               @for (method of paymentMethods; track method.value) {
@@ -241,9 +254,8 @@ export class RecurringDialogComponent {
   ): MatDialogRef<RecurringDialogComponent, boolean> {
     return dialog.open(RecurringDialogComponent, {
       data: recurring ?? null,
-      width: '640px',
-      maxHeight: '92vh',
-      autoFocus: recurring ? 'dialog' : 'input[formcontrolname="label"]',
+      width: DIALOG_LARGE,
+      autoFocus: recurring ? 'dialog' : 'input[formcontrolname="amount"]',
     });
   }
 
@@ -378,6 +390,11 @@ export class RecurringDialogComponent {
     return !this.data && !!start && toIsoDate(start)! < toIsoDate(new Date())!;
   });
 
+  constructor() {
+    protectDirtyForm(this.form);
+    effect(() => setRequired(this.form.controls.targetAccountId, this.mode() === 'TRANSFER'));
+  }
+
   protected setMode(mode: Mode): void {
     this.mode.set(mode);
     this.form.controls.categoryId.setValue(null);
@@ -390,6 +407,7 @@ export class RecurringDialogComponent {
   }
 
   protected setRepeat(value: string): void {
+    this.form.markAsDirty();
     if (value === 'custom') {
       this.customRepeat.set(true);
       return;
@@ -410,7 +428,7 @@ export class RecurringDialogComponent {
     const v = this.form.getRawValue();
     const transfer = this.mode() === 'TRANSFER';
     if (transfer && !v.targetAccountId) {
-      this.notify.error('Choisissez le compte qui reçoit le virement');
+      this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
       return;
     }
     const request: RecurringTransactionRequest = {

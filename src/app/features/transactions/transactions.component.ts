@@ -89,7 +89,7 @@ import { TransactionTableComponent } from './transaction-table.component';
               />
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field class="wide">
               <mat-label>Comptes bancaires</mat-label>
               <mat-select
                 multiple

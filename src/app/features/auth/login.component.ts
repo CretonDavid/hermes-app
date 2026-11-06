@@ -47,7 +47,6 @@ import { AuthVisualComponent } from './auth-visual.component';
               inputmode="numeric"
               autofocus
             />
-            <mat-hint align="end">{{ digits().length }} / 30</mat-hint>
             @if (number.hasError('pattern')) {
               <mat-error>Le numéro doit contenir exactement 30 chiffres</mat-error>
             }

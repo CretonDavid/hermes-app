@@ -89,7 +89,7 @@ import { TransactionTableComponent } from './transaction-table.component';
               />
             </mat-form-field>
 
-            <mat-form-field class="wide">
+            <mat-form-field class="accounts">
               <mat-label>Comptes bancaires</mat-label>
               <mat-select
                 multiple
@@ -114,7 +114,7 @@ import { TransactionTableComponent } from './transaction-table.component';
               </mat-select>
             </mat-form-field>
 
-            <mat-form-field class="wide">
+            <mat-form-field class="category">
               <mat-label>Catégorie</mat-label>
               <mat-select [ngModel]="categoryId()" (ngModelChange)="update(categoryId, $event)">
                 <mat-option [value]="null">Toutes</mat-option>
@@ -132,7 +132,7 @@ import { TransactionTableComponent } from './transaction-table.component';
               }
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field class="status">
               <mat-label>Pointage</mat-label>
               <mat-select [ngModel]="status()" (ngModelChange)="update(status, $event)">
                 <mat-option [value]="null">Toutes</mat-option>
@@ -237,14 +237,25 @@ import { TransactionTableComponent } from './transaction-table.component';
     </div>
   `,
   styles: `
+    // Largeurs minimales : chaque étiquette reste entière et les six filtres tiennent sur une ligne
+    .filters mat-form-field {
+      flex: 1 1 100px;
+    }
     .filters .search {
-      flex: 2 1 230px;
+      flex: 2 1 150px;
     }
-    .filters .wide {
-      flex: 1.5 1 200px;
+    .filters .accounts {
+      flex: 1.5 1 205px;
     }
+    .filters .category {
+      flex: 1.5 1 140px;
+    }
+    .filters .status {
+      flex: 1 1 135px;
+    }
+    // Juste la largeur des deux dates : la place restante va aux autres filtres
     .filters .period {
-      flex: 2 1 270px;
+      flex: 0 0 240px;
     }
     .reset {
       margin-top: 8px;

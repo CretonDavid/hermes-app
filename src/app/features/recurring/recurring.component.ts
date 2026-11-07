@@ -20,6 +20,7 @@ import { frequencyLabel } from '../../core/format';
 import { RecurringTransaction, UpcomingOccurrence } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { confirm } from '../../shared/confirm-dialog.component';
+import { untilEndOfMonth } from '../../shared/forecast';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { NoAccountComponent } from '../../shared/no-account.component';
 import { RecurringDialogComponent } from './recurring-dialog.component';
@@ -87,21 +88,9 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
               <ng-container matColumnDef="label">
                 <th mat-header-cell *matHeaderCellDef>Libellé</th>
                 <td mat-cell *matCellDef="let r">
-                  <div class="label">
-                    <mat-icon
-                      class="muted"
-                      [matTooltip]="r.transfer ? 'Virement' : r.direction === 'CREDIT' ? 'Revenu' : 'Dépense'"
-                      >{{
-                        r.transfer
-                          ? 'swap_horiz'
-                          : r.direction === 'CREDIT'
-                            ? 'add_circle'
-                            : 'remove_circle'
-                      }}</mat-icon
-                    >
-                    {{ r.label }}
-                  </div>
+                  <div class="label">{{ r.label }}</div>
                   <div class="muted small">
+                    {{ r.transfer ? 'Virement' : r.direction === 'CREDIT' ? 'Revenu' : 'Dépense' }} ·
                     {{ r.accountName
                     }}{{
                       r.transfer
@@ -183,7 +172,7 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
           </div>
 
           <div class="card">
-            <h2><mat-icon>event_upcoming</mat-icon> Prochains 60 jours</h2>
+            <h2><mat-icon>event_upcoming</mat-icon> D'ici la fin du mois</h2>
             @for (o of upcoming(); track o.recurringTransactionId + o.date) {
               <div class="upcoming">
                 <span class="date">{{ o.date | date: 'dd/MM/yyyy' }}</span>
@@ -195,7 +184,7 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
                 </span>
               </div>
             } @empty {
-              <p class="muted">Rien de prévu</p>
+              <p class="muted">Plus rien de prévu ce mois-ci</p>
             }
           </div>
         </div>
@@ -203,28 +192,25 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
     </div>
   `,
   styles: `
+    // Chaque bloc garde sa propre hauteur au lieu de s'étirer sur le plus grand
     .layout {
       grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      align-items: start;
     }
     @media (max-width: 1320px) {
       .layout {
         grid-template-columns: minmax(0, 1fr);
       }
     }
+    td.mat-mdc-cell {
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
     .label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
       font-weight: 500;
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
     }
     .small {
       font: var(--mat-sys-body-small);
-      margin-left: 28px;
     }
     tr.inactive {
       opacity: 0.55;
@@ -312,10 +298,10 @@ export class RecurringComponent {
   }
 
   private load(): void {
-    forkJoin({ items: this.api.list(), upcoming: this.api.upcoming(60) }).subscribe({
+    forkJoin({ items: this.api.list(), upcoming: this.api.upcoming(31) }).subscribe({
       next: ({ items, upcoming }) => {
         this.items.set(items);
-        this.upcoming.set(upcoming);
+        this.upcoming.set(untilEndOfMonth(upcoming));
       },
       error: (error) => this.notify.error(error),
     });

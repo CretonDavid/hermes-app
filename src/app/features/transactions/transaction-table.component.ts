@@ -333,7 +333,7 @@ export class TransactionTableComponent {
 
   protected reimbursementTooltip(t: Transaction): string {
     const r = t.reimbursement!;
-    return `Remboursement de « ${r.label} » pour ${reimbursementPeriodLabel(r.period, r.periodStart)}`;
+    return `Remboursement de « ${r.label} » par ${r.payerName} pour ${reimbursementPeriodLabel(r.period, r.periodStart)}`;
   }
 
   protected statusTooltip(t: Transaction): string {

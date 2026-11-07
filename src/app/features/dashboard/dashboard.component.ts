@@ -66,18 +66,20 @@ export class DashboardComponent {
   // Périodes terminées sans remboursement complet, la plus ancienne d'abord
   protected readonly overdueReimbursements = computed(() =>
     this.reimbursements().flatMap((t) =>
-      t.periods
-        .filter((p) => p.status === 'UNPAID' || p.status === 'PARTIAL')
-        .reverse()
-        .map((p) => ({
-          key: `${t.recurringTransactionId}-${p.start}`,
-          payer: t.payer,
-          label: t.label,
-          period: reimbursementPeriodLabel(t.period, p.start),
-          remaining: p.remaining,
-          currencyCode: t.currencyCode,
-          partial: p.status === 'PARTIAL',
-        })),
+      t.payers.flatMap((payer) =>
+        payer.periods
+          .filter((p) => p.status === 'UNPAID' || p.status === 'PARTIAL')
+          .reverse()
+          .map((p) => ({
+            key: `${payer.payerId}-${p.start}`,
+            payer: payer.name,
+            label: t.label,
+            period: reimbursementPeriodLabel(payer.period, p.start),
+            remaining: p.remaining,
+            currencyCode: t.currencyCode,
+            partial: p.status === 'PARTIAL',
+          })),
+      ),
     ),
   );
   protected readonly now = new Date();

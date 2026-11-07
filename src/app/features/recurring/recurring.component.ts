@@ -105,8 +105,8 @@ import { ReimbursementCardComponent } from './reimbursement-card.component';
                           ? ' · ' + r.category.name
                           : ''
                     }}
-                    @if (r.reimbursementPayer) {
-                      · remboursée par {{ r.reimbursementPayer }}
+                    @if (r.reimbursementPayers.length) {
+                      · remboursée par {{ payerNames(r) }}
                     }
                   </div>
                 </td>
@@ -297,6 +297,11 @@ export class RecurringComponent {
 
   protected label(r: RecurringTransaction): string {
     return frequencyLabel(r.frequency, r.interval);
+  }
+
+  protected payerNames(r: RecurringTransaction): string {
+    const names = r.reimbursementPayers.map((p) => p.name);
+    return names.length > 1 ? `${names.slice(0, -1).join(', ')} et ${names.at(-1)}` : names[0];
   }
 
   protected create(): void {

@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -39,6 +39,7 @@ import {
   RecurrenceFrequency,
   RecurringTransaction,
   RecurringTransactionRequest,
+  ReimbursementPayer,
   ReimbursementPeriod,
 } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
@@ -216,37 +217,74 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
         @if (mode() === 'DEBIT') {
           <div class="full">
-            <mat-checkbox formControlName="reimbursed">
-              Quelqu’un me rembourse cette dépense (abonnement partagé…)
+            <mat-checkbox [checked]="reimbursed()" (change)="setReimbursed($event.checked)">
+              Remboursée par un ou plusieurs tiers
             </mat-checkbox>
           </div>
           @if (reimbursed()) {
-            <mat-form-field>
-              <mat-label>Remboursée par</mat-label>
-              <input matInput formControlName="reimbursementPayer" placeholder="Ex. Alex" />
-              <mat-error>Indiquez qui vous rembourse</mat-error>
-            </mat-form-field>
-            <div class="custom-repeat">
-              <mat-form-field>
-                <mat-label>Part remboursée</mat-label>
-                <input
-                  matInput
-                  type="number"
-                  min="1"
-                  max="100"
-                  formControlName="reimbursementShare"
-                />
-                <span matTextSuffix>&nbsp;%</span>
-                <mat-error>Entre 1 et 100 %</mat-error>
-              </mat-form-field>
-              <mat-form-field>
-                <mat-label>Rembourse</mat-label>
-                <mat-select formControlName="reimbursementPeriod">
-                  @for (p of reimbursementPeriods; track p.value) {
-                    <mat-option [value]="p.value">{{ p.label }}</mat-option>
+            <div class="full payers" formArrayName="payers">
+              @for (payer of payers.controls; track payer; let i = $index) {
+                <div class="payer" [formGroupName]="i">
+                  <mat-form-field subscriptSizing="dynamic">
+                    <mat-label>Tiers</mat-label>
+                    <input matInput formControlName="name" placeholder="Ex. Alex" />
+                    <mat-error>Nom obligatoire</mat-error>
+                  </mat-form-field>
+                  <mat-form-field subscriptSizing="dynamic">
+                    <mat-label>Part</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0.01"
+                      max="100"
+                      step="0.01"
+                      formControlName="share"
+                    />
+                    <span matTextSuffix>&nbsp;%</span>
+                    <mat-error>Entre 0,01 et 100 %</mat-error>
+                  </mat-form-field>
+                  <mat-form-field subscriptSizing="dynamic">
+                    <mat-label>Rembourse</mat-label>
+                    <mat-select formControlName="period">
+                      @for (p of reimbursementPeriods; track p.value) {
+                        <mat-option [value]="p.value">{{ p.label }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <button
+                    matIconButton
+                    type="button"
+                    matTooltip="Retirer ce tiers"
+                    aria-label="Retirer ce tiers"
+                    (click)="removePayer(i)"
+                  >
+                    <mat-icon>person_remove</mat-icon>
+                  </button>
+                </div>
+              }
+              <div class="payer-actions">
+                <button matButton type="button" (click)="addPayer()">
+                  <mat-icon>person_add</mat-icon> Ajouter un tiers
+                </button>
+                <button
+                  matButton
+                  type="button"
+                  matTooltip="Répartit la dépense à parts égales entre vous et les tiers"
+                  (click)="splitEqually()"
+                >
+                  <mat-icon>pie_chart</mat-icon> Parts égales
+                </button>
+                <span class="own" [class.negative]="ownShare() < 0">
+                  @if (ownShare() < 0) {
+                    Les parts dépassent 100 %
+                  } @else {
+                    Votre part : {{ formatShare(ownShare()) }}
+                    @if (amount()) {
+                      ({{ ownAmount() }} par échéance)
+                    }
                   }
-                </mat-select>
-              </mat-form-field>
+                </span>
+              </div>
             </div>
           }
         }
@@ -275,6 +313,27 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
+    }
+    .payer {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 120px 170px 40px;
+      gap: 8px;
+      align-items: start;
+      margin-bottom: 12px;
+      button {
+        margin-top: 8px;
+      }
+    }
+    .payer-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+      .own {
+        margin-left: auto;
+        font: var(--mat-sys-body-medium);
+      }
     }
     .summary {
       margin: 0;
@@ -342,33 +401,46 @@ export class RecurringDialogComponent {
     endDate: new FormControl<Date | null>(fromIsoDate(this.data?.endDate)),
     paymentMethod: new FormControl<PaymentMethod | null>(this.data?.paymentMethod ?? null),
     active: new FormControl(this.data?.active ?? true, { nonNullable: true }),
-    reimbursed: new FormControl(!!this.data?.reimbursementPayer, { nonNullable: true }),
-    reimbursementPayer: new FormControl(this.data?.reimbursementPayer ?? '', { nonNullable: true }),
-    reimbursementShare: new FormControl(this.data?.reimbursementShare ?? 100, {
-      nonNullable: true,
-      validators: [Validators.min(1), Validators.max(100)],
-    }),
-    reimbursementPeriod: new FormControl<ReimbursementPeriod>(
-      this.data?.reimbursementPeriod ?? 'YEARLY',
-      { nonNullable: true },
+    payers: new FormArray(
+      (this.data?.reimbursementPayers ?? []).map((p) => RecurringDialogComponent.payerForm(p)),
     ),
   });
 
   protected readonly reimbursementPeriods = REIMBURSEMENT_PERIODS;
-  private readonly reimbursedValue = toSignal(this.form.controls.reimbursed.valueChanges, {
-    initialValue: this.form.controls.reimbursed.value,
-  });
+  protected readonly payers = this.form.controls.payers;
+  private readonly reimbursedValue = signal(this.payers.length > 0);
   protected readonly reimbursed = computed(() => this.mode() === 'DEBIT' && this.reimbursedValue());
-  private readonly payer = toSignal(this.form.controls.reimbursementPayer.valueChanges, {
-    initialValue: this.form.controls.reimbursementPayer.value,
+  private readonly payerValues = toSignal(this.payers.valueChanges, {
+    initialValue: this.payers.value,
   });
-  private readonly share = toSignal(this.form.controls.reimbursementShare.valueChanges, {
-    initialValue: this.form.controls.reimbursementShare.value,
-  });
-  private readonly reimbursementPeriod = toSignal(
-    this.form.controls.reimbursementPeriod.valueChanges,
-    { initialValue: this.form.controls.reimbursementPeriod.value },
+  // Part restant à votre charge, en pourcentage
+  protected readonly ownShare = computed(
+    () =>
+      Math.round(
+        (100 - this.payerValues().reduce((sum, p) => sum + (Number(p.share) || 0), 0)) * 100,
+      ) / 100,
   );
+  protected readonly ownAmount = computed(() =>
+    formatMoney(((this.amount() ?? 0) * Math.max(this.ownShare(), 0)) / 100, this.currency()),
+  );
+
+  private static payerForm(payer?: Partial<ReimbursementPayer>) {
+    return new FormGroup({
+      id: new FormControl<number | null>(payer?.id ?? null),
+      name: new FormControl(payer?.name ?? '', {
+        nonNullable: true,
+        validators: Validators.required,
+      }),
+      share: new FormControl<number | null>(payer?.share ?? 100, [
+        Validators.required,
+        Validators.min(0.01),
+        Validators.max(100),
+      ]),
+      period: new FormControl<ReimbursementPeriod>(payer?.period ?? 'YEARLY', {
+        nonNullable: true,
+      }),
+    });
+  }
 
   private readonly accountId = toSignal(this.form.controls.accountId.valueChanges, {
     initialValue: this.form.controls.accountId.value,
@@ -388,7 +460,7 @@ export class RecurringDialogComponent {
   private readonly endDate = toSignal(this.form.controls.endDate.valueChanges, {
     initialValue: this.form.controls.endDate.value,
   });
-  private readonly amount = toSignal(this.form.controls.amount.valueChanges, {
+  protected readonly amount = toSignal(this.form.controls.amount.valueChanges, {
     initialValue: this.form.controls.amount.value,
   });
 
@@ -434,10 +506,11 @@ export class RecurringDialogComponent {
       !this.data && (this.startsInPast() || toIsoDate(start) === toIsoDate(new Date()))
         ? " Les échéances jusqu'à aujourd'hui seront ajoutées dès l'enregistrement."
         : '';
-    const payer = this.payer().trim();
+    const payers = this.payerValues().filter((p) => p.name?.trim() && p.share);
+    const names = payers.map((p) => `${p.name!.trim()} (${this.formatShare(Number(p.share))})`);
     const refund =
-      this.reimbursed() && payer
-        ? ` ${payer} vous en rembourse ${this.share() === 100 ? 'la totalité' : this.share() + ' %'}, ${REIMBURSEMENT_PERIODS.find((p) => p.value === this.reimbursementPeriod())!.label.toLowerCase()}.`
+      this.reimbursed() && names.length
+        ? ` Remboursée par ${names.length > 1 ? names.slice(0, -1).join(', ') + ' et ' + names.at(-1) : names[0]} ; votre part : ${this.formatShare(Math.max(this.ownShare(), 0))}.`
         : '';
     return `${what} ${repeat}, à partir du ${format(start, 'dd/MM/yyyy')}${end}.${refund}${now}`;
   });
@@ -463,7 +536,42 @@ export class RecurringDialogComponent {
   constructor() {
     protectDirtyForm(this.form);
     effect(() => setRequired(this.form.controls.targetAccountId, this.mode() === 'TRANSFER'));
-    effect(() => setRequired(this.form.controls.reimbursementPayer, this.reimbursed()));
+  }
+
+  protected formatShare(share: number): string {
+    return `${share.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`;
+  }
+
+  protected setReimbursed(checked: boolean): void {
+    this.reimbursedValue.set(checked);
+    if (checked && this.payers.length === 0) {
+      this.addPayer();
+    }
+  }
+
+  // Un nouveau tiers prend ce qui reste à votre charge, ou une part égale s'il ne reste rien
+  protected addPayer(): void {
+    const remaining = this.ownShare();
+    this.payers.push(RecurringDialogComponent.payerForm({ share: remaining > 0 ? remaining : 0 }));
+    if (remaining <= 0) {
+      this.splitEqually();
+    }
+    this.form.markAsDirty();
+  }
+
+  protected removePayer(index: number): void {
+    this.payers.removeAt(index);
+    this.form.markAsDirty();
+    if (this.payers.length === 0) {
+      this.reimbursedValue.set(false);
+    }
+  }
+
+  // Parts égales entre vous et chaque tiers ; l'arrondi éventuel reste à votre charge
+  protected splitEqually(): void {
+    const share = Math.floor(10000 / (this.payers.length + 1)) / 100;
+    this.payers.controls.forEach((c) => c.controls.share.setValue(share));
+    this.form.markAsDirty();
   }
 
   protected setMode(mode: Mode): void {
@@ -492,16 +600,19 @@ export class RecurringDialogComponent {
   }
 
   protected save(): void {
-    const v = this.form.getRawValue();
-    const reimbursed = this.reimbursed() && !!v.reimbursementPayer.trim();
-    // Une part hors bornes ne doit bloquer que si le remboursement est demandé
-    if (!reimbursed) {
-      this.form.controls.reimbursementShare.setValue(100);
+    // Des tiers masqués (case décochée, revenu ou virement) ne doivent pas bloquer l'enregistrement
+    if (!this.reimbursed()) {
+      this.payers.clear();
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
+    if (this.ownShare() < 0) {
+      this.notify.error('Les parts des tiers dépassent 100 %');
+      return;
+    }
+    const v = this.form.getRawValue();
     const transfer = this.mode() === 'TRANSFER';
     if (transfer && !v.targetAccountId) {
       this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
@@ -522,9 +633,12 @@ export class RecurringDialogComponent {
       startDate: toIsoDate(v.startDate)!,
       endDate: toIsoDate(v.endDate),
       active: v.active,
-      reimbursementPayer: reimbursed ? v.reimbursementPayer.trim() : null,
-      reimbursementShare: reimbursed ? v.reimbursementShare : null,
-      reimbursementPeriod: reimbursed ? v.reimbursementPeriod : null,
+      reimbursementPayers: v.payers.map((p) => ({
+        id: p.id,
+        name: p.name.trim(),
+        share: p.share!,
+        period: p.period,
+      })),
     };
     this.saving.set(true);
     const request$ = this.data ? this.api.update(this.data.id, request) : this.api.create(request);

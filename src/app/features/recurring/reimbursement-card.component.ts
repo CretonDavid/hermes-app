@@ -2,7 +2,6 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   inject,
   input,
   output,
@@ -15,6 +14,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RecurringApi } from '../../core/api';
 import { REIMBURSEMENT_PERIODS, reimbursementPeriodLabel } from '../../core/format';
 import {
+  PayerTracking,
   ReimbursementPayment,
   ReimbursementPeriodStatus,
   ReimbursementTracking,
@@ -24,11 +24,12 @@ import { confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
 import { ReimbursementLinkDialogComponent } from './reimbursement-link-dialog.component';
 
-// Nombre de périodes affichées avant « Afficher les périodes précédentes »
+// Nombre de périodes affichées par tiers avant « Afficher les périodes précédentes »
 const VISIBLE_PERIODS = 3;
 
 /**
- * Suivi d'une dépense récurrente remboursée par un tiers : ce qui est dû et reçu, période par période.
+ * Suivi d'une dépense récurrente remboursée par des tiers : pour chacun, ce qui est dû et reçu,
+ * période par période.
  */
 @Component({
   selector: 'app-reimbursement-card',
@@ -37,92 +38,100 @@ const VISIBLE_PERIODS = 3;
   template: `
     @let t = tracking();
     <div class="card">
-      <h2>
-        <mat-icon>handshake</mat-icon>
-        <span class="title">
-          {{ t.label }}
-          <span class="muted subtitle">
-            Remboursée par {{ t.payer }} ·
-            {{ t.share === 100 ? 'en totalité' : t.share + ' %' }} · {{ rhythm() }}
-          </span>
-        </span>
-      </h2>
+      <h2><mat-icon>handshake</mat-icon> {{ t.label }}</h2>
 
-      @for (p of visible(); track p.start) {
-        <div class="period" [class.alert]="p.status === 'UNPAID' || p.status === 'PARTIAL'">
-          <div class="name">
-            {{ name(p) }}
-            @if (!p.ended) {
-              <span class="muted small">en cours</span>
-            }
+      @for (payer of t.payers; track payer.payerId) {
+        <div class="payer">
+          <div class="payer-name">
+            {{ payer.name }}
+            <span class="muted">· {{ shareLabel(payer.share) }} · {{ rhythm(payer) }}</span>
           </div>
-          <div class="figures">
-            <span>
-              <span class="muted small">{{ p.ended ? 'Dû' : 'Dû à ce jour' }}</span>
-              <span class="amount">{{ p.due | money: t.currencyCode }}</span>
-            </span>
-            <span>
-              <span class="muted small">Reçu</span>
-              <span class="amount" [class.positive]="p.received > 0">
-                {{ p.received | money: t.currencyCode }}
+
+          @for (p of visible(payer); track p.start) {
+            <div class="period">
+              <div class="name">
+                {{ name(payer, p) }}
+                @if (!p.ended) {
+                  <span class="muted small">en cours</span>
+                }
+              </div>
+              <div class="figures">
+                <span>
+                  <span class="muted small">{{ p.ended ? 'Dû' : 'Dû à ce jour' }}</span>
+                  <span class="amount">{{ p.due | money: t.currencyCode }}</span>
+                </span>
+                <span>
+                  <span class="muted small">Reçu</span>
+                  <span class="amount" [class.positive]="p.received > 0">
+                    {{ p.received | money: t.currencyCode }}
+                  </span>
+                </span>
+              </div>
+              <span class="chip status" [class]="p.status">
+                <mat-icon>{{ icons[p.status] }}</mat-icon>
+                {{ statusLabel(p) }}
               </span>
-            </span>
-          </div>
-          <span class="chip status" [class]="p.status">
-            <mat-icon>{{ icons[p.status] }}</mat-icon>
-            {{ statusLabel(p) }}
-          </span>
-          <button
-            matButton
-            class="link"
-            [attr.aria-label]="'Rattacher un remboursement pour ' + name(p)"
-            (click)="link(p)"
-          >
-            <mat-icon>add_link</mat-icon> Rattacher
-          </button>
-        </div>
-        @for (payment of p.payments; track payment.transactionId) {
-          <div class="payment">
-            <mat-icon class="muted">subdirectory_arrow_right</mat-icon>
-            <span class="date">{{ payment.date | date: 'dd/MM/yyyy' }}</span>
-            <span class="text">
-              {{ payment.label }} <span class="muted small">· {{ payment.accountName }}</span>
-            </span>
-            <span class="amount positive">{{ payment.amount | money: t.currencyCode : true }}</span>
-            <button
-              matIconButton
-              matTooltip="Détacher ce remboursement"
-              [attr.aria-label]="'Détacher ' + payment.label"
-              (click)="unlink(p, payment)"
-            >
-              <mat-icon>link_off</mat-icon>
-            </button>
-          </div>
-        }
-      } @empty {
-        <p class="muted">Aucune échéance pour l'instant.</p>
-      }
+              <button
+                matButton
+                [attr.aria-label]="
+                  'Rattacher un remboursement de ' + payer.name + ' pour ' + name(payer, p)
+                "
+                (click)="link(payer, p)"
+              >
+                <mat-icon>add_link</mat-icon> Rattacher
+              </button>
+            </div>
+            @for (payment of p.payments; track payment.transactionId) {
+              <div class="payment">
+                <mat-icon class="muted">subdirectory_arrow_right</mat-icon>
+                <span class="date">{{ payment.date | date: 'dd/MM/yyyy' }}</span>
+                <span class="text">
+                  {{ payment.label }} <span class="muted small">· {{ payment.accountName }}</span>
+                </span>
+                <span class="amount positive">
+                  {{ payment.amount | money: t.currencyCode : true }}
+                </span>
+                <button
+                  matIconButton
+                  matTooltip="Détacher ce remboursement"
+                  [attr.aria-label]="'Détacher ' + payment.label"
+                  (click)="unlink(payer, p, payment)"
+                >
+                  <mat-icon>link_off</mat-icon>
+                </button>
+              </div>
+            }
+          } @empty {
+            <p class="muted">Aucune échéance pour l'instant.</p>
+          }
 
-      @if (hidden() > 0) {
-        <button matButton class="more" (click)="expanded.set(true)">
-          Afficher {{ hidden() > 1 ? 'les ' + hidden() + ' périodes précédentes' : 'la période précédente' }}
-        </button>
+          @if (hidden(payer) > 0) {
+            <button matButton class="more" (click)="expand(payer)">
+              Afficher
+              {{
+                hidden(payer) > 1
+                  ? 'les ' + hidden(payer) + ' périodes précédentes'
+                  : 'la période précédente'
+              }}
+            </button>
+          }
+        </div>
       }
     </div>
   `,
   styles: `
-    h2 {
-      align-items: flex-start;
-    }
-    .title {
-      display: flex;
-      flex-direction: column;
-    }
-    .subtitle {
-      font: var(--mat-sys-body-medium);
-    }
     .small {
       font: var(--mat-sys-body-small);
+    }
+    .payer + .payer {
+      margin-top: 20px;
+    }
+    .payer-name {
+      font: var(--mat-sys-title-small);
+      margin-bottom: 4px;
+      .muted {
+        font: var(--mat-sys-body-medium);
+      }
     }
     .period {
       display: grid;
@@ -167,7 +176,7 @@ const VISIBLE_PERIODS = 3;
       }
     }
     .more {
-      margin-top: 8px;
+      margin-top: 4px;
     }
   `,
 })
@@ -186,19 +195,35 @@ export class ReimbursementCardComponent {
     IN_PROGRESS: 'schedule',
   } as const;
 
-  protected readonly expanded = signal(false);
-  protected readonly visible = computed(() =>
-    this.expanded() ? this.tracking().periods : this.tracking().periods.slice(0, VISIBLE_PERIODS),
-  );
-  protected readonly hidden = computed(
-    () => this.tracking().periods.length - this.visible().length,
-  );
-  protected readonly rhythm = computed(() =>
-    REIMBURSEMENT_PERIODS.find((p) => p.value === this.tracking().period)!.label.toLowerCase(),
-  );
+  // Tiers dont toutes les périodes sont affichées
+  private readonly expanded = signal<ReadonlySet<number>>(new Set());
 
-  protected name(p: ReimbursementPeriodStatus): string {
-    return reimbursementPeriodLabel(this.tracking().period, p.start);
+  protected visible(payer: PayerTracking): ReimbursementPeriodStatus[] {
+    return this.expanded().has(payer.payerId)
+      ? payer.periods
+      : payer.periods.slice(0, VISIBLE_PERIODS);
+  }
+
+  protected hidden(payer: PayerTracking): number {
+    return payer.periods.length - this.visible(payer).length;
+  }
+
+  protected expand(payer: PayerTracking): void {
+    this.expanded.update((set) => new Set([...set, payer.payerId]));
+  }
+
+  protected shareLabel(share: number): string {
+    return share === 100
+      ? 'en totalité'
+      : `${share.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`;
+  }
+
+  protected rhythm(payer: PayerTracking): string {
+    return REIMBURSEMENT_PERIODS.find((p) => p.value === payer.period)!.label.toLowerCase();
+  }
+
+  protected name(payer: PayerTracking, p: ReimbursementPeriodStatus): string {
+    return reimbursementPeriodLabel(payer.period, p.start);
   }
 
   protected statusLabel(p: ReimbursementPeriodStatus): string {
@@ -215,8 +240,8 @@ export class ReimbursementCardComponent {
     }
   }
 
-  protected link(period: ReimbursementPeriodStatus): void {
-    ReimbursementLinkDialogComponent.open(this.dialog, { tracking: this.tracking(), period })
+  protected link(payer: PayerTracking, period: ReimbursementPeriodStatus): void {
+    ReimbursementLinkDialogComponent.open(this.dialog, { tracking: this.tracking(), payer, period })
       .afterClosed()
       .subscribe((linked) => {
         if (linked) {
@@ -225,10 +250,14 @@ export class ReimbursementCardComponent {
       });
   }
 
-  protected unlink(period: ReimbursementPeriodStatus, payment: ReimbursementPayment): void {
+  protected unlink(
+    payer: PayerTracking,
+    period: ReimbursementPeriodStatus,
+    payment: ReimbursementPayment,
+  ): void {
     confirm(this.dialog, {
       title: 'Détacher le remboursement',
-      message: `« ${payment.label} » ne comptera plus comme remboursement pour ${this.name(period)}. L'opération est conservée.`,
+      message: `« ${payment.label} » ne comptera plus comme remboursement de ${payer.name} pour ${this.name(payer, period)}. L'opération est conservée.`,
       confirmLabel: 'Détacher',
     }).subscribe((ok) => {
       if (ok) {

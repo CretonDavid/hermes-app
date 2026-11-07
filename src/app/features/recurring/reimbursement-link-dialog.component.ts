@@ -15,6 +15,7 @@ import { subMonths } from 'date-fns';
 import { RecurringApi, TransactionApi } from '../../core/api';
 import { fromIsoDate, reimbursementPeriodLabel, toIsoDate } from '../../core/format';
 import {
+  PayerTracking,
   ReimbursementPeriodStatus,
   ReimbursementTracking,
   Transaction,
@@ -26,6 +27,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 
 export interface ReimbursementLinkData {
   tracking: ReimbursementTracking;
+  payer: PayerTracking;
   period: ReimbursementPeriodStatus;
 }
 
@@ -53,7 +55,7 @@ export interface ReimbursementLinkData {
       <p class="intro">
         <strong>{{ data.tracking.label }} · {{ periodName }}</strong><br />
         <span class="muted">
-          Dû par {{ data.tracking.payer }} :
+          Dû par {{ data.payer.name }} :
           {{ data.period.due | money: data.tracking.currencyCode }}
           @if (data.period.received > 0) {
             · déjà reçu {{ data.period.received | money: data.tracking.currencyCode }}
@@ -175,7 +177,7 @@ export class ReimbursementLinkDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<ReimbursementLinkDialogComponent, boolean>);
 
   protected readonly periodName = reimbursementPeriodLabel(
-    this.data.tracking.period,
+    this.data.payer.period,
     this.data.period.start,
   );
   protected readonly from = subMonths(fromIsoDate(this.data.period.start)!, 3);
@@ -222,7 +224,12 @@ export class ReimbursementLinkDialogComponent {
     }
     this.saving.set(true);
     this.recurringApi
-      .linkReimbursement(this.data.tracking.recurringTransactionId, id, this.data.period.start)
+      .linkReimbursement(
+        this.data.tracking.recurringTransactionId,
+        this.data.payer.payerId,
+        id,
+        this.data.period.start,
+      )
       .subscribe({
         next: () => {
           this.notify.success('Remboursement rattaché');

@@ -328,8 +328,14 @@ export class RecurringApi {
   }
 
   // period : n'importe quelle date de la période couverte
-  linkReimbursement(id: number, transactionId: number, period: string): Observable<void> {
+  linkReimbursement(
+    id: number,
+    payerId: number,
+    transactionId: number,
+    period: string,
+  ): Observable<void> {
     return this.http.post<void>(`${API}/recurring-transactions/${id}/reimbursements`, {
+      payerId,
       transactionId,
       period,
     });

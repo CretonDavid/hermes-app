@@ -156,6 +156,8 @@ export interface Transaction {
   reimbursement: {
     recurringTransactionId: number;
     label: string;
+    payerId: number;
+    payerName: string;
     period: ReimbursementPeriod;
     periodStart: string;
   } | null;
@@ -261,9 +263,15 @@ export interface RecurringTransaction {
   occurrenceCount: number;
   active: boolean;
   transfer: boolean;
-  reimbursementPayer: string | null;
-  reimbursementShare: number | null;
-  reimbursementPeriod: ReimbursementPeriod | null;
+  reimbursementPayers: ReimbursementPayer[];
+}
+
+// Tiers qui rembourse une part (en %) d'une dépense récurrente
+export interface ReimbursementPayer {
+  id: number;
+  name: string;
+  share: number;
+  period: ReimbursementPeriod;
 }
 
 export type ReimbursementPeriod = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
@@ -290,15 +298,21 @@ export interface ReimbursementPeriodStatus {
   payments: ReimbursementPayment[];
 }
 
-// Suivi d'une dépense récurrente remboursée par un tiers, période la plus récente d'abord
+// Suivi d'un tiers, période la plus récente d'abord
+export interface PayerTracking {
+  payerId: number;
+  name: string;
+  share: number;
+  period: ReimbursementPeriod;
+  periods: ReimbursementPeriodStatus[];
+}
+
+// Suivi d'une dépense récurrente remboursée par des tiers
 export interface ReimbursementTracking {
   recurringTransactionId: number;
   label: string;
-  payer: string;
-  share: number;
-  period: ReimbursementPeriod;
   currencyCode: string;
-  periods: ReimbursementPeriodStatus[];
+  payers: PayerTracking[];
 }
 
 export interface RecurringTransactionRequest {
@@ -316,9 +330,7 @@ export interface RecurringTransactionRequest {
   startDate: string;
   endDate: string | null;
   active: boolean;
-  reimbursementPayer: string | null;
-  reimbursementShare: number | null;
-  reimbursementPeriod: ReimbursementPeriod | null;
+  reimbursementPayers: (Omit<ReimbursementPayer, 'id'> & { id: number | null })[];
 }
 
 export interface UpcomingOccurrence {

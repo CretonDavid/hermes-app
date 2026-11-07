@@ -18,6 +18,7 @@ const transaction = (values: Partial<Transaction>): Transaction => ({
   status: 'PENDING',
   transfer: null,
   recurringTransactionId: null,
+  reimbursement: null,
   createdAt: '2026-11-01T00:00:00',
   ...values,
 });

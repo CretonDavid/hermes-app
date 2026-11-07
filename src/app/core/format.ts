@@ -1,6 +1,11 @@
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { PaymentMethod, RecurrenceFrequency, TransactionStatus } from './models';
+import {
+  PaymentMethod,
+  RecurrenceFrequency,
+  ReimbursementPeriod,
+  TransactionStatus,
+} from './models';
 
 // Conversion entre les dates du datepicker (Date) et le format de l'API (yyyy-MM-dd)
 export function toIsoDate(date: Date | string | null | undefined): string | null {
@@ -76,4 +81,23 @@ export function formatDay(date: string): string {
 export function trimLeadingEmpty<T>(items: T[], hasData: (item: T) => boolean): T[] {
   const first = items.findIndex(hasData);
   return first === -1 ? items : items.slice(first);
+}
+
+export const REIMBURSEMENT_PERIODS: { value: ReimbursementPeriod; label: string }[] = [
+  { value: 'YEARLY', label: 'Une fois par an' },
+  { value: 'QUARTERLY', label: 'Chaque trimestre' },
+  { value: 'MONTHLY', label: 'Chaque mois' },
+];
+
+// Nom d'une période de remboursement : « 2026 », « T1 2026 » ou « nov. 2026 »
+export function reimbursementPeriodLabel(period: ReimbursementPeriod, start: string): string {
+  const date = parseISO(start);
+  switch (period) {
+    case 'YEARLY':
+      return format(date, 'yyyy');
+    case 'QUARTERLY':
+      return `T${Math.floor(date.getMonth() / 3) + 1} ${format(date, 'yyyy')}`;
+    default:
+      return format(date, 'MMM yyyy', { locale: fr });
+  }
 }

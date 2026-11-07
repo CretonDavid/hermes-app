@@ -19,7 +19,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
-import { STATUS_LABELS, paymentMethodLabel } from '../../core/format';
+import { STATUS_LABELS, paymentMethodLabel, reimbursementPeriodLabel } from '../../core/format';
 import { Transaction, TransactionSort, TransactionSortField } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
@@ -104,6 +104,8 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
             <div class="label">
               @if (t.transfer) {
                 <mat-icon class="kind" matTooltip="Virement interne">swap_horiz</mat-icon>
+              } @else if (t.reimbursement) {
+                <mat-icon class="kind" [matTooltip]="reimbursementTooltip(t)">handshake</mat-icon>
               } @else if (t.recurringTransactionId) {
                 <mat-icon class="kind" matTooltip="Récurrence">event_repeat</mat-icon>
               }
@@ -327,6 +329,11 @@ export class TransactionTableComponent {
 
   protected categoryColor(id: number): string {
     return this.store.categoryOption(id)?.color ?? '#9e9e9e';
+  }
+
+  protected reimbursementTooltip(t: Transaction): string {
+    const r = t.reimbursement!;
+    return `Remboursement de « ${r.label} » pour ${reimbursementPeriodLabel(r.period, r.periodStart)}`;
   }
 
   protected statusTooltip(t: Transaction): string {

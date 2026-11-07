@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import {
   FREQUENCIES,
   PAYMENT_METHODS,
+  REIMBURSEMENT_PERIODS,
   frequencyLabel,
   fromIsoDate,
   toIsoDate,
@@ -38,6 +39,7 @@ import {
   RecurrenceFrequency,
   RecurringTransaction,
   RecurringTransactionRequest,
+  ReimbursementPeriod,
 } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
@@ -212,6 +214,43 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
           <mat-checkbox formControlName="active">Active</mat-checkbox>
         </div>
 
+        @if (mode() === 'DEBIT') {
+          <div class="full">
+            <mat-checkbox formControlName="reimbursed">
+              Quelqu’un me rembourse cette dépense (abonnement partagé…)
+            </mat-checkbox>
+          </div>
+          @if (reimbursed()) {
+            <mat-form-field>
+              <mat-label>Remboursée par</mat-label>
+              <input matInput formControlName="reimbursementPayer" placeholder="Ex. Alex" />
+              <mat-error>Indiquez qui vous rembourse</mat-error>
+            </mat-form-field>
+            <div class="custom-repeat">
+              <mat-form-field>
+                <mat-label>Part remboursée</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="1"
+                  max="100"
+                  formControlName="reimbursementShare"
+                />
+                <span matTextSuffix>&nbsp;%</span>
+                <mat-error>Entre 1 et 100 %</mat-error>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Rembourse</mat-label>
+                <mat-select formControlName="reimbursementPeriod">
+                  @for (p of reimbursementPeriods; track p.value) {
+                    <mat-option [value]="p.value">{{ p.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          }
+        }
+
         @if (summary(); as text) {
           <p class="full summary"><mat-icon inline>event_repeat</mat-icon> {{ text }}</p>
         }
@@ -303,7 +342,33 @@ export class RecurringDialogComponent {
     endDate: new FormControl<Date | null>(fromIsoDate(this.data?.endDate)),
     paymentMethod: new FormControl<PaymentMethod | null>(this.data?.paymentMethod ?? null),
     active: new FormControl(this.data?.active ?? true, { nonNullable: true }),
+    reimbursed: new FormControl(!!this.data?.reimbursementPayer, { nonNullable: true }),
+    reimbursementPayer: new FormControl(this.data?.reimbursementPayer ?? '', { nonNullable: true }),
+    reimbursementShare: new FormControl(this.data?.reimbursementShare ?? 100, {
+      nonNullable: true,
+      validators: [Validators.min(1), Validators.max(100)],
+    }),
+    reimbursementPeriod: new FormControl<ReimbursementPeriod>(
+      this.data?.reimbursementPeriod ?? 'YEARLY',
+      { nonNullable: true },
+    ),
   });
+
+  protected readonly reimbursementPeriods = REIMBURSEMENT_PERIODS;
+  private readonly reimbursedValue = toSignal(this.form.controls.reimbursed.valueChanges, {
+    initialValue: this.form.controls.reimbursed.value,
+  });
+  protected readonly reimbursed = computed(() => this.mode() === 'DEBIT' && this.reimbursedValue());
+  private readonly payer = toSignal(this.form.controls.reimbursementPayer.valueChanges, {
+    initialValue: this.form.controls.reimbursementPayer.value,
+  });
+  private readonly share = toSignal(this.form.controls.reimbursementShare.valueChanges, {
+    initialValue: this.form.controls.reimbursementShare.value,
+  });
+  private readonly reimbursementPeriod = toSignal(
+    this.form.controls.reimbursementPeriod.valueChanges,
+    { initialValue: this.form.controls.reimbursementPeriod.value },
+  );
 
   private readonly accountId = toSignal(this.form.controls.accountId.valueChanges, {
     initialValue: this.form.controls.accountId.value,
@@ -369,7 +434,12 @@ export class RecurringDialogComponent {
       !this.data && (this.startsInPast() || toIsoDate(start) === toIsoDate(new Date()))
         ? " Les échéances jusqu'à aujourd'hui seront ajoutées dès l'enregistrement."
         : '';
-    return `${what} ${repeat}, à partir du ${format(start, 'dd/MM/yyyy')}${end}.${now}`;
+    const payer = this.payer().trim();
+    const refund =
+      this.reimbursed() && payer
+        ? ` ${payer} vous en rembourse ${this.share() === 100 ? 'la totalité' : this.share() + ' %'}, ${REIMBURSEMENT_PERIODS.find((p) => p.value === this.reimbursementPeriod())!.label.toLowerCase()}.`
+        : '';
+    return `${what} ${repeat}, à partir du ${format(start, 'dd/MM/yyyy')}${end}.${refund}${now}`;
   });
 
   protected readonly currency = computed(
@@ -393,6 +463,7 @@ export class RecurringDialogComponent {
   constructor() {
     protectDirtyForm(this.form);
     effect(() => setRequired(this.form.controls.targetAccountId, this.mode() === 'TRANSFER'));
+    effect(() => setRequired(this.form.controls.reimbursementPayer, this.reimbursed()));
   }
 
   protected setMode(mode: Mode): void {
@@ -421,11 +492,16 @@ export class RecurringDialogComponent {
   }
 
   protected save(): void {
+    const v = this.form.getRawValue();
+    const reimbursed = this.reimbursed() && !!v.reimbursementPayer.trim();
+    // Une part hors bornes ne doit bloquer que si le remboursement est demandé
+    if (!reimbursed) {
+      this.form.controls.reimbursementShare.setValue(100);
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const v = this.form.getRawValue();
     const transfer = this.mode() === 'TRANSFER';
     if (transfer && !v.targetAccountId) {
       this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
@@ -446,6 +522,9 @@ export class RecurringDialogComponent {
       startDate: toIsoDate(v.startDate)!,
       endDate: toIsoDate(v.endDate),
       active: v.active,
+      reimbursementPayer: reimbursed ? v.reimbursementPayer.trim() : null,
+      reimbursementShare: reimbursed ? v.reimbursementShare : null,
+      reimbursementPeriod: reimbursed ? v.reimbursementPeriod : null,
     };
     this.saving.set(true);
     const request$ = this.data ? this.api.update(this.data.id, request) : this.api.create(request);

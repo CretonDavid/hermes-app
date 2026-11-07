@@ -17,13 +17,18 @@ import { forkJoin } from 'rxjs';
 import { RecurringApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { frequencyLabel } from '../../core/format';
-import { RecurringTransaction, UpcomingOccurrence } from '../../core/models';
+import {
+  RecurringTransaction,
+  ReimbursementTracking,
+  UpcomingOccurrence,
+} from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { untilEndOfMonth } from '../../shared/forecast';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { NoAccountComponent } from '../../shared/no-account.component';
 import { RecurringDialogComponent } from './recurring-dialog.component';
+import { ReimbursementCardComponent } from './reimbursement-card.component';
 
 @Component({
   selector: 'app-recurring',
@@ -35,6 +40,7 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
     MatTooltipModule,
     MoneyPipe,
     NoAccountComponent,
+    ReimbursementCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -99,6 +105,9 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
                           ? ' · ' + r.category.name
                           : ''
                     }}
+                    @if (r.reimbursementPayer) {
+                      · remboursée par {{ r.reimbursementPayer }}
+                    }
                   </div>
                 </td>
               </ng-container>
@@ -188,6 +197,15 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
             }
           </div>
         </div>
+
+        @if (reimbursements().length > 0) {
+          <h2 class="section">Remboursements attendus</h2>
+          <div class="reimbursements">
+            @for (t of reimbursements(); track t.recurringTransactionId) {
+              <app-reimbursement-card [tracking]="t" (changed)="store.transactionsChanged()" />
+            }
+          </div>
+        }
       }
     </div>
   `,
@@ -211,6 +229,13 @@ import { RecurringDialogComponent } from './recurring-dialog.component';
     }
     .small {
       font: var(--mat-sys-body-small);
+    }
+    .section {
+      margin: 24px 0 12px;
+    }
+    .reimbursements {
+      display: grid;
+      gap: 16px;
     }
     tr.inactive {
       opacity: 0.55;
@@ -241,6 +266,7 @@ export class RecurringComponent {
   protected readonly columns = ['label', 'frequency', 'next', 'amount', 'actions'];
   protected readonly items = signal<RecurringTransaction[]>([]);
   protected readonly upcoming = signal<UpcomingOccurrence[]>([]);
+  protected readonly reimbursements = signal<ReimbursementTracking[]>([]);
 
   // Equivalent mensuel des récurrences actives
   protected readonly monthly = computed(() => {
@@ -298,9 +324,14 @@ export class RecurringComponent {
   }
 
   private load(): void {
-    forkJoin({ items: this.api.list(), upcoming: this.api.upcoming(31) }).subscribe({
-      next: ({ items, upcoming }) => {
+    forkJoin({
+      items: this.api.list(),
+      upcoming: this.api.upcoming(31),
+      reimbursements: this.api.reimbursements(),
+    }).subscribe({
+      next: ({ items, upcoming, reimbursements }) => {
         this.items.set(items);
+        this.reimbursements.set(reimbursements);
         this.upcoming.set(untilEndOfMonth(upcoming));
       },
       error: (error) => this.notify.error(error),

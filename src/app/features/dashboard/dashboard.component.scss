@@ -113,6 +113,10 @@
   }
 }
 
+.warning-card .flex {
+  flex: 1;
+}
+
 .warning-card {
   display: flex;
   align-items: center;

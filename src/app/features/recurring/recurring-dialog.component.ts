@@ -549,14 +549,10 @@ export class RecurringDialogComponent {
     }
   }
 
-  // Le premier tiers rembourse tout (cas d'un ami qui rembourse un abonnement) ; ensuite, chaque
-  // ajout ou retrait répartit la dépense à parts égales entre vous et les tiers
+  // Chaque ajout ou retrait répartit la dépense à parts égales entre vous et les tiers
   protected addPayer(): void {
-    const first = this.payers.length === 0;
-    this.payers.push(RecurringDialogComponent.payerForm({ share: 100 }));
-    if (!first) {
-      this.splitEqually();
-    }
+    this.payers.push(RecurringDialogComponent.payerForm());
+    this.splitEqually();
     this.form.markAsDirty();
   }
 

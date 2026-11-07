@@ -152,6 +152,15 @@ export interface Transaction {
   status: TransactionStatus;
   transfer: { peerTransactionId: number; accountId: number; accountName: string } | null;
   recurringTransactionId: number | null;
+  // Dépense récurrente remboursée par cette opération
+  reimbursement: {
+    recurringTransactionId: number;
+    label: string;
+    payerId: number;
+    payerName: string;
+    period: ReimbursementPeriod;
+    periodStart: string;
+  } | null;
   createdAt: string;
 }
 
@@ -254,6 +263,56 @@ export interface RecurringTransaction {
   occurrenceCount: number;
   active: boolean;
   transfer: boolean;
+  reimbursementPayers: ReimbursementPayer[];
+}
+
+// Tiers qui rembourse une part (en %) d'une dépense récurrente
+export interface ReimbursementPayer {
+  id: number;
+  name: string;
+  share: number;
+  period: ReimbursementPeriod;
+}
+
+export type ReimbursementPeriod = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
+export type ReimbursementStatus = 'PAID' | 'PARTIAL' | 'UNPAID' | 'IN_PROGRESS';
+
+export interface ReimbursementPayment {
+  transactionId: number;
+  date: string;
+  amount: number;
+  label: string;
+  accountName: string;
+}
+
+export interface ReimbursementPeriodStatus {
+  start: string;
+  end: string;
+  ended: boolean;
+  expenses: number;
+  due: number;
+  received: number;
+  remaining: number;
+  status: ReimbursementStatus;
+  payments: ReimbursementPayment[];
+}
+
+// Suivi d'un tiers, période la plus récente d'abord
+export interface PayerTracking {
+  payerId: number;
+  name: string;
+  share: number;
+  period: ReimbursementPeriod;
+  periods: ReimbursementPeriodStatus[];
+}
+
+// Suivi d'une dépense récurrente remboursée par des tiers
+export interface ReimbursementTracking {
+  recurringTransactionId: number;
+  label: string;
+  currencyCode: string;
+  payers: PayerTracking[];
 }
 
 export interface RecurringTransactionRequest {
@@ -271,6 +330,7 @@ export interface RecurringTransactionRequest {
   startDate: string;
   endDate: string | null;
   active: boolean;
+  reimbursementPayers: (Omit<ReimbursementPayer, 'id'> & { id: number | null })[];
 }
 
 export interface UpcomingOccurrence {

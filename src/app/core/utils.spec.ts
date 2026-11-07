@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { categoryColors } from '../shared/charts';
 import { formatMoney } from '../shared/money.pipe';
 import { toParams } from './api';
-import { frequencyLabel, toIsoDate } from './format';
+import { frequencyLabel, reimbursementPeriodLabel, toIsoDate } from './format';
 import { CategoryStat } from './models';
 
 const stat = (color: string | null): CategoryStat => ({
@@ -44,5 +44,13 @@ describe('utilitaires', () => {
     const colors = categoryColors([stat('#e57373'), stat('#e57373'), stat('#e57373')]);
     expect(new Set(colors).size).toBe(3);
     expect(categoryColors([stat('#111111'), stat('#222222')])).toEqual(['#111111', '#222222']);
+  });
+});
+
+describe('reimbursementPeriodLabel', () => {
+  it('nomme une année, un trimestre ou un mois', () => {
+    expect(reimbursementPeriodLabel('YEARLY', '2025-01-01')).toBe('2025');
+    expect(reimbursementPeriodLabel('QUARTERLY', '2025-07-01')).toBe('T3 2025');
+    expect(reimbursementPeriodLabel('MONTHLY', '2025-11-01')).toBe('nov. 2025');
   });
 });

@@ -31,6 +31,7 @@ import {
   ReconciliationStatus,
   RecurringTransaction,
   RecurringTransactionRequest,
+  ReimbursementTracking,
   SavingsStats,
   StatsList,
   StatsSummary,
@@ -320,6 +321,30 @@ export class RecurringApi {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${API}/recurring-transactions/${id}`);
+  }
+
+  reimbursements(): Observable<ReimbursementTracking[]> {
+    return this.http.get<ReimbursementTracking[]>(`${API}/recurring-transactions/reimbursements`);
+  }
+
+  // period : n'importe quelle date de la période couverte
+  linkReimbursement(
+    id: number,
+    payerId: number,
+    transactionId: number,
+    period: string,
+  ): Observable<void> {
+    return this.http.post<void>(`${API}/recurring-transactions/${id}/reimbursements`, {
+      payerId,
+      transactionId,
+      period,
+    });
+  }
+
+  unlinkReimbursement(id: number, transactionId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${API}/recurring-transactions/${id}/reimbursements/${transactionId}`,
+    );
   }
 }
 

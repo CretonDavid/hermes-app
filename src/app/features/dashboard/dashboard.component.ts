@@ -16,10 +16,11 @@ import { addDays, endOfMonth, startOfMonth, subMonths } from 'date-fns';
 import { forkJoin } from 'rxjs';
 import { RecurringApi, StatsApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
-import { toIsoDate, trimLeadingEmpty } from '../../core/format';
+import { reimbursementPeriodLabel, toIsoDate, trimLeadingEmpty } from '../../core/format';
 import {
   CategoryStat,
   MonthlyStat,
+  ReimbursementTracking,
   StatsSummary,
   Transaction,
   UpcomingOccurrence,
@@ -61,6 +62,26 @@ export class DashboardComponent {
   protected readonly months = signal<MonthlyStat[]>([]);
   protected readonly recent = signal<Transaction[]>([]);
   protected readonly upcoming = signal<UpcomingOccurrence[]>([]);
+  private readonly reimbursements = signal<ReimbursementTracking[]>([]);
+  // Périodes terminées sans remboursement complet, la plus ancienne d'abord
+  protected readonly overdueReimbursements = computed(() =>
+    this.reimbursements().flatMap((t) =>
+      t.payers.flatMap((payer) =>
+        payer.periods
+          .filter((p) => p.status === 'UNPAID' || p.status === 'PARTIAL')
+          .reverse()
+          .map((p) => ({
+            key: `${payer.payerId}-${p.start}`,
+            payer: payer.name,
+            label: t.label,
+            period: reimbursementPeriodLabel(payer.period, p.start),
+            remaining: p.remaining,
+            currencyCode: t.currencyCode,
+            partial: p.status === 'PARTIAL',
+          })),
+      ),
+    ),
+  );
   protected readonly now = new Date();
   private readonly dataLoaded = signal(false);
 
@@ -170,6 +191,7 @@ export class DashboardComponent {
         100,
       ),
       upcoming: this.recurringApi.upcoming(30),
+      reimbursements: this.recurringApi.reimbursements(),
     }).subscribe({
       next: (r) => {
         this.dataLoaded.set(true);
@@ -182,6 +204,7 @@ export class DashboardComponent {
         this.categories.set(r.categories.items);
         this.months.set(trimLeadingEmpty(r.months.items, (m) => !!(m.income || m.expenses)));
         this.recent.set(r.recent.content);
+        this.reimbursements.set(r.reimbursements);
         this.hasTransactions.set(r.any.totalElements > 0);
         this.upcoming.set(withFutureTransactions(r.upcoming, r.future.content).slice(0, 8));
       },

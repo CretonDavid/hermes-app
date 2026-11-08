@@ -545,3 +545,9 @@ tr.clickable:focus-visible {
   outline: 2px solid var(--mat-sys-primary);
   outline-offset: -2px;
 }
+
+// Infobulle sur plusieurs lignes (un \n par ligne dans le message)
+.multiline-tooltip .mat-mdc-tooltip-surface {
+  white-space: pre-line;
+  max-width: 360px;
+}

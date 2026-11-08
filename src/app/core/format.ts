@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { addMonths, format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   PaymentMethod,
@@ -88,6 +88,33 @@ export const REIMBURSEMENT_PERIODS: { value: ReimbursementPeriod; label: string 
   { value: 'QUARTERLY', label: 'Chaque trimestre' },
   { value: 'MONTHLY', label: 'Chaque mois' },
 ];
+
+const PERIOD_MONTHS: Record<ReimbursementPeriod, number> = { MONTHLY: 1, QUARTERLY: 3, YEARLY: 12 };
+
+// Premier jour de la période de remboursement contenant la date (yyyy-MM-dd)
+export function reimbursementPeriodStart(period: ReimbursementPeriod, date: Date | string): string {
+  const d = typeof date === 'string' ? parseISO(date) : date;
+  const months = PERIOD_MONTHS[period];
+  return toIsoDate(new Date(d.getFullYear(), Math.floor(d.getMonth() / months) * months, 1))!;
+}
+
+// Périodes de remboursement de la première à la dernière date incluses, la plus récente d'abord
+export function reimbursementPeriodStarts(
+  period: ReimbursementPeriod,
+  from: Date | string,
+  to: Date | string,
+): string[] {
+  const last = reimbursementPeriodStart(period, to);
+  const starts: string[] = [];
+  for (
+    let start = reimbursementPeriodStart(period, from);
+    start <= last;
+    start = toIsoDate(addMonths(parseISO(start), PERIOD_MONTHS[period]))!
+  ) {
+    starts.unshift(start);
+  }
+  return starts;
+}
 
 // Nom d'une période de remboursement : « 2026 », « T1 2026 » ou « nov. 2026 »
 export function reimbursementPeriodLabel(period: ReimbursementPeriod, start: string): string {

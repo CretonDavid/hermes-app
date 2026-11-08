@@ -1,3 +1,4 @@
+// Production : l'API est servie par le même nginx que le front, sous /api
 export const environment = {
-  apiUrl: 'http://localhost:8080',
+  apiUrl: '/api',
 };

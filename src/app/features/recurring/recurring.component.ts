@@ -256,7 +256,7 @@ import {
       width: 20px;
       height: 20px;
       font-size: 20px;
-      color: var(--mat-sys-error);
+      color: var(--hermes-warning);
       cursor: help;
     }
     .small {

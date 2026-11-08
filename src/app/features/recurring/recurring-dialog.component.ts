@@ -25,13 +25,16 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RecurringApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
-import { format } from 'date-fns';
+import { addYears, format } from 'date-fns';
 import {
   FREQUENCIES,
   PAYMENT_METHODS,
   REIMBURSEMENT_PERIODS,
   frequencyLabel,
   fromIsoDate,
+  reimbursementPeriodLabel,
+  reimbursementPeriodStart,
+  reimbursementPeriodStarts,
   toIsoDate,
 } from '../../core/format';
 import {
@@ -46,7 +49,6 @@ import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
 import { formatMoney } from '../../shared/money.pipe';
 import { AmountInputDirective } from '../../shared/amount-input.directive';
-import { DIALOG_LARGE } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 import { protectDirtyForm } from '../../shared/dialog-guard';
 import { setRequired } from '../../shared/required';
@@ -114,7 +116,9 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
         </mat-form-field>
 
         <mat-form-field>
-          <mat-label>{{ mode() === 'TRANSFER' ? 'Depuis le compte bancaire' : 'Compte bancaire' }}</mat-label>
+          <mat-label>{{
+            mode() === 'TRANSFER' ? 'Depuis le compte bancaire' : 'Compte bancaire'
+          }}</mat-label>
           <mat-select formControlName="accountId">
             @for (account of store.openAccounts(); track account.id) {
               <mat-option [value]="account.id">{{ account.name }}</mat-option>
@@ -245,9 +249,22 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
                   </mat-form-field>
                   <mat-form-field subscriptSizing="dynamic">
                     <mat-label>Rembourse</mat-label>
-                    <mat-select formControlName="period">
+                    <mat-select
+                      formControlName="period"
+                      (selectionChange)="periodChanged(payer, $event.value)"
+                    >
                       @for (p of reimbursementPeriods; track p.value) {
                         <mat-option [value]="p.value">{{ p.label }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field subscriptSizing="dynamic">
+                    <mat-label>Depuis</mat-label>
+                    <mat-select formControlName="startDate" panelWidth="">
+                      @for (start of payerStarts(payer); track start) {
+                        <mat-option [value]="start">{{
+                          periodLabel(payer.value.period!, start)
+                        }}</mat-option>
                       }
                     </mat-select>
                   </mat-form-field>
@@ -316,7 +333,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
     }
     .payer {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 120px 170px 40px;
+      grid-template-columns: minmax(0, 1fr) 104px 170px 112px 40px;
       gap: 8px;
       align-items: start;
       margin-bottom: 12px;
@@ -352,7 +369,8 @@ export class RecurringDialogComponent {
   ): MatDialogRef<RecurringDialogComponent, boolean> {
     return dialog.open(RecurringDialogComponent, {
       data: recurring ?? null,
-      width: DIALOG_LARGE,
+      // Plus large que les autres formulaires pour tenir les tiers sur une ligne
+      width: '760px',
       autoFocus: recurring ? 'dialog' : 'input[formcontrolname="amount"]',
     });
   }
@@ -439,7 +457,31 @@ export class RecurringDialogComponent {
       period: new FormControl<ReimbursementPeriod>(payer?.period ?? 'YEARLY', {
         nonNullable: true,
       }),
+      // Un nouveau tiers doit par défaut à partir de la période en cours
+      startDate: new FormControl<string>(
+        payer?.startDate ?? reimbursementPeriodStart(payer?.period ?? 'YEARLY', new Date()),
+        { nonNullable: true },
+      ),
     });
+  }
+
+  // Périodes proposées pour « Depuis » : du début de la récurrence à l'an prochain
+  protected payerStarts(payer: FormGroup): string[] {
+    const period = payer.value.period as ReimbursementPeriod;
+    const chosen = payer.value.startDate as string;
+    const recurrenceStart = toIsoDate(this.startDate()) ?? chosen;
+    const from = recurrenceStart < chosen ? recurrenceStart : chosen;
+    const nextYear = toIsoDate(addYears(new Date(), 1))!;
+    return reimbursementPeriodStarts(period, from, chosen > nextYear ? chosen : nextYear);
+  }
+
+  protected periodLabel(period: ReimbursementPeriod, start: string): string {
+    return reimbursementPeriodLabel(period, start);
+  }
+
+  // Le début reste dans la même période quand le rythme change (mars 2026 → 2026 → T1 2026)
+  protected periodChanged(payer: FormGroup, period: ReimbursementPeriod): void {
+    payer.patchValue({ startDate: reimbursementPeriodStart(period, payer.value.startDate) });
   }
 
   private readonly accountId = toSignal(this.form.controls.accountId.valueChanges, {
@@ -637,6 +679,7 @@ export class RecurringDialogComponent {
         name: p.name.trim(),
         share: p.share!,
         period: p.period,
+        startDate: p.startDate,
       })),
     };
     this.saving.set(true);

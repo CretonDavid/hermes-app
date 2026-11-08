@@ -189,6 +189,8 @@ export interface TransactionFilter {
   search?: string;
   minAmount?: number;
   maxAmount?: number;
+  // Opérations générées par cette récurrence
+  recurringTransactionId?: number;
 }
 
 export interface TransactionTotals {
@@ -272,6 +274,8 @@ export interface ReimbursementPayer {
   name: string;
   share: number;
   period: ReimbursementPeriod;
+  // Début de la première période due (yyyy-MM-dd)
+  startDate: string;
 }
 
 export type ReimbursementPeriod = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
@@ -293,7 +297,11 @@ export interface ReimbursementPeriodStatus {
   expenses: number;
   due: number;
   received: number;
+  // Part due couverte par le trop-perçu des périodes précédentes
+  advanceUsed: number;
   remaining: number;
+  // Trop-perçu restant après cette période, reporté sur les suivantes
+  surplus: number;
   status: ReimbursementStatus;
   payments: ReimbursementPayment[];
 }

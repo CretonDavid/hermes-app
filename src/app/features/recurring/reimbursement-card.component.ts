@@ -1,12 +1,5 @@
 import { DatePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -37,14 +30,17 @@ const VISIBLE_PERIODS = 3;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let t = tracking();
-    <div class="card">
-      <h2><mat-icon>handshake</mat-icon> {{ t.label }}</h2>
-
+    <div>
       @for (payer of t.payers; track payer.payerId) {
         <div class="payer">
           <div class="payer-name">
             {{ payer.name }}
-            <span class="muted">· {{ shareLabel(payer.share) }} · {{ rhythm(payer) }}</span>
+            <span class="muted">
+              · {{ shareLabel(payer.share) }} · {{ rhythm(payer) }}
+              @if (payer.periods.at(-1); as first) {
+                · depuis {{ name(payer, first) }}
+              }
+            </span>
           </div>
 
           @for (p of visible(payer); track p.start) {
@@ -66,6 +62,18 @@ const VISIBLE_PERIODS = 3;
                     {{ p.received | money: t.currencyCode }}
                   </span>
                 </span>
+                @if (p.advanceUsed > 0) {
+                  <span matTooltip="Trop-perçu des périodes précédentes, déduit de ce qui est dû">
+                    <span class="muted small">Avance utilisée</span>
+                    <span class="amount positive">{{ p.advanceUsed | money: t.currencyCode }}</span>
+                  </span>
+                }
+                @if (p.surplus > 0) {
+                  <span matTooltip="Versé en trop, reporté sur les périodes suivantes">
+                    <span class="muted small">Trop-perçu reporté</span>
+                    <span class="amount positive">{{ p.surplus | money: t.currencyCode }}</span>
+                  </span>
+                }
               </div>
               <span class="chip status" [class]="p.status">
                 <mat-icon>{{ icons[p.status] }}</mat-icon>
@@ -102,7 +110,7 @@ const VISIBLE_PERIODS = 3;
               </div>
             }
           } @empty {
-            <p class="muted">Aucune échéance pour l'instant.</p>
+            <p class="muted">Rien à rembourser pour l'instant.</p>
           }
 
           @if (hidden(payer) > 0) {
@@ -148,7 +156,8 @@ const VISIBLE_PERIODS = 3;
     }
     .figures {
       display: flex;
-      gap: 32px;
+      flex-wrap: wrap;
+      gap: 8px 28px;
       > span {
         display: flex;
         flex-direction: column;
@@ -222,15 +231,18 @@ export class ReimbursementCardComponent {
     return REIMBURSEMENT_PERIODS.find((p) => p.value === payer.period)!.label.toLowerCase();
   }
 
-  protected name(payer: PayerTracking, p: ReimbursementPeriodStatus): string {
-    return reimbursementPeriodLabel(payer.period, p.start);
+  protected name(payer: PayerTracking, p: ReimbursementPeriodStatus | null): string {
+    return p ? reimbursementPeriodLabel(payer.period, p.start) : '—';
   }
 
   protected statusLabel(p: ReimbursementPeriodStatus): string {
     const remaining = formatMoney(p.remaining, this.tracking().currencyCode);
     switch (p.status) {
       case 'PAID':
-        return p.due === 0 && p.received === 0 ? 'Rien à rembourser' : 'Remboursé';
+        if (p.due === 0 && p.received === 0) {
+          return 'Rien à rembourser';
+        }
+        return p.received === 0 && p.advanceUsed > 0 ? "Couvert par l'avance" : 'Remboursé';
       case 'PARTIAL':
         return `Reste ${remaining}`;
       case 'UNPAID':

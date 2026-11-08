@@ -51,17 +51,6 @@
       </div>
     </div>
   } @else {
-    @for (r of overdueReimbursements(); track r.key) {
-      <div class="card warning-card">
-        <mat-icon>handshake</mat-icon>
-        <span class="flex">
-          {{ r.payer }} ne vous a pas encore {{ r.partial ? 'entièrement ' : '' }}remboursé
-          « {{ r.label }} » pour {{ r.period }} : reste
-          <strong>{{ r.remaining | money: r.currencyCode }}</strong>.
-        </span>
-        <a routerLink="/recurring">Voir le suivi</a>
-      </div>
-    }
     @if (summary(); as s) {
       @if (s.missingRates.length > 0) {
         <div class="card warning-card">

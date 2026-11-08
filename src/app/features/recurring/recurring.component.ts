@@ -16,19 +16,18 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin } from 'rxjs';
 import { RecurringApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
-import { frequencyLabel } from '../../core/format';
-import {
-  RecurringTransaction,
-  ReimbursementTracking,
-  UpcomingOccurrence,
-} from '../../core/models';
+import { frequencyLabel, reimbursementPeriodLabel } from '../../core/format';
+import { RecurringTransaction, ReimbursementTracking, UpcomingOccurrence } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { untilEndOfMonth } from '../../shared/forecast';
-import { MoneyPipe } from '../../shared/money.pipe';
+import { formatMoney, MoneyPipe } from '../../shared/money.pipe';
 import { NoAccountComponent } from '../../shared/no-account.component';
 import { RecurringDialogComponent } from './recurring-dialog.component';
-import { ReimbursementCardComponent } from './reimbursement-card.component';
+import {
+  RecurringHistoryDialogComponent,
+  RecurringHistoryTab,
+} from './recurring-history-dialog.component';
 
 @Component({
   selector: 'app-recurring',
@@ -40,7 +39,6 @@ import { ReimbursementCardComponent } from './reimbursement-card.component';
     MatTooltipModule,
     MoneyPipe,
     NoAccountComponent,
-    ReimbursementCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -94,20 +92,39 @@ import { ReimbursementCardComponent } from './reimbursement-card.component';
               <ng-container matColumnDef="label">
                 <th mat-header-cell *matHeaderCellDef>Libellé</th>
                 <td mat-cell *matCellDef="let r">
-                  <div class="label">{{ r.label }}</div>
-                  <div class="muted small">
-                    {{ r.transfer ? 'Virement' : r.direction === 'CREDIT' ? 'Revenu' : 'Dépense' }} ·
-                    {{ r.accountName
-                    }}{{
-                      r.transfer
-                        ? ' → ' + r.targetAccountName
-                        : r.category
-                          ? ' · ' + r.category.name
-                          : ''
-                    }}
-                    @if (r.reimbursementPayers.length) {
-                      · remboursée par {{ payerNames(r) }}
+                  <div class="label-cell">
+                    @if (overdue().get(r.id); as message) {
+                      <mat-icon
+                        class="overdue"
+                        tabindex="0"
+                        role="button"
+                        matTooltipClass="multiline-tooltip"
+                        [matTooltip]="message"
+                        [attr.aria-label]="message"
+                        (click)="history(r, 'reimbursements')"
+                        (keydown.enter)="history(r, 'reimbursements')"
+                        >error</mat-icon
+                      >
                     }
+                    <div>
+                      <div class="label">{{ r.label }}</div>
+                      <div class="muted small">
+                        {{
+                          r.transfer ? 'Virement' : r.direction === 'CREDIT' ? 'Revenu' : 'Dépense'
+                        }}
+                        · {{ r.accountName
+                        }}{{
+                          r.transfer
+                            ? ' → ' + r.targetAccountName
+                            : r.category
+                              ? ' · ' + r.category.name
+                              : ''
+                        }}
+                        @if (r.reimbursementPayers.length) {
+                          · remboursée par {{ payerNames(r) }}
+                        }
+                      </div>
+                    </div>
                   </div>
                 </td>
               </ng-container>
@@ -141,6 +158,16 @@ import { ReimbursementCardComponent } from './reimbursement-card.component';
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef></th>
                 <td mat-cell *matCellDef="let r" style="text-align: right; white-space: nowrap">
+                  @if (r.reimbursementPayers.length) {
+                    <button
+                      matIconButton
+                      matTooltip="Historique des remboursements et des opérations"
+                      [attr.aria-label]="'Historique de ' + r.label"
+                      (click)="history(r)"
+                    >
+                      <mat-icon>history</mat-icon>
+                    </button>
+                  }
                   <button
                     matIconButton
                     matTooltip="Modifier"
@@ -170,8 +197,8 @@ import { ReimbursementCardComponent } from './reimbursement-card.component';
               <div class="empty">
                 <mat-icon>event_repeat</mat-icon>
                 <p>
-                  Aucune récurrence.<br />Ajoutez votre loyer, votre salaire ou vos
-                  abonnements : ils seront créés automatiquement à chaque échéance.
+                  Aucune récurrence.<br />Ajoutez votre loyer, votre salaire ou vos abonnements :
+                  ils seront créés automatiquement à chaque échéance.
                 </p>
                 <button matButton="filled" (click)="create()">
                   <mat-icon>add</mat-icon> Nouvelle récurrence
@@ -197,15 +224,6 @@ import { ReimbursementCardComponent } from './reimbursement-card.component';
             }
           </div>
         </div>
-
-        @if (reimbursements().length > 0) {
-          <h2 class="section">Remboursements attendus</h2>
-          <div class="reimbursements">
-            @for (t of reimbursements(); track t.recurringTransactionId) {
-              <app-reimbursement-card [tracking]="t" (changed)="store.transactionsChanged()" />
-            }
-          </div>
-        }
       }
     </div>
   `,
@@ -227,15 +245,22 @@ import { ReimbursementCardComponent } from './reimbursement-card.component';
     .label {
       font-weight: 500;
     }
+    // Pastille d'alerte centrée verticalement à gauche du libellé et du détail
+    .label-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .overdue {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      color: var(--hermes-warning);
+      cursor: help;
+    }
     .small {
       font: var(--mat-sys-body-small);
-    }
-    .section {
-      margin: 24px 0 12px;
-    }
-    .reimbursements {
-      display: grid;
-      gap: 16px;
     }
     tr.inactive {
       opacity: 0.55;
@@ -267,6 +292,29 @@ export class RecurringComponent {
   protected readonly items = signal<RecurringTransaction[]>([]);
   protected readonly upcoming = signal<UpcomingOccurrence[]>([]);
   protected readonly reimbursements = signal<ReimbursementTracking[]>([]);
+  // Par récurrence, les périodes terminées sans remboursement complet (la plus ancienne d'abord)
+  protected readonly overdue = computed(() => {
+    const messages = new Map<number, string>();
+    for (const t of this.reimbursements()) {
+      const lines = t.payers.flatMap((payer) =>
+        payer.periods
+          .filter((p) => p.status === 'UNPAID' || p.status === 'PARTIAL')
+          .reverse()
+          .map(
+            (p) =>
+              `${payer.name} ne vous a pas encore ${p.status === 'PARTIAL' ? 'entièrement ' : ''}remboursé ` +
+              `pour ${reimbursementPeriodLabel(payer.period, p.start)} : reste ${formatMoney(p.remaining, t.currencyCode)}.`,
+          ),
+      );
+      if (lines.length) {
+        messages.set(
+          t.recurringTransactionId,
+          [...lines, 'Cliquez pour voir le suivi des remboursements.'].join('\n'),
+        );
+      }
+    }
+    return messages;
+  });
 
   // Equivalent mensuel des récurrences actives
   protected readonly monthly = computed(() => {
@@ -310,6 +358,10 @@ export class RecurringComponent {
 
   protected edit(r: RecurringTransaction): void {
     RecurringDialogComponent.open(this.dialog, r);
+  }
+
+  protected history(r: RecurringTransaction, tab?: RecurringHistoryTab): void {
+    RecurringHistoryDialogComponent.open(this.dialog, { recurring: r, tab });
   }
 
   protected remove(r: RecurringTransaction): void {

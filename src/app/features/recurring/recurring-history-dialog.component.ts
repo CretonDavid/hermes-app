@@ -1,4 +1,4 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,7 +16,7 @@ import {
 } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { RecurringApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { frequencyLabel } from '../../core/format';
@@ -37,14 +37,13 @@ export interface RecurringHistoryData {
 const PAGE_SIZE = 20;
 
 /**
- * Historique d'une récurrence : le suivi des remboursements par les tiers, s'il y en a, et les
- * opérations qu'elle a créées.
+ * Historique d'une dépense récurrente remboursée par des tiers : le suivi des remboursements et
+ * les opérations qu'elle a créées.
  */
 @Component({
   selector: 'app-recurring-history-dialog',
   imports: [
     DatePipe,
-    NgTemplateOutlet,
     MatButtonModule,
     MatDialogModule,
     MatIconModule,
@@ -59,58 +58,48 @@ const PAGE_SIZE = 20;
     <h2 mat-dialog-title>Historique · {{ r.label }}</h2>
     <mat-dialog-content>
       <p class="muted intro">
-        {{ r.transfer ? 'Virement' : r.direction === 'CREDIT' ? 'Revenu' : 'Dépense' }} ·
-        {{ frequency }} · {{ r.accountName }} ·
-        {{ (r.direction === 'DEBIT' ? -r.amount : r.amount) | money: r.currencyCode : true }}
+        Dépense · {{ frequency }} · {{ r.accountName }} ·
+        {{ -r.amount | money: r.currencyCode : true }}
       </p>
 
-      @if (r.reimbursementPayers.length) {
-        <mat-tab-group
-          [selectedIndex]="data.tab === 'operations' ? 1 : 0"
-          mat-stretch-tabs="false"
-          animationDuration="0ms"
-        >
-          <mat-tab label="Remboursements">
-            <div class="tab">
-              @if (tracking(); as t) {
-                <app-reimbursement-card [tracking]="t" (changed)="store.transactionsChanged()" />
+      <mat-tab-group
+        [selectedIndex]="data.tab === 'operations' ? 1 : 0"
+        mat-stretch-tabs="false"
+        animationDuration="0ms"
+      >
+        <mat-tab label="Remboursements">
+          <div class="tab">
+            @if (tracking(); as t) {
+              <app-reimbursement-card [tracking]="t" (changed)="store.transactionsChanged()" />
+            }
+          </div>
+        </mat-tab>
+        <mat-tab [label]="operationsLabel()">
+          <div class="tab">
+            @for (t of operations(); track t.id) {
+              <button type="button" class="operation" (click)="open(t)">
+                <span class="date">{{ t.operationDate | date: 'dd/MM/yyyy' }}</span>
+                <span class="text">
+                  {{ t.label }}
+                  <span class="muted small">· {{ t.accountName }}</span>
+                </span>
+                <span class="amount">
+                  {{ -t.amount | money: t.currencyCode : true }}
+                </span>
+              </button>
+            } @empty {
+              @if (loaded()) {
+                <p class="muted">Aucune opération créée pour l'instant.</p>
               }
-            </div>
-          </mat-tab>
-          <mat-tab [label]="operationsLabel()">
-            <div class="tab">
-              <ng-container *ngTemplateOutlet="operationsList" />
-            </div>
-          </mat-tab>
-        </mat-tab-group>
-      } @else {
-        <h3>{{ operationsLabel() }}</h3>
-        <ng-container *ngTemplateOutlet="operationsList" />
-      }
-
-      <ng-template #operationsList>
-        @for (t of operations(); track t.id) {
-          <button type="button" class="operation" (click)="open(t)">
-            <span class="date">{{ t.operationDate | date: 'dd/MM/yyyy' }}</span>
-            <span class="text">
-              {{ t.label }}
-              <span class="muted small">· {{ t.accountName }}</span>
-            </span>
-            <span class="amount" [class.positive]="!t.transfer && t.direction === 'CREDIT'">
-              {{ (t.direction === 'DEBIT' ? -t.amount : t.amount) | money: t.currencyCode : true }}
-            </span>
-          </button>
-        } @empty {
-          @if (loaded()) {
-            <p class="muted">Aucune opération créée pour l'instant.</p>
-          }
-        }
-        @if (operations().length < total()) {
-          <button matButton class="more" (click)="more()">
-            Afficher {{ Math.min(pageSize, total() - operations().length) }} de plus
-          </button>
-        }
-      </ng-template>
+            }
+            @if (operations().length < total()) {
+              <button matButton class="more" (click)="more()">
+                Afficher {{ Math.min(pageSize, total() - operations().length) }} de plus
+              </button>
+            }
+          </div>
+        </mat-tab>
+      </mat-tab-group>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button matButton mat-dialog-close>Fermer</button>
@@ -224,9 +213,7 @@ export class RecurringHistoryDialogComponent {
     const size = Math.max(PAGE_SIZE, this.operations().length);
     forkJoin({
       operations: this.transactionApi.search({ recurringTransactionId: id }, 0, size),
-      tracking: this.data.recurring.reimbursementPayers.length
-        ? this.recurringApi.reimbursements()
-        : of([]),
+      tracking: this.recurringApi.reimbursements(),
     }).subscribe({
       next: ({ operations, tracking }) => {
         this.operations.set(operations.content);

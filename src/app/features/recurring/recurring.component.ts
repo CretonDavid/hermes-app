@@ -158,14 +158,16 @@ import {
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef></th>
                 <td mat-cell *matCellDef="let r" style="text-align: right; white-space: nowrap">
-                  <button
-                    matIconButton
-                    matTooltip="Historique"
-                    [attr.aria-label]="'Historique de ' + r.label"
-                    (click)="history(r)"
-                  >
-                    <mat-icon>history</mat-icon>
-                  </button>
+                  @if (r.reimbursementPayers.length) {
+                    <button
+                      matIconButton
+                      matTooltip="Historique des remboursements et des opérations"
+                      [attr.aria-label]="'Historique de ' + r.label"
+                      (click)="history(r)"
+                    >
+                      <mat-icon>history</mat-icon>
+                    </button>
+                  }
                   <button
                     matIconButton
                     matTooltip="Modifier"

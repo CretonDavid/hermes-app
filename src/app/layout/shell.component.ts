@@ -113,7 +113,6 @@ export class ShellComponent implements OnInit {
   }
 
   protected logout(): void {
-    this.store.clear();
     this.auth.logout();
   }
 }

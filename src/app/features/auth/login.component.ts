@@ -38,6 +38,8 @@ import { AuthVisualComponent } from './auth-visual.component';
         <form [formGroup]="form" (ngSubmit)="submit()">
           <mat-form-field class="number-input">
             <mat-label>Numéro de compte</mat-label>
+            <!-- Seul champ de la page : le focus initial évite un clic sans dérouter la navigation au clavier -->
+            <!-- eslint-disable @angular-eslint/template/no-autofocus -->
             <input
               matInput
               formControlName="number"
@@ -46,6 +48,7 @@ import { AuthVisualComponent } from './auth-visual.component';
               inputmode="numeric"
               autofocus
             />
+            <!-- eslint-enable @angular-eslint/template/no-autofocus -->
           </mat-form-field>
 
           @if (error()) {

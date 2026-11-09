@@ -53,7 +53,8 @@ export interface ReimbursementLinkData {
     <h2 mat-dialog-title>Rattacher un remboursement</h2>
     <mat-dialog-content>
       <p class="intro">
-        <strong>{{ data.tracking.label }} · {{ periodName }}</strong><br />
+        <strong>{{ data.tracking.label }} · {{ periodName }}</strong
+        ><br />
         <span class="muted">
           Dû par {{ data.payer.name }} :
           {{ data.period.due | money: data.tracking.currencyCode }}

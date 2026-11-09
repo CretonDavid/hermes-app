@@ -112,10 +112,9 @@ const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '
                 <mat-icon>{{ option.icon ?? 'sell' }}</mat-icon>
               </span>
             }
-            <span
-              class="name"
-              (click)="hasChildren(option.category.id) && toggle(option.category.id)"
-            >
+            <!-- Raccourci à la souris : au clavier, le bouton de dépliage ci-dessus fait la même chose -->
+            <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+            <span class="name" (click)="toggleIfParent(option.category.id)">
               @if (query() && option.depth > 0) {
                 <span class="muted">{{ parentPath(option) }} › </span>
               }
@@ -323,6 +322,12 @@ export class CategoriesComponent {
 
   protected parentPath(option: CategoryOption): string {
     return option.path.slice(0, option.path.lastIndexOf(' › '));
+  }
+
+  protected toggleIfParent(id: number): void {
+    if (this.hasChildren(id)) {
+      this.toggle(id);
+    }
   }
 
   protected toggle(id: number): void {

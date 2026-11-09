@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -25,6 +25,9 @@ export interface CategoryDialogData {
   parentId?: number | null;
   type?: CategoryType;
 }
+
+// Couleur proposée pour une nouvelle catégorie principale
+const DEFAULT_COLOR = '#5c6bc0';
 
 const ICONS = [
   'restaurant',
@@ -108,8 +111,8 @@ const ICONS = [
         </mat-form-field>
 
         <div class="color-field">
-          <label>Couleur</label>
-          <input type="color" formControlName="color" />
+          <label for="category-color">Couleur</label>
+          <input id="category-color" type="color" formControlName="color" />
           @if (parentId()) {
             <button matButton type="button" (click)="form.controls.color.setValue(null)">
               Hériter du parent
@@ -197,9 +200,7 @@ export class CategoryDialogComponent {
     type: new FormControl<CategoryType>(this.category?.type ?? this.data.type ?? 'EXPENSE', {
       nonNullable: true,
     }),
-    color: new FormControl<string | null>(
-      this.category ? this.category.color : this.data.parentId ? null : '#5c6bc0',
-    ),
+    color: new FormControl<string | null>(this.initialColor()),
     icon: new FormControl<string | null>(this.category?.icon ?? null),
   });
 
@@ -230,7 +231,17 @@ export class CategoryDialogComponent {
   constructor() {
     protectDirtyForm(this.form);
     this.syncType(this.form.controls.parentId.value);
-    this.form.controls.parentId.valueChanges.subscribe((parentId) => this.syncType(parentId));
+    this.form.controls.parentId.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((parentId) => this.syncType(parentId));
+  }
+
+  // Une sous-catégorie hérite par défaut de la couleur de son parent
+  private initialColor(): string | null {
+    if (this.category) {
+      return this.category.color;
+    }
+    return this.data.parentId ? null : DEFAULT_COLOR;
   }
 
   private syncType(parentId: number | null): void {

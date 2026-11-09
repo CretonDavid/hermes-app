@@ -343,7 +343,11 @@ export class TransactionTableComponent {
   }
 
   protected rowLabel(t: Transaction): string {
-    const amount = formatMoney(t.direction === 'DEBIT' ? -t.amount : t.amount, t.currencyCode, true);
+    const amount = formatMoney(
+      t.direction === 'DEBIT' ? -t.amount : t.amount,
+      t.currencyCode,
+      true,
+    );
     return `Modifier ${t.label}, ${amount}, du ${t.operationDate.split('-').reverse().join('/')}`;
   }
 

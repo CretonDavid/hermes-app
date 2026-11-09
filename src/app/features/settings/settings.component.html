@@ -53,8 +53,8 @@
           <div class="danger-row delete">
             <strong>Supprimer définitivement mon compte</strong>
             <div class="muted">
-              Efface tous vos comptes bancaires, opérations et catégories. Saisissez votre numéro
-              de compte pour confirmer.
+              Efface tous vos comptes bancaires, opérations et catégories. Saisissez votre numéro de
+              compte pour confirmer.
             </div>
             <div class="delete-action">
               <mat-form-field>
@@ -92,7 +92,9 @@
       <div class="tab">
         <div class="card">
           <div class="row" style="margin-bottom: 12px">
-            <h2 style="margin: 0; flex: 1"><mat-icon>category</mat-icon> Types de compte bancaire</h2>
+            <h2 style="margin: 0; flex: 1">
+              <mat-icon>category</mat-icon> Types de compte bancaire
+            </h2>
             <button matButton="tonal" (click)="createType()">
               <mat-icon>add</mat-icon> Ajouter
             </button>
@@ -123,7 +125,8 @@
             </div>
           } @empty {
             <p class="muted">
-              Aucun type de compte bancaire. Exemples : Compte courant, Livret A, Assurance vie, PEA…
+              Aucun type de compte bancaire. Exemples : Compte courant, Livret A, Assurance vie,
+              PEA…
             </p>
           }
         </div>
@@ -244,7 +247,9 @@
                     <button
                       matIconButton
                       matTooltip="Modifier"
-                      [attr.aria-label]="'Modifier le taux ' + r.baseCurrency.code + ' ' + r.quoteCurrency.code"
+                      [attr.aria-label]="
+                        'Modifier le taux ' + r.baseCurrency.code + ' ' + r.quoteCurrency.code
+                      "
                       (click)="editRate(r)"
                     >
                       <mat-icon>edit</mat-icon>
@@ -252,7 +257,9 @@
                     <button
                       matIconButton
                       matTooltip="Supprimer"
-                      [attr.aria-label]="'Supprimer le taux ' + r.baseCurrency.code + ' ' + r.quoteCurrency.code"
+                      [attr.aria-label]="
+                        'Supprimer le taux ' + r.baseCurrency.code + ' ' + r.quoteCurrency.code
+                      "
                       (click)="deleteRate(r)"
                     >
                       <mat-icon>delete</mat-icon>

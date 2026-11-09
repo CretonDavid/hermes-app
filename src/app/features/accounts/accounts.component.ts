@@ -48,7 +48,8 @@ interface AccountGroup {
           <div class="subtitle">
             {{ store.openAccounts().length }} ouvert{{ store.openAccounts().length > 1 ? 's' : '' }}
             @if (summary(); as s) {
-              · Patrimoine total : <strong class="amount">{{ s.netWorth | money: s.currencyCode }}</strong>
+              · Patrimoine total :
+              <strong class="amount">{{ s.netWorth | money: s.currencyCode }}</strong>
             }
           </div>
         </div>

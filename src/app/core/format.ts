@@ -15,6 +15,17 @@ export function toIsoDate(date: Date | string | null | undefined): string | null
   return typeof date === 'string' ? date : format(date, 'yyyy-MM-dd');
 }
 
+/**
+ * Nombre suivi du mot, au pluriel à partir de 2 : « 1 opération », « 3 opérations ».
+ */
+export function countLabel(count: number, word: string): string {
+  return `${count} ${pluralize(count, word)}`;
+}
+
+export function pluralize(count: number, word: string): string {
+  return count > 1 ? `${word}s` : word;
+}
+
 export function fromIsoDate(date: string | null | undefined): Date | null {
   return date ? parseISO(date) : null;
 }

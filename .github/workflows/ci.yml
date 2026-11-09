@@ -1,0 +1,47 @@
+# Intégration continue : formatage, analyse statique (ESLint + règles SonarJS), tests avec couverture,
+# audit des dépendances et build de production, à chaque push et PR
+name: CI
+
+on:
+  push:
+    branches: [master, develop, "feature/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Formatage
+        run: npm run format:check
+
+      - name: Analyse statique
+        run: npm run lint
+
+      - name: Tests et couverture
+        run: npm run test:ci
+
+      - name: Audit des dépendances
+        run: npm audit --audit-level=moderate
+
+      - name: Build de production
+        run: npx ng build --configuration production
+
+      - name: Rapport de couverture
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage
+          path: coverage

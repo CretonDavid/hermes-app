@@ -53,7 +53,8 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     }
     h2 {
       font:
-        700 32px/40px Nunito,
+        700 32px/40px 'Nunito Variable',
+        Nunito,
         sans-serif;
       letter-spacing: -0.01em;
       margin: 0 0 8px;

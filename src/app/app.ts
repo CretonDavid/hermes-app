@@ -9,7 +9,7 @@ import { RouterOutlet } from '@angular/router';
 })
 export class App {
   constructor() {
-    // Icônes Material Symbols (chargées depuis Google Fonts dans index.html)
+    // Icônes Material Symbols (police auto-hébergée, déclarée dans angular.json)
     inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
   }
 }

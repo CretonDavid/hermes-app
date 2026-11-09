@@ -37,9 +37,7 @@ describe('transactionsToCsv', () => {
   });
 
   it('met entre guillemets les textes contenant un séparateur', () => {
-    expect(dataRow(transaction({ label: 'Café; "chez Paul"' }))).toContain(
-      '"Café; ""chez Paul"""',
-    );
+    expect(dataRow(transaction({ label: 'Café; "chez Paul"' }))).toContain('"Café; ""chez Paul"""');
   });
 
   it('neutralise les textes interprétables comme une formule', () => {
@@ -50,5 +48,16 @@ describe('transactionsToCsv', () => {
     const transfer = { peerTransactionId: 2, accountId: 2, accountName: 'Livret' };
 
     expect(dataRow(transaction({ transfer }))).toContain(';Virement interne;');
+  });
+
+  it('neutralise aussi les formules du tiers et des notes', () => {
+    const row = dataRow(transaction({ payee: '@tiers', notes: '+cmd' }));
+
+    expect(row).toContain(";'@tiers;");
+    expect(row.endsWith(";'+cmd")).toBe(true);
+  });
+
+  it('écrit les crédits sans signe', () => {
+    expect(dataRow(transaction({ direction: 'CREDIT', amount: 100 }))).toContain(';100,00;');
   });
 });

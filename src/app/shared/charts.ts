@@ -57,18 +57,18 @@ function donutTotal(amount: string): Plugin<'doughnut'> {
       ctx.save();
       ctx.textAlign = 'center';
       ctx.fillStyle = String(Chart.defaults.color);
-      ctx.font = '600 12px Nunito, sans-serif';
+      ctx.font = "600 12px 'Nunito Variable', Nunito, sans-serif";
       ctx.fillText('Total', arc.x, arc.y - 12);
       // Le canvas hérite de la couleur de texte de la carte
       ctx.fillStyle = getComputedStyle(chart.canvas).color;
-      ctx.font = '800 18px Nunito, sans-serif';
+      ctx.font = "800 18px 'Nunito Variable', Nunito, sans-serif";
       ctx.fillText(amount, arc.x, arc.y + 12);
       ctx.restore();
     },
   };
 }
 
-const LEGEND_FONT = '12px Nunito, sans-serif';
+const LEGEND_FONT = "12px 'Nunito Variable', Nunito, sans-serif";
 // Pastille, marges : ce qui reste de la moitié du graphique accordée à la légende va au texte
 const LEGEND_RESERVED_WIDTH = 40;
 
@@ -109,7 +109,7 @@ export function barValues(format: (value: number) => string): Plugin {
   };
 }
 
-const HINT_FONT = '13px Nunito, sans-serif';
+const HINT_FONT = "13px 'Nunito Variable', Nunito, sans-serif";
 const HINT_LINE_HEIGHT = 16;
 const HINT_GAP = 8;
 

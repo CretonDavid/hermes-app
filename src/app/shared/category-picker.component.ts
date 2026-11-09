@@ -144,8 +144,8 @@ export class CategoryPickerComponent implements ControlValueAccessor {
     return this.options().filter((o) => normalize(o.path).includes(q));
   });
 
-  private onChange: (value: number | null) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: number | null) => void = () => undefined;
+  private onTouched: () => void = () => undefined;
 
   writeValue(value: number | null): void {
     this.value.set(value ?? null);

@@ -28,6 +28,7 @@ import { DataStore } from '../../core/data.store';
 import { toIsoDate } from '../../core/format';
 import { AccountType, Currency, ExchangeRate } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { APP_VERSION } from '../../core/version';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { AccountTypeDialogComponent } from '../accounts/account-type-dialog.component';
 import { CurrencyDialogComponent } from './currency-dialog.component';
@@ -57,6 +58,7 @@ const TABS = ['profile', 'types', 'currencies', 'rates'];
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent {
+  protected readonly version = APP_VERSION;
   protected readonly store = inject(DataStore);
   private readonly userApi = inject(UserApi);
   private readonly accountApi = inject(AccountApi);

@@ -13,7 +13,7 @@ import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { ThemeService } from '../core/theme.service';
 
 Chart.register(...registerables);
-Chart.defaults.font.family = 'Nunito, sans-serif';
+Chart.defaults.font.family = "'Nunito Variable', Nunito, sans-serif";
 Chart.defaults.plugins.legend.labels.usePointStyle = true;
 Chart.defaults.plugins.legend.labels.boxWidth = 8;
 Chart.defaults.plugins.legend.labels.boxHeight = 8;

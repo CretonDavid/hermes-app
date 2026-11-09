@@ -90,7 +90,11 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
           <button matButton="filled" (click)="newTransaction()" [disabled]="a.closed">
             <mat-icon>add</mat-icon> Opération
           </button>
-          <button matIconButton [matMenuTriggerFor]="menu" aria-label="Autres actions sur ce compte bancaire">
+          <button
+            matIconButton
+            [matMenuTriggerFor]="menu"
+            aria-label="Autres actions sur ce compte bancaire"
+          >
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #menu>
@@ -311,7 +315,7 @@ export class AccountDetailComponent {
 
     effect(() => {
       this.id();
-      this.account()?.openingDate;
+      this.account();
       this.store.version();
       untracked(() => {
         this.loadTransactions();

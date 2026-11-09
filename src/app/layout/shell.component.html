@@ -1,12 +1,7 @@
 <a class="skip-link" href="#main-content" (click)="skipToContent($event)">Aller au contenu</a>
 
 <mat-sidenav-container class="shell">
-  <mat-sidenav
-    #sidenav
-    class="sidenav"
-    [mode]="compact() ? 'over' : 'side'"
-    [opened]="!compact()"
-  >
+  <mat-sidenav #sidenav class="sidenav" [mode]="compact() ? 'over' : 'side'" [opened]="!compact()">
     <div class="brand">
       <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span>
       <span>Hermès</span>
@@ -28,21 +23,21 @@
     </span>
 
     <nav aria-label="Navigation principale">
-    <mat-nav-list>
-      @for (item of navigation; track item.path) {
-        <a
-          mat-list-item
-          [routerLink]="item.path"
-          routerLinkActive
-          #rla="routerLinkActive"
-          [routerLinkActiveOptions]="{ exact: !!item.exact }"
-          [activated]="rla.isActive"
-        >
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
-        </a>
-      }
-    </mat-nav-list>
+      <mat-nav-list>
+        @for (item of navigation; track item.path) {
+          <a
+            mat-list-item
+            [routerLink]="item.path"
+            routerLinkActive
+            #rla="routerLinkActive"
+            [routerLinkActiveOptions]="{ exact: !!item.exact }"
+            [activated]="rla.isActive"
+          >
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        }
+      </mat-nav-list>
     </nav>
 
     @if (store.openAccounts().length > 0) {

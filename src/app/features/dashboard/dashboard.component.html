@@ -86,8 +86,8 @@
           @if (comparison(); as c) {
             @if (expenseDelta(); as delta) {
               <div class="delta" [class.negative]="delta > 0" [class.positive]="delta < 0">
-                {{ delta > 0 ? '+' : '' }}{{ delta | percentage: 0 }} par rapport à la même date
-                en {{ previousMonth | date: 'MMMM' }}
+                {{ delta > 0 ? '+' : '' }}{{ delta | percentage: 0 }} par rapport à la même date en
+                {{ previousMonth | date: 'MMMM' }}
               </div>
             } @else {
               <div class="delta muted">

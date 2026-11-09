@@ -9,5 +9,6 @@ RUN npx ng build --configuration production
 # Service par nginx, qui relaie aussi /api vers l'API
 FROM nginx:1.28-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx/security-headers.conf nginx/api-proxy.conf /etc/nginx/snippets/
 COPY --from=build /app/dist/hermes-app/browser /usr/share/nginx/html
 EXPOSE 80

@@ -67,14 +67,19 @@
             <mat-icon inline>help</mat-icon>
             Téléchargez votre relevé depuis l’espace client de votre banque (souvent « Exporter » ou
             « Télécharger mes opérations »). Préférez le format OFX quand il est proposé : il est
-            reconnu automatiquement. Les opérations déjà présentes dans le compte bancaire sont détectées.
+            reconnu automatiquement. Les opérations déjà présentes dans le compte bancaire sont
+            détectées.
           </p>
 
           <div class="row">
             <span class="spacer"></span>
             @if (!accountId() || !file()) {
               <span class="muted">
-                {{ !accountId() ? 'Choisissez le compte bancaire de destination' : 'Choisissez le fichier du relevé' }}
+                {{
+                  !accountId()
+                    ? 'Choisissez le compte bancaire de destination'
+                    : 'Choisissez le fichier du relevé'
+                }}
               </span>
             }
             <button
@@ -253,8 +258,8 @@
           @if (duplicateCount() > 0) {
             <div class="notice">
               <mat-icon>content_copy</mat-icon>
-              {{ duplicateCount() }} opération(s) semblent déjà présentes dans le compte bancaire et ont été
-              décochées.
+              {{ duplicateCount() }} opération(s) semblent déjà présentes dans le compte bancaire et
+              ont été décochées.
             </div>
           }
           @for (w of preview()?.warnings ?? []; track $index) {
@@ -330,20 +335,12 @@
 
           <div class="preview-nav">
             @if (!headerVisible()) {
-              <button
-                matFab
-                aria-label="Remonter en haut de la liste"
-                (click)="goToHeader()"
-              >
+              <button matFab aria-label="Remonter en haut de la liste" (click)="goToHeader()">
                 <mat-icon>arrow_upward</mat-icon>
               </button>
             }
             @if (!actionsVisible()) {
-              <button
-                matFab
-                aria-label="Aller aux boutons d'import"
-                (click)="goToActions()"
-              >
+              <button matFab aria-label="Aller aux boutons d'import" (click)="goToActions()">
                 <mat-icon>arrow_downward</mat-icon>
               </button>
             }
@@ -376,7 +373,9 @@
             <strong>{{ imported() }} opération(s) importée(s)</strong> et marquées comme pointées.
           </p>
           <div class="row" style="justify-content: center">
-            <a matButton="tonal" [routerLink]="['/accounts', accountId()]">Voir le compte bancaire</a>
+            <a matButton="tonal" [routerLink]="['/accounts', accountId()]"
+              >Voir le compte bancaire</a
+            >
             <button matButton="filled" (click)="restart()">Importer un autre fichier</button>
           </div>
         </div>

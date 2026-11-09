@@ -55,6 +55,29 @@ import { setRequired } from '../../shared/required';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 
+function initialMode(recurring: RecurringTransaction | null): Mode {
+  if (!recurring) {
+    return 'DEBIT';
+  }
+  return recurring.transfer ? 'TRANSFER' : recurring.direction;
+}
+
+function movementSummary(mode: Mode, money: string, account: string, target?: string): string {
+  switch (mode) {
+    case 'TRANSFER':
+      return `${money} seront virés de « ${account} » vers « ${target ?? '…'} »`;
+    case 'DEBIT':
+      return `${money} seront débités de « ${account} »`;
+    default:
+      return `${money} seront crédités sur « ${account} »`;
+  }
+}
+
+// « Anne », « Anne et Paul », « Anne, Paul et Léa »
+function joinNames(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} et ${names.at(-1)}` : names[0];
+}
+
 @Component({
   selector: 'app-recurring-dialog',
   imports: [
@@ -384,9 +407,7 @@ export class RecurringDialogComponent {
   protected readonly frequencies = FREQUENCIES;
   protected readonly paymentMethods = PAYMENT_METHODS;
   protected readonly saving = signal(false);
-  protected readonly mode = signal<Mode>(
-    this.data ? (this.data.transfer ? 'TRANSFER' : this.data.direction) : 'DEBIT',
-  );
+  protected readonly mode = signal<Mode>(initialMode(this.data));
 
   protected readonly form = new FormGroup({
     label: new FormControl(this.data?.label ?? '', {
@@ -532,12 +553,7 @@ export class RecurringDialogComponent {
     const money = formatMoney(amount, this.currency());
     const account = this.store.account(this.accountId())?.name ?? '';
     const target = this.store.account(this.targetAccountId())?.name;
-    const what =
-      this.mode() === 'TRANSFER'
-        ? `${money} seront virés de « ${account} » vers « ${target ?? '…'} »`
-        : this.mode() === 'DEBIT'
-          ? `${money} seront débités de « ${account} »`
-          : `${money} seront crédités sur « ${account} »`;
+    const what = movementSummary(this.mode(), money, account, target);
     const repeat =
       this.frequency() === 'MONTHLY' && this.interval() === 1
         ? `le ${start.getDate()} de chaque mois`
@@ -552,7 +568,7 @@ export class RecurringDialogComponent {
     const names = payers.map((p) => `${p.name!.trim()} (${this.formatShare(Number(p.share))})`);
     const refund =
       this.reimbursed() && names.length
-        ? ` Remboursée par ${names.length > 1 ? names.slice(0, -1).join(', ') + ' et ' + names.at(-1) : names[0]} ; votre part : ${this.formatShare(Math.max(this.ownShare(), 0))}.`
+        ? ` Remboursée par ${joinNames(names)} ; votre part : ${this.formatShare(Math.max(this.ownShare(), 0))}.`
         : '';
     return `${what} ${repeat}, à partir du ${format(start, 'dd/MM/yyyy')}${end}.${refund}${now}`;
   });

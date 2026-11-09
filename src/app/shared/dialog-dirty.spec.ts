@@ -24,7 +24,11 @@ function create(component: Type<unknown>, data: unknown): ModeDialog {
       { provide: MAT_DIALOG_DATA, useValue: data },
       {
         provide: MatDialogRef,
-        useValue: { backdropClick: () => NEVER, keydownEvents: () => NEVER, close: () => {} },
+        useValue: {
+          backdropClick: () => NEVER,
+          keydownEvents: () => NEVER,
+          close: () => undefined,
+        },
       },
     ],
   });
@@ -34,7 +38,7 @@ function create(component: Type<unknown>, data: unknown): ModeDialog {
 }
 
 describe('fenêtres avec un choix Dépense, Revenu ou Virement', () => {
-  it("changer de type sans rien saisir ne compte pas comme une saisie (opération)", () => {
+  it('changer de type sans rien saisir ne compte pas comme une saisie (opération)', () => {
     const dialog = create(TransactionFormDialogComponent, {});
 
     dialog.setMode('CREDIT');
@@ -84,7 +88,7 @@ describe('fenêtre Opération', () => {
     expect(dialog.form.valid).toBe(true);
   });
 
-  it('exige le compte bancaire cible d\'un virement, puis plus après être revenu à une dépense', () => {
+  it("exige le compte bancaire cible d'un virement, puis plus après être revenu à une dépense", () => {
     const dialog = setup();
 
     dialog.setMode('TRANSFER');

@@ -51,7 +51,14 @@ describe('upcomingNet', () => {
 
 describe('withFutureTransactions', () => {
   const future = (values: Partial<Transaction>) =>
-    ({ id: 7, label: 'Achat', direction: 'DEBIT', amount: 10, transfer: null, ...values }) as Transaction;
+    ({
+      id: 7,
+      label: 'Achat',
+      direction: 'DEBIT',
+      amount: 10,
+      transfer: null,
+      ...values,
+    }) as Transaction;
 
   it('classe les opérations futures et les échéances par date', () => {
     const result = withFutureTransactions(

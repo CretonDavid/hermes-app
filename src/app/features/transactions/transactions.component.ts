@@ -93,7 +93,9 @@ import { TransactionTableComponent } from './transaction-table.component';
                   @for (t of totals(); track t.currencyCode) {
                     <tr>
                       <th scope="row">{{ t.currencyCode }}</th>
-                      <td class="amount positive">{{ t.credits | money: t.currencyCode : true }}</td>
+                      <td class="amount positive">
+                        {{ t.credits | money: t.currencyCode : true }}
+                      </td>
                       <td class="amount">{{ -t.debits | money: t.currencyCode : true }}</td>
                       <td class="amount" [class.positive]="t.net > 0" [class.negative]="t.net < 0">
                         {{ t.net | money: t.currencyCode : true }}

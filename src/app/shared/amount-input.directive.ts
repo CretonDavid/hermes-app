@@ -13,8 +13,9 @@ export function formatAmount(value: number | null | undefined): string {
 
 // Accepte la virgule ou le point, les espaces et le signe moins ; null si ce n'est pas un nombre
 export function parseAmount(text: string): number | null {
-  const normalized = text.replace(/[\s  ]/g, '').replace(',', '.').replace('−', '-');
-  if (!/^-?\d*\.?\d*$/.test(normalized) || !/\d/.test(normalized)) {
+  // \s couvre aussi les espaces insécables (U+00A0, U+202F) des montants formatés en français
+  const normalized = text.replace(/\s/g, '').replace(',', '.').replace('−', '-');
+  if (!/^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
     return null;
   }
   return Number(normalized);
@@ -36,8 +37,8 @@ export function parseAmount(text: string): number | null {
 })
 export class AmountInputDirective implements ControlValueAccessor {
   private readonly input = inject<ElementRef<HTMLInputElement>>(ElementRef).nativeElement;
-  private onChange: (value: number | null) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: number | null) => void = () => undefined;
+  private onTouched: () => void = () => undefined;
 
   writeValue(value: number | null): void {
     this.input.value = formatAmount(value);

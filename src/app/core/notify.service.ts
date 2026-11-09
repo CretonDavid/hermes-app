@@ -9,7 +9,7 @@ import { ApiError } from './models';
 export function errorMessage(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0) {
-      return "Impossible de joindre l'API. Est-elle démarrée ?";
+      return 'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.';
     }
     const body = error.error as ApiError | null;
     if (body?.fieldErrors) {

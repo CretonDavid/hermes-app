@@ -143,8 +143,14 @@ html {
         tertiary: mat.$orange-palette,
       ),
       typography: (
-        plain-family: Nunito,
-        brand-family: Nunito,
+        plain-family: (
+          'Nunito Variable',
+          Nunito,
+        ),
+        brand-family: (
+          'Nunito Variable',
+          Nunito,
+        ),
         regular-weight: 400,
         medium-weight: 600,
         bold-weight: 700,
@@ -200,10 +206,10 @@ html {
   );
 
   // Petits textes un peu plus grands que ceux de Material, pour rester lisibles
-  --mat-sys-body-small: 400 13px / 18px Nunito;
+  --mat-sys-body-small: 400 13px / 18px 'Nunito Variable', Nunito;
   --mat-sys-body-small-size: 13px;
   --mat-sys-body-small-line-height: 18px;
-  --mat-sys-label-small: 600 12px / 16px Nunito;
+  --mat-sys-label-small: 600 12px / 16px 'Nunito Variable', Nunito;
   --mat-sys-label-small-size: 12px;
 
   // Couleurs sémantiques de l'application
@@ -265,7 +271,8 @@ body {
 
   h1 {
     font:
-      700 28px/36px Nunito,
+      700 28px/36px 'Nunito Variable',
+      Nunito,
       sans-serif;
     letter-spacing: -0.01em;
     margin: 0;
@@ -410,7 +417,8 @@ mat-form-field {
 
   .value {
     font:
-      700 28px/36px Nunito,
+      700 28px/36px 'Nunito Variable',
+      Nunito,
       sans-serif;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;

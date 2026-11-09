@@ -45,6 +45,7 @@ import {
   Transaction,
   TransactionDirection,
   TransactionRequest,
+  TransactionStatus,
   Transfer,
   TransferRequest,
 } from '../../core/models';
@@ -64,6 +65,14 @@ export interface TransactionFormData {
   transaction?: Transaction;
   accountId?: number;
   mode?: Mode;
+}
+
+function initialMode(data: TransactionFormData): Mode {
+  const transaction = data.transaction;
+  if (!transaction) {
+    return data.mode ?? 'DEBIT';
+  }
+  return transaction.transfer ? 'TRANSFER' : transaction.direction;
 }
 
 @Component({
@@ -118,13 +127,7 @@ export class TransactionFormDialogComponent implements OnInit {
   protected readonly editing = !!this.data.transaction;
   protected readonly reconciled = this.data.transaction?.status === 'RECONCILED';
 
-  protected readonly mode = signal<Mode>(
-    this.data.transaction
-      ? this.data.transaction.transfer
-        ? 'TRANSFER'
-        : this.data.transaction.direction
-      : (this.data.mode ?? 'DEBIT'),
-  );
+  protected readonly mode = signal<Mode>(initialMode(this.data));
   // Les champs secondaires sont repliés à la création pour garder une saisie rapide
   protected readonly showDetails = signal(this.editing);
   // Pour un virement en édition, id de l'opération de débit
@@ -190,7 +193,7 @@ export class TransactionFormDialogComponent implements OnInit {
   );
   private readonly label = toSignal(this.form.controls.label.valueChanges, { initialValue: '' });
   protected readonly transferLockedHint =
-    "Une opération et un virement ne sont pas interchangeables : supprimez celle-ci et créez-en une nouvelle pour changer de nature.";
+    'Une opération et un virement ne sont pas interchangeables : supprimez celle-ci et créez-en une nouvelle pour changer de nature.';
 
   protected readonly payeeSuggestions: Observable<PayeeSuggestion[]> =
     this.form.controls.payee.valueChanges.pipe(
@@ -287,46 +290,9 @@ export class TransactionFormDialogComponent implements OnInit {
       return;
     }
 
-    let request$: Observable<unknown>;
-    if (this.mode() === 'TRANSFER') {
-      if (!v.toAccountId) {
-        this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
-        return;
-      }
-      const request: TransferRequest = {
-        fromAccountId: v.accountId,
-        toAccountId: v.toAccountId,
-        amount: v.amount,
-        targetAmount: this.needsTargetAmount() ? v.targetAmount : null,
-        label: v.label.trim() || null,
-        notes: v.notes.trim() || null,
-        operationDate: toIsoDate(v.operationDate)!,
-      };
-      request$ = this.transferId
-        ? this.api.updateTransfer(this.transferId, request)
-        : this.api.createTransfer(request);
-    } else {
-      const label = v.label.trim() || v.payee.trim();
-      if (!label) {
-        this.notify.error('Indiquez au moins un bénéficiaire ou un libellé');
-        return;
-      }
-      const request: TransactionRequest = {
-        accountId: v.accountId,
-        direction: this.mode() as TransactionDirection,
-        amount: v.amount,
-        label,
-        payee: v.payee.trim() || null,
-        notes: v.notes.trim() || null,
-        categoryId: v.categoryId,
-        paymentMethod: v.paymentMethod,
-        operationDate: toIsoDate(v.operationDate)!,
-        valueDate: toIsoDate(v.valueDate),
-        status: this.reconciled ? undefined : v.cleared ? 'CLEARED' : 'PENDING',
-      };
-      request$ = this.data.transaction
-        ? this.api.update(this.data.transaction.id, request)
-        : this.api.create(request);
+    const request$ = this.mode() === 'TRANSFER' ? this.saveTransfer() : this.saveTransaction();
+    if (!request$) {
+      return;
     }
 
     this.saving.set(true);
@@ -341,6 +307,61 @@ export class TransactionFormDialogComponent implements OnInit {
         this.notify.error(error);
       },
     });
+  }
+
+  // Requête d'enregistrement du virement, ou null si la saisie est incomplète
+  private saveTransfer(): Observable<unknown> | null {
+    const v = this.form.getRawValue();
+    if (!v.toAccountId) {
+      this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
+      return null;
+    }
+    const request: TransferRequest = {
+      fromAccountId: v.accountId!,
+      toAccountId: v.toAccountId,
+      amount: v.amount!,
+      targetAmount: this.needsTargetAmount() ? v.targetAmount : null,
+      label: v.label.trim() || null,
+      notes: v.notes.trim() || null,
+      operationDate: toIsoDate(v.operationDate)!,
+    };
+    return this.transferId
+      ? this.api.updateTransfer(this.transferId, request)
+      : this.api.createTransfer(request);
+  }
+
+  // Requête d'enregistrement de la dépense ou du revenu, ou null si la saisie est incomplète
+  private saveTransaction(): Observable<unknown> | null {
+    const v = this.form.getRawValue();
+    const label = v.label.trim() || v.payee.trim();
+    if (!label) {
+      this.notify.error('Indiquez au moins un bénéficiaire ou un libellé');
+      return null;
+    }
+    const request: TransactionRequest = {
+      accountId: v.accountId!,
+      direction: this.mode() as TransactionDirection,
+      amount: v.amount!,
+      label,
+      payee: v.payee.trim() || null,
+      notes: v.notes.trim() || null,
+      categoryId: v.categoryId,
+      paymentMethod: v.paymentMethod,
+      operationDate: toIsoDate(v.operationDate)!,
+      valueDate: toIsoDate(v.valueDate),
+      status: this.statusToSave(v.cleared),
+    };
+    return this.data.transaction
+      ? this.api.update(this.data.transaction.id, request)
+      : this.api.create(request);
+  }
+
+  // Une opération rapprochée garde son statut : il n'est pas transmis
+  private statusToSave(cleared: boolean): TransactionStatus | undefined {
+    if (this.reconciled) {
+      return undefined;
+    }
+    return cleared ? 'CLEARED' : 'PENDING';
   }
 
   protected delete(): void {

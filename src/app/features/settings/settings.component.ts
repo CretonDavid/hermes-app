@@ -124,7 +124,6 @@ export class SettingsComponent {
       if (ok) {
         this.userApi.disable().subscribe({
           next: () => {
-            this.store.clear();
             this.auth.logout();
           },
           error: (error) => this.notify.error(error),
@@ -145,7 +144,6 @@ export class SettingsComponent {
       if (ok) {
         this.userApi.delete(number).subscribe({
           next: () => {
-            this.store.clear();
             this.auth.logout();
           },
           error: (error) => this.notify.error(error),

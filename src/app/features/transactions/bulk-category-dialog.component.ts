@@ -9,6 +9,7 @@ import {
 } from '@angular/material/dialog';
 import { TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
+import { countLabel, pluralize } from '../../core/format';
 import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
 import { DIALOG_SMALL } from '../../shared/confirm-dialog.component';
@@ -46,7 +47,10 @@ import { DialogCloseComponent } from '../../shared/dialog-close.component';
   `,
 })
 export class BulkCategoryDialogComponent {
-  static open(dialog: MatDialog, ids: number[]): MatDialogRef<BulkCategoryDialogComponent, boolean> {
+  static open(
+    dialog: MatDialog,
+    ids: number[],
+  ): MatDialogRef<BulkCategoryDialogComponent, boolean> {
     return dialog.open(BulkCategoryDialogComponent, { data: ids, width: DIALOG_SMALL });
   }
 
@@ -64,10 +68,10 @@ export class BulkCategoryDialogComponent {
     this.api.updateCategory(this.ids, this.category.value).subscribe({
       next: ({ updated, skippedTransfers }) => {
         const skipped = skippedTransfers
-          ? ` (${skippedTransfers} virement${skippedTransfers > 1 ? 's' : ''} ignoré${skippedTransfers > 1 ? 's' : ''})`
+          ? ` (${countLabel(skippedTransfers, 'virement')} ${pluralize(skippedTransfers, 'ignoré')})`
           : '';
         this.notify.success(
-          `${updated} opération${updated > 1 ? 's' : ''} catégorisée${updated > 1 ? 's' : ''}${skipped}`,
+          `${countLabel(updated, 'opération')} ${pluralize(updated, 'catégorisée')}${skipped}`,
         );
         this.store.transactionsChanged();
         this.dialogRef.close(true);

@@ -48,7 +48,9 @@ export function formatAxisMoney(amount: number, currency = 'EUR'): string {
       }).format(amount),
     );
   } catch {
-    return trueMinus(`${formatter('axis', { maximumFractionDigits: 0 }).format(amount)} ${currency}`);
+    return trueMinus(
+      `${formatter('axis', { maximumFractionDigits: 0 }).format(amount)} ${currency}`,
+    );
   }
 }
 

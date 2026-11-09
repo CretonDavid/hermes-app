@@ -145,8 +145,8 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
         </mat-form-field>
         <p class="full help">
           <mat-icon inline>info</mat-icon>
-          Indiquez le solde de votre compte bancaire à cette date : inutile de saisir les opérations plus
-          anciennes. Le solde affiché ensuite est calculé automatiquement à partir de vos
+          Indiquez le solde de votre compte bancaire à cette date : inutile de saisir les opérations
+          plus anciennes. Le solde affiché ensuite est calculé automatiquement à partir de vos
           opérations.
         </p>
 
@@ -339,7 +339,9 @@ export class AccountFormDialogComponent {
       )
       .subscribe({
         next: (account) => {
-          this.notify.success(this.data ? 'Compte bancaire modifié' : `Compte bancaire « ${account.name} » créé`);
+          this.notify.success(
+            this.data ? 'Compte bancaire modifié' : `Compte bancaire « ${account.name} » créé`,
+          );
           this.store.reloadAccountTypes();
           this.store.transactionsChanged();
           this.dialogRef.close(account);

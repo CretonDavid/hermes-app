@@ -10,10 +10,28 @@ Prérequis : Node 24 et l'API démarrée sur `http://localhost:8080` (URL modifi
 
 ```bash
 npm install
-npm start          # http://localhost:4200
-npm test           # tests unitaires (Vitest)
-npm run build      # build de production dans dist/
+npm start              # http://localhost:4200
+npm test               # tests unitaires (Vitest)
+npm run build          # build de production dans dist/
 ```
+
+## Qualité
+
+```bash
+npm run lint           # ESLint : règles Angular, typescript-eslint et SonarJS (règles de SonarQube)
+npm run format:check   # formatage Prettier (npm run format pour corriger)
+npm run test:ci        # tests avec couverture dans coverage/
+```
+
+TypeScript et les templates sont compilés en mode strict. La CI GitHub Actions lance formatage, lint, tests, `npm audit` et build de production à chaque push ; Dependabot propose chaque semaine les mises à jour.
+
+## Sécurité
+
+- Polices (Nunito, Material Symbols) auto-hébergées : aucune requête vers un service tiers.
+- nginx envoie une Content-Security-Policy stricte (`script-src 'self'`, aucun script en ligne : le thème initial est appliqué par `public/theme-init.js`), ainsi que `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` ; voir `nginx/security-headers.conf`.
+- Les routes `/api/auth/` sont limitées par nginx en plus de l'API.
+- La déconnexion révoque la session côté serveur et vide les données gardées en mémoire. Si deux onglets rafraîchissent la session en même temps, le second reprend les jetons du premier.
+- L'export CSV neutralise les textes interprétables comme des formules par un tableur.
 
 ## Fonctionnalités
 

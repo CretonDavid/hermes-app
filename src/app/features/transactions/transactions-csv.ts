@@ -2,6 +2,9 @@ import { STATUS_LABELS, paymentMethodLabel } from '../../core/format';
 import { Transaction } from '../../core/models';
 import { formatAmount } from '../../shared/amount-input.directive';
 
+// Marque d'ordre des octets en tête du fichier : Excel reconnaît alors l'UTF-8
+const BYTE_ORDER_MARK = String.fromCodePoint(0xfeff);
+
 const HEADERS = [
   'Date',
   'Libellé',
@@ -43,5 +46,5 @@ export function transactionsToCsv(transactions: Transaction[]): string {
       .map(cell)
       .join(';'),
   );
-  return `﻿${[HEADERS.join(';'), ...rows].join('\r\n')}\r\n`;
+  return `${BYTE_ORDER_MARK}${[HEADERS.join(';'), ...rows].join('\r\n')}\r\n`;
 }

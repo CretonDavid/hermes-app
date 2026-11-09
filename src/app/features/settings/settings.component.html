@@ -1,0 +1,281 @@
+<div class="page">
+  <div class="page-header">
+    <h1>Paramètres</h1>
+    <span class="version muted">Hermès {{ version }}</span>
+  </div>
+
+  <mat-tab-group
+    [selectedIndex]="tabIndex()"
+    (selectedIndexChange)="tabIndex.set($event)"
+    animationDuration="0ms"
+    mat-stretch-tabs="false"
+  >
+    <mat-tab label="Profil">
+      <div class="tab">
+        <div class="card">
+          <h2><mat-icon>person</mat-icon> Mon compte</h2>
+          @if (store.user(); as user) {
+            <p class="muted">
+              Créé le {{ user.createdAt | date: 'dd/MM/yyyy' }}
+              @if (user.lastLoginAt) {
+                · dernière connexion le {{ user.lastLoginAt | date: "dd/MM/yyyy 'à' HH:mm" }}
+              }
+            </p>
+            <mat-form-field style="max-width: 360px">
+              <mat-label>Devise de référence</mat-label>
+              <mat-select
+                [value]="user.referenceCurrency?.id"
+                (valueChange)="setReferenceCurrency($event)"
+              >
+                @for (c of store.currencies(); track c.id) {
+                  <mat-option [value]="c.id">{{ c.code }} — {{ c.name }}</mat-option>
+                }
+              </mat-select>
+              <mat-hint>Devise utilisée pour les statistiques et le patrimoine total</mat-hint>
+            </mat-form-field>
+          }
+          <p class="muted" style="margin-top: 24px">
+            <mat-icon inline>key</mat-icon> Votre numéro de compte n'est pas conservé en clair : il
+            ne peut être ni affiché ni récupéré.
+          </p>
+        </div>
+
+        <div class="card danger-zone" style="margin-top: 16px">
+          <h2><mat-icon>warning</mat-icon> Zone sensible</h2>
+          <div class="danger-row">
+            <div>
+              <strong>Désactiver mon compte</strong>
+              <div class="muted">
+                Bloque la connexion. Les données sont conservées et le compte peut être réactivé.
+              </div>
+            </div>
+            <button matButton="outlined" (click)="disable()">Désactiver</button>
+          </div>
+          <div class="danger-row delete">
+            <strong>Supprimer définitivement mon compte</strong>
+            <div class="muted">
+              Efface tous vos comptes bancaires, opérations et catégories. Saisissez votre numéro de
+              compte pour confirmer.
+            </div>
+            <div class="delete-action">
+              <mat-form-field>
+                <mat-label>Numéro de compte</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="deleteNumber"
+                  autocomplete="off"
+                  inputmode="numeric"
+                  aria-describedby="delete-progress"
+                />
+              </mat-form-field>
+              <button
+                matButton="filled"
+                class="danger"
+                [disabled]="deleteDigits() !== 30"
+                (click)="deleteAccount()"
+              >
+                Supprimer
+              </button>
+            </div>
+            <div class="delete-progress muted" id="delete-progress">
+              @if (deleteDigits() === 30) {
+                Numéro complet : le bouton est activé.
+              } @else {
+                {{ deleteDigits() }} / 30 chiffres : le bouton s'active une fois le numéro complet.
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Types de compte bancaire">
+      <div class="tab">
+        <div class="card">
+          <div class="row" style="margin-bottom: 12px">
+            <h2 style="margin: 0; flex: 1">
+              <mat-icon>category</mat-icon> Types de compte bancaire
+            </h2>
+            <button matButton="tonal" (click)="createType()">
+              <mat-icon>add</mat-icon> Ajouter
+            </button>
+          </div>
+          @for (type of store.accountTypes(); track type.id) {
+            <div class="list-row">
+              <mat-icon class="muted">{{ type.savings ? 'savings' : 'account_balance' }}</mat-icon>
+              <span class="flex">{{ type.name }}</span>
+              @if (type.savings) {
+                <span class="chip">Épargne</span>
+              }
+              <button
+                matIconButton
+                matTooltip="Modifier"
+                [attr.aria-label]="'Modifier ' + type.name"
+                (click)="editType(type)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                matIconButton
+                matTooltip="Supprimer"
+                [attr.aria-label]="'Supprimer ' + type.name"
+                (click)="deleteType(type)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          } @empty {
+            <p class="muted">
+              Aucun type de compte bancaire. Exemples : Compte courant, Livret A, Assurance vie,
+              PEA…
+            </p>
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Devises">
+      <div class="tab">
+        <div class="card">
+          <div class="row" style="margin-bottom: 12px">
+            <h2 style="margin: 0; flex: 1"><mat-icon>paid</mat-icon> Mes devises</h2>
+            <button matButton="tonal" (click)="createCurrency()">
+              <mat-icon>add</mat-icon> Ajouter une devise
+            </button>
+          </div>
+          @for (c of customCurrencies(); track c.id) {
+            <div class="list-row">
+              <span class="code">{{ c.code }}</span>
+              <span class="flex">{{ c.name }} ({{ c.symbol }})</span>
+              <button
+                matIconButton
+                matTooltip="Modifier"
+                [attr.aria-label]="'Modifier ' + c.name"
+                (click)="editCurrency(c)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                matIconButton
+                matTooltip="Supprimer"
+                [attr.aria-label]="'Supprimer ' + c.name"
+                (click)="deleteCurrency(c)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          } @empty {
+            <p class="muted">Aucune devise personnalisée (crypto-monnaie, devise rare…).</p>
+          }
+        </div>
+        <div class="card" style="margin-top: 16px">
+          <h2><mat-icon>public</mat-icon> Devises par défaut</h2>
+          <div class="currency-grid">
+            @for (c of defaultCurrencies(); track c.id) {
+              <div>
+                <span class="code">{{ c.code }}</span> {{ c.name }}
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Taux de change">
+      <div class="tab">
+        <div class="card">
+          <h2><mat-icon>currency_exchange</mat-icon> Synchronisation BCE</h2>
+          <p class="muted">
+            Récupère les taux de référence de la Banque centrale européenne entre votre devise de
+            référence ({{ store.referenceCurrency() }}) et les devises de vos comptes bancaires
+            @if (foreignCurrencies().length) {
+              ({{ foreignCurrencies().join(', ') }}).
+            } @else {
+              — tous vos comptes bancaires sont actuellement en {{ store.referenceCurrency() }}.
+            }
+          </p>
+          <div class="row">
+            <button matButton="filled" (click)="sync(false)" [disabled]="syncing()">
+              <mat-icon>sync</mat-icon> Taux du jour
+            </button>
+            <mat-form-field style="width: 200px">
+              <mat-label>Historique depuis le</mat-label>
+              <input matInput [matDatepicker]="picker" [(ngModel)]="syncFrom" />
+              <mat-datepicker-toggle matIconSuffix [for]="picker" />
+              <mat-datepicker #picker />
+            </mat-form-field>
+            <button matButton="tonal" (click)="sync(true)" [disabled]="syncing() || !syncFrom">
+              <mat-icon>history</mat-icon> Importer l'historique
+            </button>
+          </div>
+          @if (syncing()) {
+            <mat-progress-bar mode="indeterminate" />
+          }
+        </div>
+
+        <div class="card" style="margin-top: 16px">
+          <div class="row" style="margin-bottom: 12px">
+            <h2 style="margin: 0; flex: 1"><mat-icon>table_rows</mat-icon> Taux enregistrés</h2>
+            <mat-slide-toggle [checked]="allRates()" (change)="allRates.set($event.checked)"
+              >Afficher l'historique</mat-slide-toggle
+            >
+            <button matButton="tonal" (click)="createRate()">
+              <mat-icon>add</mat-icon> Saisir un taux
+            </button>
+          </div>
+          <table class="rates">
+            <thead>
+              <tr>
+                <th>Valable à partir du</th>
+                <th>Conversion</th>
+                <th class="right">Inverse</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of rates(); track r.id) {
+                <tr>
+                  <td>{{ r.date | date: 'dd/MM/yyyy' }}</td>
+                  <td class="amount">
+                    1 {{ r.baseCurrency.code }} = <strong>{{ r.rate | number: '1.2-6' }}</strong>
+                    {{ r.quoteCurrency.code }}
+                  </td>
+                  <td class="right amount muted">
+                    1 {{ r.quoteCurrency.code }} = {{ 1 / r.rate | number: '1.2-6' }}
+                    {{ r.baseCurrency.code }}
+                  </td>
+                  <td class="right">
+                    <button
+                      matIconButton
+                      matTooltip="Modifier"
+                      [attr.aria-label]="
+                        'Modifier le taux ' + r.baseCurrency.code + ' ' + r.quoteCurrency.code
+                      "
+                      (click)="editRate(r)"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                      matIconButton
+                      matTooltip="Supprimer"
+                      [attr.aria-label]="
+                        'Supprimer le taux ' + r.baseCurrency.code + ' ' + r.quoteCurrency.code
+                      "
+                      (click)="deleteRate(r)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="muted">Aucun taux enregistré</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

@@ -1,0 +1,562 @@
+@use 'sass:list';
+@use '@angular/material' as mat;
+
+// Palette « aubergine et safran » : (valeur en thème clair, valeur en thème sombre)
+$hermes-colors: (
+  primary: (
+    #4b2a78,
+    #cdb8ff,
+  ),
+  on-primary: (
+    #ffffff,
+    #2e1460,
+  ),
+  primary-container: (
+    #eadffb,
+    #4b2a78,
+  ),
+  on-primary-container: (
+    #2e1753,
+    #eadffb,
+  ),
+  secondary: (
+    #6b5b7e,
+    #cfc2e0,
+  ),
+  on-secondary: (
+    #ffffff,
+    #33274a,
+  ),
+  secondary-container: (
+    #ece4f6,
+    #3d3350,
+  ),
+  on-secondary-container: (
+    #2b1f3a,
+    #ece4f6,
+  ),
+  tertiary: (
+    #8a5a00,
+    #f4b942,
+  ),
+  on-tertiary: (
+    #ffffff,
+    #3a2600,
+  ),
+  tertiary-container: (
+    #ffe3ae,
+    #5a3e00,
+  ),
+  on-tertiary-container: (
+    #3a2600,
+    #ffe3ae,
+  ),
+  error: (
+    #ba1a47,
+    #ff8fa8,
+  ),
+  on-error: (
+    #ffffff,
+    #4f0620,
+  ),
+  error-container: (
+    #ffdde3,
+    #7a1235,
+  ),
+  on-error-container: (
+    #5c0a23,
+    #ffdde3,
+  ),
+  background: (
+    #f7f3ec,
+    #15111c,
+  ),
+  on-background: (
+    #241b2f,
+    #efe9f5,
+  ),
+  surface: (
+    #f7f3ec,
+    #15111c,
+  ),
+  on-surface: (
+    #241b2f,
+    #efe9f5,
+  ),
+  surface-variant: (
+    #ede7de,
+    #2f283c,
+  ),
+  on-surface-variant: (
+    #635a6e,
+    #b8afc4,
+  ),
+  // En sombre aussi, les cartes sont plus claires que le fond
+  surface-container-lowest: (
+      #ffffff,
+      #201a2a,
+    ),
+  surface-container-low: (
+    #f2ede5,
+    #1b1624,
+  ),
+  surface-container: (
+    #ede7de,
+    #262032,
+  ),
+  surface-container-high: (
+    #e7e0d6,
+    #2f283c,
+  ),
+  surface-container-highest: (
+    #e1d9ce,
+    #393146,
+  ),
+  outline: (
+    #8c8396,
+    #857c92,
+  ),
+  outline-variant: (
+    #e6dfd6,
+    #342c41,
+  ),
+  inverse-surface: (
+    #2f2739,
+    #efe9f5,
+  ),
+  inverse-on-surface: (
+    #f7f3ec,
+    #241b2f,
+  ),
+  inverse-primary: (
+    #cdb8ff,
+    #4b2a78,
+  ),
+);
+
+html {
+  color-scheme: light;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$violet-palette,
+        tertiary: mat.$orange-palette,
+      ),
+      typography: (
+        plain-family: (
+          'Nunito Variable',
+          Nunito,
+        ),
+        brand-family: (
+          'Nunito Variable',
+          Nunito,
+        ),
+        regular-weight: 400,
+        medium-weight: 600,
+        bold-weight: 700,
+      ),
+      density: -2,
+    )
+  );
+
+  @each $role, $values in $hermes-colors {
+    --mat-sys-#{$role}: light-dark(#{list.nth($values, 1)}, #{list.nth($values, 2)});
+  }
+
+  @include mat.button-overrides(
+    (
+      filled-container-shape: 12px,
+      outlined-container-shape: 12px,
+      protected-container-shape: 12px,
+      text-container-shape: 12px,
+      tonal-container-shape: 12px,
+      filled-container-height: 40px,
+      outlined-container-height: 40px,
+      protected-container-height: 40px,
+      text-container-height: 40px,
+      tonal-container-height: 40px,
+    )
+  );
+  @include mat.form-field-overrides(
+    (
+      outlined-container-shape: 12px,
+      outlined-outline-color: light-dark(#c9c1b6, #54495f),
+    )
+  );
+  @include mat.table-overrides(
+    (
+      background-color: transparent,
+      header-headline-color: var(--mat-sys-on-surface-variant),
+      header-headline-size: 13px,
+      row-item-outline-color: var(--mat-sys-outline-variant),
+    )
+  );
+  @include mat.paginator-overrides(
+    (
+      container-background-color: transparent,
+    )
+  );
+  @include mat.dialog-overrides(
+    (
+      container-color: var(--mat-sys-surface-container-lowest),
+      container-shape: 20px,
+      // Réserve à droite la place de la croix de fermeture
+      headline-padding: 6px 56px 13px 24px,
+    )
+  );
+
+  // Petits textes un peu plus grands que ceux de Material, pour rester lisibles
+  --mat-sys-body-small: 400 13px / 18px 'Nunito Variable', Nunito;
+  --mat-sys-body-small-size: 13px;
+  --mat-sys-body-small-line-height: 18px;
+  --mat-sys-label-small: 600 12px / 16px 'Nunito Variable', Nunito;
+  --mat-sys-label-small-size: 12px;
+
+  // Couleurs sémantiques de l'application
+  --hermes-positive: light-dark(#0b7a65, #4fd1b5);
+  --hermes-negative: light-dark(#c2264f, #ff8fa8);
+  --hermes-warning: light-dark(#e65100, #ffb74d);
+  --hermes-muted: var(--mat-sys-on-surface-variant);
+  --hermes-surface: var(--mat-sys-surface-container-low);
+  --hermes-border: var(--mat-sys-outline-variant);
+  --hermes-panel: light-dark(#2a1846, #0f0b15);
+  --hermes-saffron: #f4b942;
+}
+
+html.dark-theme {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
+
+// Icônes plus fines
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+// ---------- Mise en page ----------
+
+.page {
+  padding: 36px 40px 56px;
+  max-width: 1360px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+
+  // Le titre pousse les actions à droite, qu'il soit seul ou accompagné d'un sous-titre
+  > div:first-child {
+    flex: 1;
+  }
+
+  h1 {
+    font:
+      700 28px/36px 'Nunito Variable',
+      Nunito,
+      sans-serif;
+    letter-spacing: -0.01em;
+    margin: 0;
+    flex: 1;
+  }
+
+  .subtitle {
+    color: var(--hermes-muted);
+    font: var(--mat-sys-body-medium);
+    margin-top: 4px;
+  }
+}
+
+.card {
+  background: var(--mat-sys-surface-container-lowest);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 3px light-dark(rgba(42, 24, 70, 0.06), transparent);
+  box-sizing: border-box;
+
+  h2 {
+    font: var(--mat-sys-title-medium);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    > mat-icon {
+      color: var(--hermes-muted);
+    }
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+// Le menu latéral occupe 264 px au-delà de 1100 px : les colonnes se replient plus tôt
+@media (max-width: 1320px) {
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    padding: 24px 20px 40px;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+  align-items: start;
+  row-gap: 14px;
+
+  .full {
+    grid-column: 1 / -1;
+  }
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+// Les filtres occupent toute la largeur : leurs bords s'alignent sur ceux du tableau
+.filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+
+  mat-form-field {
+    flex: 1 1 150px;
+    width: auto;
+    min-width: 0;
+  }
+}
+
+// Le menu des totaux contient un tableau : il prend la largeur de ses colonnes
+.totals-menu.mat-mdc-menu-panel {
+  max-width: none;
+}
+
+// ---------- Montants et indicateurs ----------
+
+.amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.positive {
+  color: var(--hermes-positive);
+}
+
+.negative {
+  color: var(--hermes-negative);
+}
+
+.muted {
+  color: var(--hermes-muted);
+}
+
+.kpi {
+  .label {
+    font: var(--mat-sys-label-large);
+    color: var(--hermes-muted);
+  }
+
+  .value {
+    font:
+      700 28px/36px 'Nunito Variable',
+      Nunito,
+      sans-serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    margin-top: 8px;
+  }
+
+  .delta {
+    font: var(--mat-sys-body-small);
+    margin-top: 4px;
+  }
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--hermes-muted);
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    opacity: 0.6;
+  }
+
+  p {
+    margin: 8px 0 16px;
+  }
+}
+
+.category-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font: var(--mat-sys-label-medium);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// ---------- Tableaux ----------
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+tr.clickable {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-low);
+  }
+}
+
+// Un nom très long est raccourci plutôt que d'élargir tout le tableau
+td.mat-column-account {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+th.mat-column-account {
+  white-space: nowrap;
+}
+
+td.mat-column-amount,
+th.mat-column-amount,
+td.mat-column-balance,
+th.mat-column-balance {
+  text-align: right;
+}
+
+// Même espacement dans toutes les fenêtres de formulaire
+.mat-mdc-dialog-content .form-grid {
+  padding-top: 8px;
+  padding-bottom: 24px;
+  column-gap: 20px;
+  row-gap: 24px;
+}
+
+// Les flèches des champs numériques n'apportent rien pour des taux ou des montants
+input[type='number'] {
+  appearance: textfield;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+}
+
+.danger-zone {
+  border: 1px solid var(--mat-sys-error);
+}
+
+// Petite icône d'aide à côté d'un libellé
+mat-icon.info {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  color: var(--hermes-muted);
+  cursor: help;
+}
+
+// Icône dans une ligne de texte : centrée sur la hauteur des lettres
+mat-icon.mat-icon-inline {
+  width: 1.15em;
+  height: 1.15em;
+  font-size: 1.15em;
+  line-height: 1;
+  vertical-align: -0.2em;
+}
+
+// Lignes de tableau cliquables : le focus clavier doit se voir
+tr.clickable:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: -2px;
+}
+
+// Infobulle sur plusieurs lignes (un \n par ligne dans le message)
+.multiline-tooltip .mat-mdc-tooltip-surface {
+  white-space: pre-line;
+  max-width: 360px;
+}

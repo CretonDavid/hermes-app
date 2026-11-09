@@ -1,0 +1,234 @@
+@use '@angular/material' as mat;
+
+.shell {
+  height: 100vh;
+}
+
+// Invisible tant qu'on n'y arrive pas au clavier
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: var(--hermes-saffron);
+  color: #2a1846;
+  font-weight: 700;
+  transform: translateY(-200%);
+
+  &:focus {
+    transform: none;
+  }
+}
+
+main:focus {
+  outline: none;
+}
+
+// N'apparaît qu'au-delà de 200 ms, pour ne pas clignoter sur les réponses rapides
+.global-loader {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin-bottom: -4px;
+  opacity: 0;
+  animation: loader-appear 0s 200ms forwards;
+}
+
+@keyframes loader-appear {
+  to {
+    opacity: 1;
+  }
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px 8px 12px;
+  background: var(--mat-sys-surface-container-lowest);
+  border-bottom: 1px solid var(--hermes-border);
+}
+
+.topbar-title {
+  font:
+    800 18px/28px 'Nunito Variable',
+    Nunito,
+    sans-serif;
+}
+
+// Panneau aubergine dans les deux thèmes : ses composants reçoivent leurs propres couleurs
+.sidenav {
+  --panel-text: #ede6f7;
+  --panel-muted: #b9adcd;
+  --panel-hover: rgba(255, 255, 255, 0.07);
+  --panel-active: rgba(255, 255, 255, 0.11);
+
+  width: 264px;
+  border: none;
+  border-radius: 0;
+  background: var(--hermes-panel);
+  color: var(--panel-text);
+  display: flex;
+  flex-direction: column;
+
+  ::ng-deep .mat-drawer-inner-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  @include mat.list-overrides(
+    (
+      active-indicator-color: var(--panel-active),
+      active-indicator-shape: 12px,
+      list-item-label-text-color: var(--panel-muted),
+      list-item-hover-label-text-color: var(--panel-text),
+      list-item-focus-label-text-color: var(--panel-text),
+      list-item-leading-icon-color: var(--panel-muted),
+      list-item-hover-state-layer-color: #ffffff,
+      list-item-focus-state-layer-color: #ffffff,
+      list-item-one-line-container-height: 44px,
+      list-item-container-shape: 12px,
+    )
+  );
+
+  mat-nav-list {
+    padding: 0 12px;
+
+    a {
+      margin-bottom: 2px;
+    }
+
+    // Rubrique active : texte clair et icône safran
+    a.mdc-list-item--activated {
+      --mat-list-list-item-label-text-color: var(--panel-text);
+      --mat-list-list-item-hover-label-text-color: var(--panel-text);
+      --mat-list-list-item-focus-label-text-color: var(--panel-text);
+      --mat-list-list-item-leading-icon-color: var(--hermes-saffron);
+      --mat-list-list-item-hover-leading-icon-color: var(--hermes-saffron);
+    }
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px 20px;
+  font:
+    800 20px/28px 'Nunito Variable',
+    Nunito,
+    sans-serif;
+  letter-spacing: -0.01em;
+
+  .logo {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--hermes-saffron);
+    color: #2a1846;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+}
+
+.new-button-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.new-button {
+  margin: 0 16px 20px;
+  --mat-button-filled-container-color: var(--hermes-saffron);
+  --mat-button-filled-label-text-color: #2a1846;
+  --mat-button-filled-disabled-container-color: rgba(255, 255, 255, 0.1);
+  --mat-button-filled-disabled-label-text-color: var(--panel-muted);
+}
+
+.accounts-title {
+  font: var(--mat-sys-label-small);
+  color: var(--panel-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 24px 28px 8px;
+}
+
+.accounts {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-muted) transparent;
+}
+
+.account-link {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--panel-text);
+  font: var(--mat-sys-body-small);
+
+  .name {
+    color: var(--panel-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Le rouge du thème clair serait illisible sur ce panneau
+  .negative {
+    color: #ff8fa8;
+  }
+
+  &:hover {
+    background: var(--panel-hover);
+  }
+
+  &.active {
+    background: var(--panel-active);
+
+    .name {
+      color: var(--panel-text);
+    }
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-top: 1px solid var(--panel-active);
+  margin-top: 12px;
+}
+
+.logout {
+  --mat-button-text-label-text-color: var(--panel-muted);
+  --mat-button-text-state-layer-color: #ffffff;
+}
+
+.theme-toggle {
+  --mat-icon-button-icon-color: var(--panel-muted);
+  --mat-icon-button-state-layer-color: #ffffff;
+}
+
+.content {
+  background: var(--mat-sys-surface);
+  // Réserve la place de l'ascenseur : le contenu ne bouge plus d'une page à l'autre
+  scrollbar-gutter: stable;
+}

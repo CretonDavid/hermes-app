@@ -109,7 +109,13 @@ export class ShellComponent implements OnInit {
   }
 
   protected newTransaction(): void {
-    TransactionFormDialogComponent.open(this.dialog, {});
+    TransactionFormDialogComponent.open(this.dialog, { accountId: this.displayedAccountId() });
+  }
+
+  // Compte bancaire de la fiche affichée, pour le présélectionner (s'il est ouvert)
+  private displayedAccountId(): number | undefined {
+    const id = Number(/^\/accounts\/(\d+)/.exec(this.router.url)?.[1]);
+    return this.store.openAccounts().some((a) => a.id === id) ? id : undefined;
   }
 
   protected logout(): void {

@@ -261,6 +261,11 @@ export class TransactionFormDialogComponent implements OnInit {
     }
     this.mode.set(mode);
     this.form.controls.categoryId.setValue(null);
+    // Cliquer sur le choix du type fait perdre le focus au montant, qui a le focus à l'ouverture :
+    // sans saisie, ce n'est pas une erreur de l'utilisateur
+    if (!this.form.controls.amount.value) {
+      this.form.controls.amount.markAsUntouched();
+    }
     if (mode === 'TRANSFER' && !this.form.controls.toAccountId.value) {
       const other = this.store
         .openAccounts()

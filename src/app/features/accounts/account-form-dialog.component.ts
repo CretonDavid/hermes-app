@@ -23,6 +23,8 @@ import { fromIsoDate, toIsoDate } from '../../core/format';
 import { Account, AccountRequest } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { AmountInputDirective } from '../../shared/amount-input.directive';
+import { CEILING_PRESETS } from '../../shared/ceiling';
+import { MoneyPipe } from '../../shared/money.pipe';
 import { DIALOG_LARGE } from '../../shared/confirm-dialog.component';
 import { DialogCloseComponent } from '../../shared/dialog-close.component';
 import { protectDirtyForm } from '../../shared/dialog-guard';
@@ -48,6 +50,7 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     MatDialogModule,
     DialogCloseComponent,
     AmountInputDirective,
+    MoneyPipe,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -151,6 +154,30 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
         </p>
 
         <mat-form-field>
+          <mat-label>Plafond (facultatif)</mat-label>
+          <input matInput appAmount formControlName="ceiling" />
+          <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
+          <mat-hint>Livret A, LDDS… : laissez vide s'il n'y en a pas</mat-hint>
+          <mat-error>Le plafond doit être supérieur à 0</mat-error>
+        </mat-form-field>
+
+        <!-- Plafonds réglementaires français, en euros -->
+        <div class="presets" role="group" aria-label="Plafonds réglementaires">
+          @if (currencyCode() === 'EUR') {
+            @for (preset of ceilingPresets; track preset.label) {
+              <button
+                type="button"
+                class="chip"
+                [class.selected]="form.controls.ceiling.value === preset.amount"
+                (click)="form.controls.ceiling.setValue(preset.amount); form.markAsDirty()"
+              >
+                {{ preset.label }} · {{ preset.amount | money: 'EUR' }}
+              </button>
+            }
+          }
+        </div>
+
+        <mat-form-field>
           <mat-label>Banque (facultatif)</mat-label>
           <input matInput formControlName="bankName" />
         </mat-form-field>
@@ -201,6 +228,24 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
     .chip.new {
       margin-left: 8px;
     }
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 6px;
+      padding-top: 6px;
+      .chip {
+        border: 1px solid transparent;
+        cursor: pointer;
+        &:hover {
+          color: var(--mat-sys-on-surface);
+        }
+        &.selected {
+          border-color: var(--mat-sys-primary);
+          color: var(--mat-sys-primary);
+        }
+      }
+    }
   `,
 })
 export class AccountFormDialogComponent {
@@ -221,6 +266,7 @@ export class AccountFormDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<AccountFormDialogComponent, Account>);
 
   protected readonly saving = signal(false);
+  protected readonly ceilingPresets = CEILING_PRESETS;
 
   private readonly defaultCurrencyId =
     this.store.user()?.referenceCurrency?.id ??
@@ -253,6 +299,7 @@ export class AccountFormDialogComponent {
       this.data?.initialBalance ?? 0,
       Validators.required,
     ),
+    ceiling: new FormControl<number | null>(this.data?.ceiling ?? null, Validators.min(0.01)),
     description: new FormControl(this.data?.description ?? '', { nonNullable: true }),
     closed: new FormControl(this.data?.closed ?? false, { nonNullable: true }),
   });
@@ -331,6 +378,7 @@ export class AccountFormDialogComponent {
             accountTypeId,
             currencyId: v.currencyId!,
             initialBalance: v.initialBalance!,
+            ceiling: v.ceiling || null,
             openingDate: toIsoDate(v.openingDate)!,
             closed: v.closed,
           };

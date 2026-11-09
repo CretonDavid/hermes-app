@@ -18,6 +18,7 @@ import { RecurringApi, StatsApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { Account, StatsSummary, UpcomingOccurrence } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
+import { CeilingGaugeComponent } from '../../shared/ceiling-gauge.component';
 import { upcomingNet } from '../../shared/forecast';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { AccountFormDialogComponent } from './account-form-dialog.component';
@@ -38,6 +39,7 @@ interface AccountGroup {
     MatTooltipModule,
     RouterLink,
     MoneyPipe,
+    CeilingGaugeComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -121,6 +123,15 @@ interface AccountGroup {
                     {{ forecast30(account) | money: account.currency.code }}
                   </div>
                 }
+                @if (account.ceiling) {
+                  <app-ceiling-gauge
+                    class="ceiling"
+                    compact
+                    [balance]="account.balance"
+                    [ceiling]="account.ceiling"
+                    [currency]="account.currency.code"
+                  />
+                }
               </a>
             }
           </div>
@@ -178,6 +189,9 @@ interface AccountGroup {
     .balance {
       font: var(--mat-sys-headline-small);
       margin: 16px 0 4px;
+    }
+    .ceiling {
+      margin-top: 12px;
     }
   `,
 })

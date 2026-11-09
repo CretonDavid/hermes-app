@@ -38,6 +38,7 @@ import { NotifyService } from '../../core/notify.service';
 import { ChartComponent } from '../../shared/chart.component';
 import { DATE_AXIS, SAVINGS_COLOR, SAVINGS_FILL } from '../../shared/charts';
 import { confirm } from '../../shared/confirm-dialog.component';
+import { CeilingGaugeComponent } from '../../shared/ceiling-gauge.component';
 import { upcomingNet } from '../../shared/forecast';
 import { MoneyPipe, formatAxisMoney, formatMoney } from '../../shared/money.pipe';
 import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
@@ -59,6 +60,7 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
     MatPaginatorModule,
     MatTooltipModule,
     MoneyPipe,
+    CeilingGaugeComponent,
     ChartComponent,
     TransactionTableComponent,
     ReconciliationPanelComponent,
@@ -175,6 +177,24 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
             <div class="value amount">{{ a.initialBalance | money: a.currency.code }}</div>
           </div>
         </div>
+
+        @if (a.ceiling) {
+          <div class="card" style="margin-bottom: 16px">
+            <h2>
+              <mat-icon>savings</mat-icon> Plafond
+              <mat-icon
+                class="info"
+                matTooltip="Calculé sur le solde à date, intérêts compris : ils peuvent faire dépasser le plafond, qui ne porte que sur les versements"
+                >info</mat-icon
+              >
+            </h2>
+            <app-ceiling-gauge
+              [balance]="a.balance"
+              [ceiling]="a.ceiling"
+              [currency]="a.currency.code"
+            />
+          </div>
+        }
 
         @if (chart(); as config) {
           <div class="card" style="margin-bottom: 16px">

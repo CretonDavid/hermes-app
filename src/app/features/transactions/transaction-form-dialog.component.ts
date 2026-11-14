@@ -51,6 +51,7 @@ import {
 } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { CategoryPickerComponent } from '../../shared/category-picker.component';
+import { ceilingOverflow } from '../../shared/ceiling';
 import { AmountInputDirective } from '../../shared/amount-input.directive';
 import { DIALOG_LARGE, confirm } from '../../shared/confirm-dialog.component';
 import { MoneyPipe } from '../../shared/money.pipe';
@@ -188,6 +189,26 @@ export class TransactionFormDialogComponent implements OnInit {
       this.toAccount()!.currency.code !== this.currencyCode(),
   );
   protected readonly amountValue = computed(() => this.amount() ?? 0);
+  private readonly targetAmount = toSignal(this.form.controls.targetAmount.valueChanges, {
+    initialValue: null,
+  });
+  // En modification, le versement déjà enregistré est compris dans le solde : on le retire
+  private readonly previousCredit = signal<{ accountId: number; amount: number } | null>(null);
+
+  // Avertit (sans bloquer : les intérêts peuvent dépasser) quand le versement ferait
+  // dépasser le plafond du compte bancaire qui le reçoit
+  protected readonly ceilingWarning = computed(() => {
+    const mode = this.mode();
+    const account = mode === 'TRANSFER' ? this.toAccount() : this.fromAccount();
+    if (mode === 'DEBIT' || !account?.ceiling) {
+      return null;
+    }
+    const credit = this.needsTargetAmount() ? this.targetAmount() : this.amount();
+    const previous = this.previousCredit();
+    const base = account.balance - (previous?.accountId === account.id ? previous.amount : 0);
+    const overflow = ceilingOverflow(base, account.ceiling, credit ?? 0);
+    return overflow > 0 ? { account, overflow, currency: account.currency.code } : null;
+  });
   protected readonly labelPlaceholder = computed(
     () => this.payee().trim() || 'Par défaut : le bénéficiaire',
   );
@@ -229,6 +250,9 @@ export class TransactionFormDialogComponent implements OnInit {
       notes: t.notes ?? '',
       cleared: t.status !== 'PENDING',
     });
+    if (t.direction === 'CREDIT' && !t.transfer) {
+      this.previousCredit.set({ accountId: t.accountId, amount: t.amount });
+    }
     if (!t.payee && !t.transfer) {
       // Opération sans tiers (import par exemple) : le libellé est l'information principale
       this.form.patchValue({ payee: '', label: t.label });
@@ -238,6 +262,10 @@ export class TransactionFormDialogComponent implements OnInit {
       // On recharge le virement complet pour connaître les deux côtés
       this.api.getTransfer(t.id).subscribe((transfer) => {
         this.transferId = transfer.debit.id;
+        this.previousCredit.set({
+          accountId: transfer.credit.accountId,
+          amount: transfer.credit.amount,
+        });
         this.form.patchValue({
           accountId: transfer.debit.accountId,
           toAccountId: transfer.credit.accountId,

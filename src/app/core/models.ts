@@ -82,6 +82,8 @@ export interface Account {
   balance: number;
   forecastBalance: number;
   clearedBalance: number;
+  /** Plafond de versements (Livret A, LDDS...), null sans plafond */
+  ceiling: number | null;
   openingDate: string;
   closed: boolean;
 }
@@ -93,6 +95,7 @@ export interface AccountRequest {
   accountTypeId: number;
   currencyId: number;
   initialBalance: number;
+  ceiling: number | null;
   openingDate: string;
   closed: boolean;
 }

@@ -331,6 +331,8 @@ export class AccountFormDialogComponent {
             accountTypeId,
             currencyId: v.currencyId!,
             initialBalance: v.initialBalance!,
+            // Le plafond se règle dans les paramètres : on conserve celui du compte
+            ceiling: this.data?.ceiling ?? null,
             openingDate: toIsoDate(v.openingDate)!,
             closed: v.closed,
           };

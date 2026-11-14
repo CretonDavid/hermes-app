@@ -38,12 +38,23 @@ import { NotifyService } from '../../core/notify.service';
 import { ChartComponent } from '../../shared/chart.component';
 import { DATE_AXIS, SAVINGS_COLOR, SAVINGS_FILL } from '../../shared/charts';
 import { confirm } from '../../shared/confirm-dialog.component';
+import { CeilingGaugeComponent } from '../../shared/ceiling-gauge.component';
 import { upcomingNet } from '../../shared/forecast';
 import { MoneyPipe, formatAxisMoney, formatMoney } from '../../shared/money.pipe';
 import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
 import { TransactionTableComponent } from '../transactions/transaction-table.component';
 import { AccountFormDialogComponent } from './account-form-dialog.component';
 import { ReconciliationPanelComponent } from './reconciliation-panel.component';
+
+const SHOW_CEILING_KEY = 'hermes.showCeiling';
+
+function readShowCeiling(): boolean {
+  try {
+    return localStorage.getItem(SHOW_CEILING_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 @Component({
   selector: 'app-account-detail',
@@ -59,6 +70,7 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
     MatPaginatorModule,
     MatTooltipModule,
     MoneyPipe,
+    CeilingGaugeComponent,
     ChartComponent,
     TransactionTableComponent,
     ReconciliationPanelComponent,
@@ -90,6 +102,20 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
           <button matButton="filled" (click)="newTransaction()" [disabled]="a.closed">
             <mat-icon>add</mat-icon> Opération
           </button>
+          @if (a.ceiling) {
+            <!-- Plafond masqué par défaut : ce bouton discret l'affiche ou le cache -->
+            <button
+              matIconButton
+              class="ceiling-toggle"
+              [class.active]="showCeiling()"
+              (click)="toggleCeiling()"
+              [attr.aria-pressed]="showCeiling()"
+              [matTooltip]="showCeiling() ? 'Masquer le plafond' : 'Afficher le plafond'"
+              [attr.aria-label]="showCeiling() ? 'Masquer le plafond' : 'Afficher le plafond'"
+            >
+              <mat-icon>savings</mat-icon>
+            </button>
+          }
           <button
             matIconButton
             [matMenuTriggerFor]="menu"
@@ -176,6 +202,34 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
           </div>
         </div>
 
+        @if (a.ceiling && showCeiling()) {
+          <div class="card" style="margin-bottom: 16px">
+            <h2>
+              <mat-icon>savings</mat-icon> Plafond
+              <mat-icon
+                class="info"
+                matTooltip="Calculé sur le solde à date, intérêts compris : ils peuvent faire dépasser le plafond, qui ne porte que sur les versements"
+                >info</mat-icon
+              >
+              <a
+                matIconButton
+                class="ceiling-edit"
+                routerLink="/settings"
+                [queryParams]="{ tab: 'ceilings' }"
+                matTooltip="Modifier le plafond dans les paramètres"
+                aria-label="Modifier le plafond dans les paramètres"
+              >
+                <mat-icon>edit</mat-icon>
+              </a>
+            </h2>
+            <app-ceiling-gauge
+              [balance]="a.balance"
+              [ceiling]="a.ceiling"
+              [currency]="a.currency.code"
+            />
+          </div>
+        }
+
         @if (chart(); as config) {
           <div class="card" style="margin-bottom: 16px">
             <h2><mat-icon>show_chart</mat-icon> Évolution du solde sur 12 mois</h2>
@@ -237,6 +291,18 @@ import { ReconciliationPanelComponent } from './reconciliation-panel.component';
       </div>
     }
   `,
+  styles: `
+    .ceiling-edit {
+      margin: -8px -8px -8px auto;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .ceiling-toggle {
+      color: var(--mat-sys-on-surface-variant);
+      &.active {
+        color: var(--mat-sys-primary);
+      }
+    }
+  `,
 })
 export class AccountDetailComponent {
   readonly id = input.required({ transform: numberAttribute });
@@ -264,6 +330,19 @@ export class AccountDetailComponent {
   private readonly upcoming = signal<UpcomingOccurrence[]>([]);
   // Opérations non pointées : elles expliquent l'écart entre le solde à date et le solde pointé
   protected readonly pending = signal<TransactionTotals | null>(null);
+
+  // Carte « Plafond » masquée par défaut ; le choix est retenu dans ce navigateur
+  protected readonly showCeiling = signal(readShowCeiling());
+
+  protected toggleCeiling(): void {
+    const show = !this.showCeiling();
+    this.showCeiling.set(show);
+    try {
+      localStorage.setItem(SHOW_CEILING_KEY, String(show));
+    } catch {
+      // Stockage indisponible : le choix vaut pour cette visite seulement
+    }
+  }
 
   protected upcoming30(account: Account): number {
     return upcomingNet(this.upcoming(), account.id, account.currency.code);

@@ -172,6 +172,14 @@
       </mat-form-field>
     }
 
+    @if (ceilingWarning(); as w) {
+      <p class="full ceiling-warning" role="status">
+        <mat-icon inline>warning</mat-icon>
+        Le plafond de « {{ w.account.name }} » ({{ w.account.ceiling | money: w.currency }}) serait
+        dépassé de {{ w.overflow | money: w.currency }}.
+      </p>
+    }
+
     @if (!showDetails()) {
       <button matButton type="button" class="full details-toggle" (click)="showDetails.set(true)">
         <mat-icon>expand_more</mat-icon> Plus de détails (libellé, notes{{

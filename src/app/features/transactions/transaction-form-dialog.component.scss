@@ -52,6 +52,12 @@
   color: var(--hermes-muted);
 }
 
+.ceiling-warning {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--hermes-warning);
+}
+
 .details-toggle {
   justify-self: start;
 }

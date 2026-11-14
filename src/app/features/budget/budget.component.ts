@@ -257,7 +257,9 @@ interface GoalAccount {
           @for (g of shownGoals(); track g.id) {
             <div class="card goal" [class.reached]="g.reached">
               <div class="goal-head">
-                <mat-icon class="goal-icon">{{ g.reached ? 'lock' : 'flag' }}</mat-icon>
+                <mat-icon class="goal-icon" [style.color]="goalColor(g)">{{
+                  g.reached ? 'lock' : 'flag'
+                }}</mat-icon>
                 <div class="goal-title">
                   <h3>{{ g.name }}</h3>
                   <span class="muted">{{ g.accountName }}</span>
@@ -293,7 +295,11 @@ interface GoalAccount {
                 [attr.aria-valuenow]="goalPercent(g)"
                 [attr.aria-label]="g.name + ' : objectif atteint à ' + goalPercent(g) + ' %'"
               >
-                <div class="fill" [style.width.%]="goalPercent(g)"></div>
+                <div
+                  class="fill"
+                  [style.width.%]="goalPercent(g)"
+                  [style.background]="goalColor(g)"
+                ></div>
               </div>
               <div class="goal-status">
                 @if (g.reached) {
@@ -489,9 +495,6 @@ interface GoalAccount {
       margin-top: 2px;
       color: var(--mat-sys-primary);
     }
-    .reached .goal-icon {
-      color: var(--hermes-positive);
-    }
     .goal-title {
       flex: 1;
       min-width: 0;
@@ -522,9 +525,6 @@ interface GoalAccount {
         background: var(--mat-sys-primary);
         transition: width 0.3s ease;
       }
-    }
-    .reached .goal-bar .fill {
-      background: var(--hermes-positive);
     }
     .goal-status,
     .goal-withdrawn {
@@ -689,6 +689,8 @@ export class BudgetComponent {
   protected readonly accountFilter = signal<number | null>(null);
   // Comptes qui portent des budgets spéciaux en cours, avec la part de chacun et le reste libre
   protected readonly goalAccounts = computed<GoalAccount[]>(() => {
+    // Une couleur par budget spécial, dans l’ordre de création, tous comptes confondus
+    const order = new Map(this.activeGoals().map((goal, index) => [goal.id, index]));
     const byAccount = new Map<number, Goal[]>();
     for (const goal of this.activeGoals()) {
       byAccount.set(goal.accountId, [...(byAccount.get(goal.accountId) ?? []), goal]);
@@ -706,14 +708,26 @@ export class BudgetComponent {
         allocated,
         free: Math.max(0, balance - allocated),
         allocatedPercent: balance > 0 ? Math.round((allocated / balance) * 100) : 0,
-        parts: goals.map((goal, index) => ({
+        parts: goals.map((goal) => ({
           goal,
-          color: GOAL_COLORS[index % GOAL_COLORS.length],
+          color: GOAL_COLORS[(order.get(goal.id) ?? 0) % GOAL_COLORS.length],
           percent: base > 0 ? (goal.savedAmount / base) * 100 : 0,
         })),
       };
     });
   });
+  // Couleur de chaque budget spécial, la même dans la barre du compte et sur sa carte
+  private readonly goalColors = computed(
+    () =>
+      new Map(
+        this.goalAccounts().flatMap((a) => a.parts.map((p) => [p.goal.id, p.color] as const)),
+      ),
+  );
+
+  protected goalColor(goal: Goal): string {
+    return this.goalColors().get(goal.id) ?? GOAL_COLORS[0];
+  }
+
   private readonly selectedAccount = computed(() => {
     const id = this.accountFilter();
     return this.goalAccounts().some((a) => a.id === id) ? id : null;

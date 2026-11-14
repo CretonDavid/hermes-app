@@ -314,18 +314,27 @@ interface GoalAccount {
                 ></div>
               </div>
               <div class="goal-status">
-                @if (g.reached) {
-                  <mat-icon inline>lock</mat-icon> Objectif atteint : plus d’affectation possible
-                } @else {
-                  Il manque {{ g.remaining | money: g.currencyCode }}
+                <span class="status-text">
+                  @if (g.reached) {
+                    <mat-icon inline>lock</mat-icon> Objectif atteint : plus d’affectation possible
+                  } @else {
+                    Il manque {{ g.remaining | money: g.currencyCode }}
+                  }
+                </span>
+                @if (!g.reached && accountFree(g) > 0) {
+                  <button
+                    type="button"
+                    class="goal-adjust"
+                    [style.--goal-color]="goalColor(g)"
+                    (click)="adjustGoal(g)"
+                    [matTooltip]="
+                      (accountFree(g) | money: g.currencyCode) + ' libres sur ' + g.accountName
+                    "
+                  >
+                    <mat-icon>add_circle</mat-icon> Affecter
+                  </button>
                 }
               </div>
-              @if (!g.reached && accountFree(g) > 0) {
-                <button matButton="tonal" class="goal-adjust" (click)="adjustGoal(g)">
-                  <mat-icon>add</mat-icon> Affecter
-                  <span class="muted">· {{ accountFree(g) | money: g.currencyCode }} libres</span>
-                </button>
-              }
               @if (g.withdrawn > 0) {
                 <div
                   class="goal-withdrawn muted"
@@ -564,8 +573,45 @@ interface GoalAccount {
     .goal-withdrawn {
       cursor: help;
     }
+    .goal-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 28px;
+
+      .status-text {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+    // Lien discret à la couleur du budget, légèrement teinté au survol
     .goal-adjust {
-      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px 3px 6px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--goal-color);
+      font: var(--mat-sys-label-medium);
+      cursor: pointer;
+      transition: background 0.15s ease;
+
+      mat-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+      }
+
+      &:hover {
+        background: color-mix(in srgb, var(--goal-color) 16%, transparent);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--goal-color);
+        outline-offset: 1px;
+      }
     }
     .goals-empty {
       margin: 0;

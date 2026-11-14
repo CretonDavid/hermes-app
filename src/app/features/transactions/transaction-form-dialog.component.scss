@@ -75,3 +75,100 @@
 .delete {
   color: var(--mat-sys-error);
 }
+
+// Catégorie et bouton de ventilation côte à côte
+// Catégorie en pleine largeur, lien « Ventiler » discret juste en dessous
+.category-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .split-start {
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    padding: 2px 4px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--mat-sys-primary);
+    font: var(--mat-sys-label-medium);
+    cursor: pointer;
+
+    mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--mat-sys-primary) 10%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+    }
+  }
+}
+
+.split {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--hermes-border);
+  border-radius: 12px;
+}
+
+// Catégorie et montant sur une ligne, libellé en dessous sur toute la largeur
+.split-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+  align-items: start;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--hermes-border);
+
+  .split-label {
+    grid-column: 1 / 3;
+    grid-row: 2;
+  }
+
+  button {
+    margin-top: 4px;
+  }
+}
+
+.split-error {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-error);
+}
+
+.split-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+
+  .muted {
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.split-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font: var(--mat-sys-title-small);
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: var(--mat-sys-primary);
+  }
+}

@@ -11,6 +11,20 @@ export function showFormErrors(form: AbstractControl): void {
   form.markAllAsTouched();
 }
 
+/** L'utilisateur a demandé l'enregistrement du formulaire de ce champ */
+export function saveAttempted(control: AbstractControl): boolean {
+  return submitAttempted.has(control.root);
+}
+
+/**
+ * Erreurs affichées seulement après une tentative d'enregistrement, même si le champ a été
+ * modifié : pour les champs dont un message voisin guide déjà la saisie.
+ */
+export const AFTER_SAVE_ERRORS: ErrorStateMatcher = {
+  isErrorState: (control, form) =>
+    !!control && control.invalid && (!!form?.submitted || saveAttempted(control)),
+};
+
 /**
  * Un champ ne passe en rouge que si l'utilisateur y a saisi quelque chose, ou s'il a tenté
  * d'enregistrer. Le comportement par défaut de Material (champ quitté) signalait une erreur

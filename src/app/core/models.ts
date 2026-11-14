@@ -149,6 +149,10 @@ export interface Transaction {
   payee: string | null;
   notes: string | null;
   category: CategorySummary | null;
+  // Ventilation sur plusieurs catégories (vide sinon) ; category est alors null
+  splits: TransactionSplit[];
+  // Liste filtrée par catégorie : part de l'opération ventilée qui correspond au filtre
+  matchedAmount: number | null;
   paymentMethod: PaymentMethod | null;
   operationDate: string;
   valueDate: string | null;
@@ -167,6 +171,19 @@ export interface Transaction {
   createdAt: string;
 }
 
+export interface TransactionSplit {
+  // null si la catégorie a été supprimée
+  category: CategorySummary | null;
+  label: string | null;
+  amount: number;
+}
+
+export interface TransactionSplitRequest {
+  categoryId: number;
+  label: string | null;
+  amount: number;
+}
+
 export interface TransactionRequest {
   accountId: number;
   direction: TransactionDirection;
@@ -175,6 +192,8 @@ export interface TransactionRequest {
   payee: string | null;
   notes: string | null;
   categoryId: number | null;
+  // Au moins 2 lignes dont la somme est égale au montant, ou vide
+  splits: TransactionSplitRequest[];
   paymentMethod: PaymentMethod | null;
   operationDate: string;
   valueDate: string | null;

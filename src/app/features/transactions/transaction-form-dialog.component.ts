@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -46,6 +46,7 @@ import {
   Transaction,
   TransactionDirection,
   TransactionRequest,
+  TransactionSplitRequest,
   TransactionStatus,
   Transfer,
   TransferRequest,
@@ -62,6 +63,14 @@ import { customTransferLabel } from './transfer-label';
 import { setRequired } from '../../shared/required';
 
 type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
+
+// Ligne d'une ventilation : la dernière prend automatiquement le reste du montant
+type SplitRow = FormGroup<{
+  categoryId: FormControl<number | null>;
+  amount: FormControl<number | null>;
+}>;
+
+const round2 = (value: number) => Math.round(value * 100) / 100;
 
 export interface TransactionFormData {
   transaction?: Transaction;
@@ -145,10 +154,30 @@ export class TransactionFormDialogComponent implements OnInit {
     label: new FormControl('', { nonNullable: true }),
     payee: new FormControl('', { nonNullable: true }),
     categoryId: new FormControl<number | null>(null),
+    // Ventilation sur plusieurs catégories : vide tant que l'opération n'est pas ventilée
+    splits: new FormArray<SplitRow>([]),
     paymentMethod: new FormControl<PaymentMethod | null>(null),
     notes: new FormControl('', { nonNullable: true }),
     cleared: new FormControl(false, { nonNullable: true }),
   });
+
+  protected readonly splitting = signal(false);
+  private readonly splitValues = toSignal(this.form.controls.splits.valueChanges, {
+    initialValue: [],
+  });
+  // Montant de la dernière ligne : ce que les autres lignes laissent du montant de l'opération.
+  // Recalculé à chaque changement, même à valeur égale, pour suivre l'ajout et le retrait de lignes
+  protected readonly splitRemainder = computed(
+    () => {
+      this.splitValues();
+      const rows = this.form.controls.splits.controls;
+      const others = rows
+        .slice(0, -1)
+        .reduce((sum, row) => sum + (row.controls.amount.value ?? 0), 0);
+      return round2(this.amountValue() - others);
+    },
+    { equal: () => false },
+  );
 
   private readonly accountId = toSignal(this.form.controls.accountId.valueChanges, {
     initialValue: null,
@@ -168,6 +197,12 @@ export class TransactionFormDialogComponent implements OnInit {
       // Le bénéficiaire n'est obligatoire que si aucun libellé ne permet d'identifier l'opération
       setRequired(this.form.controls.payee, !transfer && !this.label().trim());
       setRequired(this.form.controls.toAccountId, transfer);
+    });
+    effect(() => {
+      const remainder = this.splitRemainder();
+      this.form.controls.splits.controls
+        .at(-1)
+        ?.controls.amount.setValue(remainder > 0 ? remainder : null, { emitEvent: false });
     });
   }
 
@@ -251,6 +286,13 @@ export class TransactionFormDialogComponent implements OnInit {
       notes: t.notes ?? '',
       cleared: t.status !== 'PENDING',
     });
+    if (t.splits.length) {
+      for (const split of t.splits) {
+        this.form.controls.splits.push(this.splitRow(split.category?.id ?? null, split.amount));
+      }
+      this.refreshSplitRows();
+      this.splitting.set(true);
+    }
     if (t.direction === 'CREDIT' && !t.transfer) {
       this.previousCredit.set({ accountId: t.accountId, amount: t.amount });
     }
@@ -290,6 +332,10 @@ export class TransactionFormDialogComponent implements OnInit {
     }
     this.mode.set(mode);
     this.form.controls.categoryId.setValue(null);
+    // Les catégories de dépense et de revenu sont distinctes
+    for (const row of this.form.controls.splits.controls) {
+      row.controls.categoryId.setValue(null);
+    }
     if (mode === 'TRANSFER' && !this.form.controls.toAccountId.value) {
       const other = this.store
         .openAccounts()
@@ -298,7 +344,84 @@ export class TransactionFormDialogComponent implements OnInit {
     }
   }
 
+  // ---------- Ventilation ----------
+
+  protected startSplit(): void {
+    const rows = this.form.controls.splits;
+    rows.clear();
+    // La catégorie déjà choisie devient la première ligne
+    rows.push(this.splitRow(this.form.controls.categoryId.value, null));
+    rows.push(this.splitRow(null, null));
+    this.form.controls.categoryId.setValue(null);
+    this.refreshSplitRows();
+    this.splitting.set(true);
+    this.form.markAsDirty();
+  }
+
+  protected cancelSplit(): void {
+    const first = this.form.controls.splits.at(0)?.controls.categoryId.value ?? null;
+    this.form.controls.splits.clear();
+    this.splitting.set(false);
+    this.form.controls.categoryId.setValue(first);
+    this.form.markAsDirty();
+  }
+
+  // La nouvelle ligne s'insère avant la dernière, qui garde le reste
+  protected addSplitRow(): void {
+    const rows = this.form.controls.splits;
+    rows.insert(rows.length - 1, this.splitRow(null, null));
+    this.refreshSplitRows();
+  }
+
+  protected removeSplitRow(index: number): void {
+    this.form.controls.splits.removeAt(index);
+    this.refreshSplitRows();
+  }
+
+  private splitRow(categoryId: number | null, amount: number | null): SplitRow {
+    return new FormGroup({
+      categoryId: new FormControl<number | null>(categoryId),
+      amount: new FormControl<number | null>(amount, [Validators.required, Validators.min(0.01)]),
+    });
+  }
+
+  // Seule la dernière ligne est calculée : son montant n'est pas saisissable
+  private refreshSplitRows(): void {
+    const rows = this.form.controls.splits.controls;
+    rows.forEach((row, index) => {
+      if (index === rows.length - 1) {
+        row.controls.amount.disable({ emitEvent: false });
+      } else {
+        row.controls.amount.enable({ emitEvent: false });
+      }
+    });
+    this.form.controls.splits.updateValueAndValidity();
+  }
+
+  private splitsToSave(): TransactionSplitRequest[] | null {
+    if (!this.splitting()) {
+      return [];
+    }
+    const rows = this.form.controls.splits.getRawValue();
+    if (rows.some((row) => row.categoryId === null)) {
+      this.notify.error('Choisissez une catégorie pour chaque ligne de la ventilation');
+      return null;
+    }
+    const remainder = this.splitRemainder();
+    if (remainder <= 0) {
+      this.notify.error("La ventilation dépasse le montant de l'opération");
+      return null;
+    }
+    return rows.map((row, index) => ({
+      categoryId: row.categoryId!,
+      amount: index === rows.length - 1 ? remainder : row.amount!,
+    }));
+  }
+
   protected selectPayee(suggestion: PayeeSuggestion): void {
+    if (this.splitting()) {
+      return;
+    }
     if (!this.form.controls.categoryId.value && suggestion.lastCategoryId) {
       const option = this.store.categoryOption(suggestion.lastCategoryId);
       if (option && option.category.type === this.categoryType()) {
@@ -367,6 +490,10 @@ export class TransactionFormDialogComponent implements OnInit {
       this.notify.error('Indiquez au moins un bénéficiaire ou un libellé');
       return null;
     }
+    const splits = this.splitsToSave();
+    if (!splits) {
+      return null;
+    }
     const request: TransactionRequest = {
       accountId: v.accountId!,
       direction: this.mode() as TransactionDirection,
@@ -374,7 +501,8 @@ export class TransactionFormDialogComponent implements OnInit {
       label,
       payee: v.payee.trim() || null,
       notes: v.notes.trim() || null,
-      categoryId: v.categoryId,
+      categoryId: splits.length ? null : v.categoryId,
+      splits,
       paymentMethod: v.paymentMethod,
       operationDate: toIsoDate(v.operationDate)!,
       valueDate: toIsoDate(v.valueDate),
@@ -442,6 +570,10 @@ export class TransactionFormDialogComponent implements OnInit {
           payee: t.payee,
           notes: t.notes,
           categoryId: t.category?.id ?? null,
+          // Une ligne dont la catégorie a été supprimée ne peut pas être recréée telle quelle
+          splits: t.splits.every((s) => s.category)
+            ? t.splits.map((s) => ({ categoryId: s.category!.id, amount: s.amount }))
+            : [],
           paymentMethod: t.paymentMethod,
           operationDate: t.operationDate,
           valueDate: t.valueDate,

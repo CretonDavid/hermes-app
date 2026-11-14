@@ -141,11 +141,45 @@
         <mat-error>Indiquez un nom, ou un libellé</mat-error>
       </mat-form-field>
 
-      <app-category-picker
-        formControlName="categoryId"
-        [type]="categoryType()"
-        label="Catégorie (facultatif)"
-      />
+      <div class="category-cell">
+        @if (splitting()) {
+          <mat-form-field>
+            <mat-label>Catégorie</mat-label>
+            <mat-icon matIconPrefix>call_split</mat-icon>
+            <input
+              matInput
+              readonly
+              [value]="'Ventilée sur ' + form.controls.splits.length + ' catégories'"
+            />
+            <button
+              matIconButton
+              matIconSuffix
+              type="button"
+              (click)="cancelSplit()"
+              matTooltip="Annuler la ventilation"
+              aria-label="Annuler la ventilation"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-form-field>
+        } @else {
+          <app-category-picker
+            formControlName="categoryId"
+            [type]="categoryType()"
+            label="Catégorie (facultatif)"
+          />
+          <button
+            matIconButton
+            type="button"
+            class="split-start"
+            (click)="startSplit()"
+            matTooltip="Ventiler sur plusieurs catégories"
+            aria-label="Ventiler sur plusieurs catégories"
+          >
+            <mat-icon>call_split</mat-icon>
+          </button>
+        }
+      </div>
 
       <mat-form-field>
         <mat-label>Compte bancaire</mat-label>
@@ -170,6 +204,52 @@
           }
         </mat-select>
       </mat-form-field>
+
+      @if (splitting()) {
+        <div class="full split" formArrayName="splits" role="group" aria-label="Ventilation">
+          @for (row of form.controls.splits.controls; track row; let i = $index, last = $last) {
+            <div class="split-row" [formGroupName]="i">
+              <app-category-picker
+                formControlName="categoryId"
+                [type]="categoryType()"
+                label="Catégorie"
+              />
+              <mat-form-field>
+                <mat-label>{{ last ? 'Reste' : 'Montant' }}</mat-label>
+                <input matInput appAmount formControlName="amount" placeholder="0,00" />
+                <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
+                <mat-error>Montant supérieur à 0</mat-error>
+              </mat-form-field>
+              <button
+                matIconButton
+                type="button"
+                (click)="removeSplitRow(i)"
+                [disabled]="form.controls.splits.length <= 2"
+                matTooltip="Retirer cette ligne"
+                aria-label="Retirer cette ligne"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+          @if (amountValue() > 0 && splitRemainder() < 0) {
+            <p class="split-error" role="alert">
+              Les lignes dépassent le montant de l'opération de
+              {{ -splitRemainder() | money: currencyCode() }}.
+            </p>
+          } @else if (amountValue() > 0 && splitRemainder() === 0) {
+            <p class="split-error" role="alert">
+              Il ne reste rien pour la dernière ligne : réduisez une autre ligne ou retirez-la.
+            </p>
+          }
+          <div class="split-actions">
+            <button matButton type="button" (click)="addSplitRow()">
+              <mat-icon>add</mat-icon> Ajouter une catégorie
+            </button>
+            <span class="muted">La dernière ligne reçoit le reste du montant.</span>
+          </div>
+        </div>
+      }
     }
 
     <mat-form-field class="full">

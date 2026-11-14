@@ -133,6 +133,14 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
                 "
                 ><mat-icon>swap_horiz</mat-icon>Virement interne</span
               >
+            } @else if (t.splits.length) {
+              <span
+                class="chip split"
+                [matTooltip]="splitTooltip(t)"
+                matTooltipClass="multiline-tooltip"
+              >
+                <mat-icon>call_split</mat-icon>Ventilée · {{ t.splits.length }} catégories
+              </span>
             } @else if (t.category) {
               <span class="chip">
                 <span class="category-dot" [style.background]="categoryColor(t.category.id)"></span>
@@ -161,7 +169,16 @@ import { TransactionFormDialogComponent } from './transaction-form-dialog.compon
             class="amount"
             [class.positive]="t.direction === 'CREDIT'"
           >
-            {{ (t.direction === 'DEBIT' ? -t.amount : t.amount) | money: t.currencyCode : true }}
+            @if (t.matchedAmount !== null) {
+              <!-- Liste filtrée par catégorie : seule la part correspondante compte -->
+              {{
+                (t.direction === 'DEBIT' ? -t.matchedAmount : t.matchedAmount)
+                  | money: t.currencyCode : true
+              }}
+              <div class="sub">sur {{ t.amount | money: t.currencyCode }}</div>
+            } @else {
+              {{ (t.direction === 'DEBIT' ? -t.amount : t.amount) | money: t.currencyCode : true }}
+            }
           </td>
         </ng-container>
 
@@ -325,6 +342,15 @@ export class TransactionTableComponent {
       this.transactions();
       this.wrapper().nativeElement.scrollTop = 0;
     });
+  }
+
+  protected splitTooltip(t: Transaction): string {
+    return t.splits
+      .map(
+        (s) =>
+          `${s.category?.name ?? 'Non catégorisée'} : ${formatMoney(s.amount, t.currencyCode)}`,
+      )
+      .join('\n');
   }
 
   protected categoryColor(id: number): string {

@@ -28,6 +28,16 @@ function cell(value: string): string {
   return /[";\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
+// Opération ventilée : « Courses 85,00 / Maison 35,00 »
+function categoryText(t: Transaction): string | null {
+  if (!t.splits.length) {
+    return t.category?.name ?? null;
+  }
+  return t.splits
+    .map((s) => `${s.category?.name ?? 'Non catégorisée'} ${formatAmount(s.amount)}`)
+    .join(' / ');
+}
+
 // Séparateur « ; » et marque BOM : le fichier s'ouvre directement dans un tableur français
 export function transactionsToCsv(transactions: Transaction[]): string {
   const rows = transactions.map((t) =>
@@ -35,7 +45,7 @@ export function transactionsToCsv(transactions: Transaction[]): string {
       t.operationDate.split('-').reverse().join('/'),
       safeText(t.label),
       safeText(t.payee),
-      t.transfer ? 'Virement interne' : safeText(t.category?.name),
+      t.transfer ? 'Virement interne' : safeText(categoryText(t)),
       safeText(t.accountName),
       formatAmount(t.direction === 'DEBIT' ? -t.amount : t.amount),
       t.currencyCode,

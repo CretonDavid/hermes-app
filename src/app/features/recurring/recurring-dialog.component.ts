@@ -23,6 +23,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { showFormErrors } from '../../shared/form-errors';
 import { RecurringApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { addYears, format } from 'date-fns';
@@ -662,7 +663,7 @@ export class RecurringDialogComponent {
       this.payers.clear();
     }
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showFormErrors(this.form);
       return;
     }
     if (this.ownShare() < 0) {

@@ -12,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { showFormErrors } from '../../shared/form-errors';
 import { CategoryApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { Category, CategoryRequest, CategoryType } from '../../core/models';
@@ -256,7 +257,7 @@ export class CategoryDialogComponent {
 
   protected save(): void {
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showFormErrors(this.form);
       return;
     }
     const v = this.form.getRawValue();

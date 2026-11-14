@@ -11,6 +11,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { showFormErrors } from '../../shared/form-errors';
 import { CurrencyApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
@@ -111,7 +112,7 @@ export class RateDialogComponent {
 
   protected save(): void {
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showFormErrors(this.form);
       return;
     }
     const v = this.form.getRawValue();

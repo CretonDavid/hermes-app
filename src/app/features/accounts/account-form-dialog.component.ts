@@ -17,6 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Observable, map, of, switchMap } from 'rxjs';
+import { showFormErrors } from '../../shared/form-errors';
 import { AccountApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { fromIsoDate, toIsoDate } from '../../core/format';
@@ -311,7 +312,7 @@ export class AccountFormDialogComponent {
 
   protected save(): void {
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showFormErrors(this.form);
       return;
     }
     const v = this.form.getRawValue();

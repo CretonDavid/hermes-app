@@ -7,7 +7,7 @@ import {
   LOCALE_ID,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { MAT_DATE_LOCALE } from '@angular/material/core';
+import { ErrorStateMatcher, MAT_DATE_LOCALE } from '@angular/material/core';
 import { provideDateFnsAdapter } from '@angular/material-date-fns-adapter';
 import { MAT_DIALOG_DEFAULT_OPTIONS, MatDialogConfig } from '@angular/material/dialog';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
@@ -18,6 +18,7 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { loadingInterceptor } from './core/loading.service';
 import { FrDatepickerIntl, FrPaginatorIntl } from './core/material-intl';
+import { EditedErrorStateMatcher } from './shared/form-errors';
 import { MatDatepickerIntl } from '@angular/material/datepicker';
 import { MatPaginatorIntl } from '@angular/material/paginator';
 
@@ -49,6 +50,8 @@ export const appConfig: ApplicationConfig = {
       provide: MAT_DIALOG_DEFAULT_OPTIONS,
       useValue: { ...new MatDialogConfig(), maxWidth: '92vw', maxHeight: '92vh' },
     },
+    // Un champ obligatoire traversé sans saisie ne passe pas en rouge
+    { provide: ErrorStateMatcher, useClass: EditedErrorStateMatcher },
     { provide: MatPaginatorIntl, useClass: FrPaginatorIntl },
     { provide: MatDatepickerIntl, useClass: FrDatepickerIntl },
     {

@@ -9,6 +9,7 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { showFormErrors } from '../../shared/form-errors';
 import { CurrencyApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { Currency } from '../../core/models';
@@ -88,7 +89,7 @@ export class CurrencyDialogComponent {
 
   protected save(): void {
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showFormErrors(this.form);
       return;
     }
     this.saving.set(true);

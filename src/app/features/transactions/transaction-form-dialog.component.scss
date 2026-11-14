@@ -172,3 +172,26 @@
     color: var(--mat-sys-primary);
   }
 }
+
+// Budgets spéciaux du compte crédité : un montant par budget
+.goals-hint {
+  margin: -4px 0 4px;
+  font: var(--mat-sys-body-small);
+}
+
+.goal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  align-items: center;
+  gap: 12px;
+}
+
+.goal-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .muted {
+    font: var(--mat-sys-body-small);
+  }
+}

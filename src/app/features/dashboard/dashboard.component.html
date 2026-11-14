@@ -135,6 +135,90 @@
       </div>
     </div>
 
+    @if (hasBudgets()) {
+      <div class="grid grid-2 budgets">
+        <div class="card">
+          <h2>
+            <mat-icon>donut_large</mat-icon> Enveloppes de {{ now | date: 'MMMM' }}
+            <span class="spacer"></span>
+            <a matButton routerLink="/budget">Gérer</a>
+          </h2>
+          @if (budget(); as b) {
+            <div class="rings">
+              @for (e of topEnvelopes(); track e.id) {
+                <a
+                  class="ring-item"
+                  routerLink="/transactions"
+                  [queryParams]="envelopeLink(e)"
+                  [matTooltip]="
+                    (e.spent | money: b.currencyCode) +
+                    ' dépensés sur ' +
+                    (e.amount | money: b.currencyCode) +
+                    ' · voir les opérations'
+                  "
+                >
+                  <app-budget-ring
+                    [spent]="e.spent"
+                    [amount]="e.amount"
+                    [color]="categoryColor(e.category.id)"
+                    [icon]="categoryIcon(e.category.id)"
+                    [size]="80"
+                  />
+                  <span class="ring-percent amount">{{ envelopePercent(e) }} %</span>
+                  <span class="ring-name">{{ e.category.name }}</span>
+                  <span class="ring-rest amount" [class.negative]="e.remaining < 0">
+                    @if (e.remaining < 0) {
+                      {{ e.remaining | money: b.currencyCode }}
+                    } @else {
+                      reste {{ e.remaining | money: b.currencyCode }}
+                    }
+                  </span>
+                </a>
+              } @empty {
+                <div class="empty"><p>Aucune enveloppe ce mois-ci</p></div>
+              }
+            </div>
+          }
+        </div>
+        <div class="card">
+          <h2>
+            <mat-icon>flag</mat-icon> Budgets spéciaux
+            <span class="spacer"></span>
+            <a matButton routerLink="/budget">Gérer</a>
+          </h2>
+          @for (g of activeGoals(); track g.id) {
+            <div class="budget-item">
+              <div class="budget-line">
+                <span class="name">
+                  {{ g.name }} <span class="muted small">· {{ g.accountName }}</span>
+                </span>
+                <span class="amount small">
+                  {{ g.savedAmount | money: g.currencyCode }} /
+                  {{ g.targetAmount | money: g.currencyCode }}
+                </span>
+              </div>
+              <div
+                class="goal-bar"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                [attr.aria-valuenow]="goalPercent(g)"
+                [attr.aria-label]="g.name + ' : objectif atteint à ' + goalPercent(g) + ' %'"
+              >
+                <div
+                  class="fill"
+                  [style.width.%]="goalPercent(g)"
+                  [style.background]="goalColor(g)"
+                ></div>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty"><p>Aucun budget spécial en cours</p></div>
+          }
+        </div>
+      </div>
+    }
+
     <div class="grid grid-2" style="margin-top: 16px">
       <div class="card">
         <h2>

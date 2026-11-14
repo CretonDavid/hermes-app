@@ -138,7 +138,7 @@
             </mat-option>
           }
         </mat-autocomplete>
-        <mat-error>Indiquez un nom, ou un libellé dans les détails</mat-error>
+        <mat-error>Indiquez un nom, ou un libellé</mat-error>
       </mat-form-field>
 
       <app-category-picker
@@ -172,6 +172,20 @@
       </mat-form-field>
     }
 
+    <mat-form-field class="full">
+      <mat-label>Libellé (facultatif)</mat-label>
+      <input
+        matInput
+        formControlName="label"
+        [placeholder]="mode() === 'TRANSFER' ? 'Par défaut : Virement vers …' : labelPlaceholder()"
+      />
+      @if (mode() !== 'TRANSFER') {
+        <mat-hint
+          >Texte affiché dans la liste. Laissez vide pour reprendre le bénéficiaire.</mat-hint
+        >
+      }
+    </mat-form-field>
+
     @if (ceilingWarning(); as w) {
       <p class="full ceiling-warning" role="status">
         <mat-icon inline>warning</mat-icon>
@@ -182,27 +196,11 @@
 
     @if (!showDetails()) {
       <button matButton type="button" class="full details-toggle" (click)="showDetails.set(true)">
-        <mat-icon>expand_more</mat-icon> Plus de détails (libellé, notes{{
-          mode() === 'TRANSFER' ? '' : ', pointage…'
+        <mat-icon>expand_more</mat-icon> Plus de détails (notes{{
+          mode() === 'TRANSFER' ? '' : ', date de valeur, pointage'
         }})
       </button>
     } @else {
-      <mat-form-field class="full">
-        <mat-label>Libellé (facultatif)</mat-label>
-        <input
-          matInput
-          formControlName="label"
-          [placeholder]="
-            mode() === 'TRANSFER' ? 'Par défaut : Virement vers …' : labelPlaceholder()
-          "
-        />
-        @if (mode() !== 'TRANSFER') {
-          <mat-hint
-            >Texte affiché dans la liste. Laissez vide pour reprendre le bénéficiaire.</mat-hint
-          >
-        }
-      </mat-form-field>
-
       @if (mode() !== 'TRANSFER') {
         <mat-form-field>
           <mat-label>Date de valeur (facultatif)</mat-label>

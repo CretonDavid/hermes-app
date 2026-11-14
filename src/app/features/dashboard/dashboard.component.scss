@@ -207,6 +207,60 @@
   }
 }
 
+// Enveloppes : un anneau par enveloppe, jusqu'à quatre par ligne
+.rings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 16px 8px;
+
+  .empty {
+    grid-column: 1 / -1;
+  }
+}
+
+.ring-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 4px;
+  border-radius: 12px;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+
+  app-budget-ring {
+    margin-bottom: 6px;
+  }
+}
+
+.ring-percent {
+  font: var(--mat-sys-title-medium);
+}
+
+.ring-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--mat-sys-body-small);
+}
+
+.ring-rest {
+  font: var(--mat-sys-label-small);
+  color: var(--hermes-muted);
+
+  &.negative {
+    color: var(--hermes-negative);
+  }
+}
+
 .budget-item + .budget-item {
   margin-top: 14px;
 }

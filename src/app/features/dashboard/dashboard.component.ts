@@ -11,6 +11,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 import { addDays, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { forkJoin } from 'rxjs';
@@ -31,7 +32,7 @@ import { NotifyService } from '../../core/notify.service';
 import { ChartComponent } from '../../shared/chart.component';
 import { donutChart, incomeExpenseChart } from '../../shared/charts';
 import { withFutureTransactions } from '../../shared/forecast';
-import { BudgetBarComponent } from '../../shared/budget-bar.component';
+import { BudgetRingComponent } from '../../shared/budget-ring.component';
 import { GOAL_COLORS, goalColors } from '../../shared/goal-colors';
 import { MoneyPipe, PercentagePipe } from '../../shared/money.pipe';
 import { AccountFormDialogComponent } from '../accounts/account-form-dialog.component';
@@ -50,7 +51,8 @@ const ratio = (e: BudgetEnvelope) => (e.amount > 0 ? e.spent / e.amount : 0);
     MatIconModule,
     MoneyPipe,
     ChartComponent,
-    BudgetBarComponent,
+    BudgetRingComponent,
+    MatTooltipModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
@@ -143,6 +145,28 @@ export class DashboardComponent {
 
   protected editTransaction(transaction: Transaction): void {
     TransactionFormDialogComponent.open(this.dialog, { transaction });
+  }
+
+  protected categoryColor(id: number): string {
+    return this.store.categoryOption(id)?.color ?? '#9e9e9e';
+  }
+
+  protected categoryIcon(id: number): string {
+    return this.store.categoryOption(id)?.icon ?? 'sell';
+  }
+
+  protected envelopePercent(e: BudgetEnvelope): number {
+    return e.amount > 0 ? Math.round((Math.max(0, e.spent) / e.amount) * 100) : 0;
+  }
+
+  // Dépenses du mois de la catégorie de l'enveloppe, sous-catégories comprises
+  protected envelopeLink(e: BudgetEnvelope): Record<string, string | number> {
+    return {
+      categoryId: e.category.id,
+      kind: 'EXPENSE',
+      from: toIsoDate(startOfMonth(this.now))!,
+      to: toIsoDate(endOfMonth(this.now))!,
+    };
   }
 
   protected goalColor(goal: Goal): string {

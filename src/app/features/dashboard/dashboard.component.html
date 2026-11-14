@@ -144,19 +144,39 @@
             <a matButton routerLink="/budget">Gérer</a>
           </h2>
           @if (budget(); as b) {
-            @for (e of topEnvelopes(); track e.id) {
-              <div class="budget-item">
-                <div class="budget-line">
-                  <span class="name">{{ e.category.name }}</span>
-                  <span class="amount small" [class.negative]="e.remaining < 0">
-                    {{ e.spent | money: b.currencyCode }} / {{ e.amount | money: b.currencyCode }}
+            <div class="rings">
+              @for (e of topEnvelopes(); track e.id) {
+                <a
+                  class="ring-item"
+                  routerLink="/transactions"
+                  [queryParams]="envelopeLink(e)"
+                  [matTooltip]="
+                    (e.spent | money: b.currencyCode) +
+                    ' dépensés sur ' +
+                    (e.amount | money: b.currencyCode) +
+                    ' · voir les opérations'
+                  "
+                >
+                  <app-budget-ring
+                    [spent]="e.spent"
+                    [amount]="e.amount"
+                    [color]="categoryColor(e.category.id)"
+                    [icon]="categoryIcon(e.category.id)"
+                  />
+                  <span class="ring-percent amount">{{ envelopePercent(e) }} %</span>
+                  <span class="ring-name">{{ e.category.name }}</span>
+                  <span class="ring-rest amount" [class.negative]="e.remaining < 0">
+                    @if (e.remaining < 0) {
+                      {{ e.remaining | money: b.currencyCode }}
+                    } @else {
+                      reste {{ e.remaining | money: b.currencyCode }}
+                    }
                   </span>
-                </div>
-                <app-budget-bar [spent]="e.spent" [amount]="e.amount" />
-              </div>
-            } @empty {
-              <div class="empty"><p>Aucune enveloppe ce mois-ci</p></div>
-            }
+                </a>
+              } @empty {
+                <div class="empty"><p>Aucune enveloppe ce mois-ci</p></div>
+              }
+            </div>
           }
         </div>
         <div class="card">

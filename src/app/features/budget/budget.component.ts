@@ -208,14 +208,14 @@ interface GoalAccount {
         }
 
         <!-- Part de chaque compte mise de côté dans ses budgets spéciaux -->
-        <div class="accounts-grid" [class.single]="shownAccounts().length === 1">
+        <div class="accounts-grid">
           @for (a of shownAccounts(); track a.id) {
             <div class="card account-split">
               <div class="split-head">
                 <mat-icon>account_balance</mat-icon>
                 <a class="split-name" [routerLink]="['/accounts', a.id]">{{ a.name }}</a>
                 <span class="spacer"></span>
-                <span class="muted">Solde</span>
+                <span class="muted">Solde total</span>
                 <span class="amount split-balance">{{ a.balance | money: a.currencyCode }}</span>
               </div>
               <div class="stack" role="img" [attr.aria-label]="stackLabel(a)">
@@ -325,7 +325,6 @@ interface GoalAccount {
                   <button
                     type="button"
                     class="goal-adjust"
-                    [style.--goal-color]="goalColor(g)"
                     (click)="adjustGoal(g)"
                     [matTooltip]="
                       (accountFree(g) | money: g.currencyCode) + ' libres sur ' + g.accountName
@@ -412,9 +411,6 @@ interface GoalAccount {
     .account-filter {
       margin-bottom: 16px;
       flex-wrap: wrap;
-    }
-    .accounts-grid.single {
-      grid-template-columns: minmax(0, 1fr);
     }
     .accounts-grid {
       display: grid;
@@ -584,7 +580,7 @@ interface GoalAccount {
         min-width: 0;
       }
     }
-    // Lien discret à la couleur du budget, légèrement teinté au survol
+    // Lien discret, légèrement teinté au survol
     .goal-adjust {
       display: inline-flex;
       align-items: center;
@@ -593,7 +589,7 @@ interface GoalAccount {
       border: none;
       border-radius: 999px;
       background: transparent;
-      color: var(--goal-color);
+      color: var(--mat-sys-primary);
       font: var(--mat-sys-label-medium);
       cursor: pointer;
       transition: background 0.15s ease;
@@ -605,11 +601,11 @@ interface GoalAccount {
       }
 
       &:hover {
-        background: color-mix(in srgb, var(--goal-color) 16%, transparent);
+        background: color-mix(in srgb, var(--mat-sys-primary) 16%, transparent);
       }
 
       &:focus-visible {
-        outline: 2px solid var(--goal-color);
+        outline: 2px solid var(--mat-sys-primary);
         outline-offset: 1px;
       }
     }

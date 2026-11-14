@@ -134,6 +134,47 @@
       </div>
     </mat-tab>
 
+    <mat-tab label="Plafonds">
+      <div class="tab">
+        <div class="card">
+          <h2><mat-icon>savings</mat-icon> Plafonds des comptes d'épargne</h2>
+          <p class="muted">
+            Livret A, LDDS, LEP… : la jauge du compte bancaire indique ce qu'il reste possible
+            d'épargner.
+          </p>
+          @for (account of ceilingAccounts(); track account.id) {
+            <div class="list-row">
+              <mat-icon class="muted">savings</mat-icon>
+              <span class="flex">
+                {{ account.name }}
+                @if (account.bankName) {
+                  <span class="muted"> · {{ account.bankName }}</span>
+                }
+              </span>
+              @if (account.ceiling) {
+                <span class="amount">{{ account.ceiling | money: account.currency.code }}</span>
+              } @else {
+                <span class="muted">Aucun plafond</span>
+              }
+              <button
+                matIconButton
+                matTooltip="Modifier le plafond"
+                [attr.aria-label]="'Modifier le plafond de ' + account.name"
+                (click)="editCeiling(account)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+            </div>
+          } @empty {
+            <p class="muted">
+              Aucun compte bancaire d'épargne ouvert. Un compte apparaît ici si son type est marqué
+              « Épargne ».
+            </p>
+          }
+        </div>
+      </div>
+    </mat-tab>
+
     <mat-tab label="Devises">
       <div class="tab">
         <div class="card">

@@ -211,6 +211,16 @@ function readShowCeiling(): boolean {
                 matTooltip="Calculé sur le solde à date, intérêts compris : ils peuvent faire dépasser le plafond, qui ne porte que sur les versements"
                 >info</mat-icon
               >
+              <a
+                matIconButton
+                class="ceiling-edit"
+                routerLink="/settings"
+                [queryParams]="{ tab: 'ceilings' }"
+                matTooltip="Modifier le plafond dans les paramètres"
+                aria-label="Modifier le plafond dans les paramètres"
+              >
+                <mat-icon>edit</mat-icon>
+              </a>
             </h2>
             <app-ceiling-gauge
               [balance]="a.balance"
@@ -282,6 +292,10 @@ function readShowCeiling(): boolean {
     }
   `,
   styles: `
+    .ceiling-edit {
+      margin: -8px -8px -8px auto;
+      color: var(--mat-sys-on-surface-variant);
+    }
     .ceiling-toggle {
       color: var(--mat-sys-on-surface-variant);
       &.active {

@@ -26,15 +26,17 @@ import { AccountApi, CurrencyApi, UserApi } from '../../core/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { DataStore } from '../../core/data.store';
 import { toIsoDate } from '../../core/format';
-import { AccountType, Currency, ExchangeRate } from '../../core/models';
+import { Account, AccountType, Currency, ExchangeRate } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { APP_VERSION } from '../../core/version';
 import { confirm } from '../../shared/confirm-dialog.component';
+import { MoneyPipe } from '../../shared/money.pipe';
 import { AccountTypeDialogComponent } from '../accounts/account-type-dialog.component';
+import { CeilingDialogComponent } from './ceiling-dialog.component';
 import { CurrencyDialogComponent } from './currency-dialog.component';
 import { RateDialogComponent } from './rate-dialog.component';
 
-const TABS = ['profile', 'types', 'currencies', 'rates'];
+const TABS = ['profile', 'types', 'ceilings', 'currencies', 'rates'];
 
 @Component({
   selector: 'app-settings',
@@ -42,6 +44,7 @@ const TABS = ['profile', 'types', 'currencies', 'rates'];
     FormsModule,
     DatePipe,
     DecimalPipe,
+    MoneyPipe,
     MatTabsModule,
     MatButtonModule,
     MatIconModule,
@@ -79,6 +82,14 @@ export class SettingsComponent {
   protected deleteDigits(): number {
     return this.deleteNumber.replace(/\D/g, '').length;
   }
+
+  // Comptes d'épargne ouverts, plus ceux qui ont déjà un plafond (type changé depuis)
+  protected readonly ceilingAccounts = computed(() =>
+    this.store
+      .accounts()
+      .filter((a) => !a.closed && (a.accountType.savings || a.ceiling))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr')),
+  );
 
   protected readonly customCurrencies = computed(() =>
     this.store.currencies().filter((c) => c.custom),
@@ -183,6 +194,12 @@ export class SettingsComponent {
       confirmLabel: 'Supprimer',
       danger: true,
     }).subscribe((ok) => ok && action());
+  }
+
+  // ---------- Plafonds ----------
+
+  protected editCeiling(account: Account): void {
+    CeilingDialogComponent.open(this.dialog, account);
   }
 
   // ---------- Devises ----------

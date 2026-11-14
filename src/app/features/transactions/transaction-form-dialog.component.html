@@ -183,9 +183,9 @@
                 [type]="categoryType()"
                 label="Catégorie"
               />
-              <mat-form-field>
-                <mat-label>Libellé</mat-label>
-                <input matInput formControlName="label" maxlength="255" placeholder="Facultatif" />
+              <mat-form-field class="split-label">
+                <mat-label>Libellé (facultatif)</mat-label>
+                <input matInput formControlName="label" maxlength="255" />
               </mat-form-field>
               <mat-form-field>
                 <mat-label>{{ last ? 'Reste' : 'Montant' }}</mat-label>

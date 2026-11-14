@@ -122,11 +122,19 @@
   border-radius: 12px;
 }
 
+// Catégorie et montant sur une ligne, libellé en dessous sur toute la largeur
 .split-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px auto;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
   align-items: start;
   gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--hermes-border);
+
+  .split-label {
+    grid-column: 1 / 3;
+    grid-row: 2;
+  }
 
   button {
     margin-top: 4px;

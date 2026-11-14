@@ -210,8 +210,8 @@
 // Enveloppes : un anneau par enveloppe, jusqu'à quatre par ligne
 .rings {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 16px 8px;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
 
   .empty {
     grid-column: 1 / -1;
@@ -224,8 +224,10 @@
   align-items: center;
   gap: 2px;
   min-width: 0;
-  padding: 8px 4px;
-  border-radius: 12px;
+  padding: 14px 8px 12px;
+  border: 1px solid var(--hermes-border);
+  border-radius: 14px;
+  background: var(--mat-sys-surface-container-low);
   color: inherit;
   text-align: center;
   text-decoration: none;
@@ -236,7 +238,7 @@
   }
 
   app-budget-ring {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 }
 
@@ -246,9 +248,7 @@
 
 .ring-name {
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   font: var(--mat-sys-body-small);
 }
 

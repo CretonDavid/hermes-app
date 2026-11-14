@@ -10,6 +10,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
   selector: 'app-budget-ring',
   imports: [MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style.width.px]': 'size()', '[style.height.px]': 'size()' },
   template: `
     <svg viewBox="0 0 64 64" aria-hidden="true">
       <circle class="track" cx="32" cy="32" [attr.r]="radius" />
@@ -23,15 +24,19 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
         [attr.stroke-dashoffset]="offset()"
       />
     </svg>
-    <mat-icon [style.color]="color()">{{ icon() }}</mat-icon>
+    <mat-icon
+      [style.color]="color()"
+      [style.font-size.px]="size() * 0.36"
+      [style.width.px]="size() * 0.36"
+      [style.height.px]="size() * 0.36"
+      >{{ icon() }}</mat-icon
+    >
   `,
   styles: `
     :host {
       position: relative;
       display: grid;
       place-items: center;
-      width: 64px;
-      height: 64px;
     }
     svg {
       position: absolute;
@@ -51,9 +56,6 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
     }
     mat-icon {
       position: relative;
-      font-size: 22px;
-      width: 22px;
-      height: 22px;
     }
   `,
 })
@@ -62,6 +64,8 @@ export class BudgetRingComponent {
   readonly amount = input.required<number>();
   readonly color = input('#9e9e9e');
   readonly icon = input('sell');
+  // Diamètre en pixels
+  readonly size = input(64);
 
   protected readonly radius = RADIUS;
   protected readonly circumference = CIRCUMFERENCE;

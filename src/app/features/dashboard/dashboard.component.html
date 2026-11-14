@@ -135,17 +135,17 @@
       </div>
     </div>
 
-    @if (budget(); as b) {
-      @if (b.envelopes.length) {
-        <div class="card budget">
+    @if (hasBudgets()) {
+      <div class="grid grid-2 budgets">
+        <div class="card">
           <h2>
-            <mat-icon>donut_large</mat-icon> Budgets de {{ now | date: 'MMMM' }}
+            <mat-icon>donut_large</mat-icon> Enveloppes de {{ now | date: 'MMMM' }}
             <span class="spacer"></span>
             <a matButton routerLink="/budget">Gérer</a>
           </h2>
-          <div class="budget-envelopes">
+          @if (budget(); as b) {
             @for (e of topEnvelopes(); track e.id) {
-              <div class="budget-envelope">
+              <div class="budget-item">
                 <div class="budget-line">
                   <span class="name">{{ e.category.name }}</span>
                   <span class="amount small" [class.negative]="e.remaining < 0">
@@ -154,10 +154,48 @@
                 </div>
                 <app-budget-bar [spent]="e.spent" [amount]="e.amount" />
               </div>
+            } @empty {
+              <div class="empty"><p>Aucune enveloppe ce mois-ci</p></div>
             }
-          </div>
+          }
         </div>
-      }
+        <div class="card">
+          <h2>
+            <mat-icon>flag</mat-icon> Budgets spéciaux
+            <span class="spacer"></span>
+            <a matButton routerLink="/budget">Gérer</a>
+          </h2>
+          @for (g of activeGoals(); track g.id) {
+            <div class="budget-item">
+              <div class="budget-line">
+                <span class="name">
+                  {{ g.name }} <span class="muted small">· {{ g.accountName }}</span>
+                </span>
+                <span class="amount small">
+                  {{ g.savedAmount | money: g.currencyCode }} /
+                  {{ g.targetAmount | money: g.currencyCode }}
+                </span>
+              </div>
+              <div
+                class="goal-bar"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                [attr.aria-valuenow]="goalPercent(g)"
+                [attr.aria-label]="g.name + ' : objectif atteint à ' + goalPercent(g) + ' %'"
+              >
+                <div
+                  class="fill"
+                  [style.width.%]="goalPercent(g)"
+                  [style.background]="goalColor(g)"
+                ></div>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty"><p>Aucun budget spécial en cours</p></div>
+          }
+        </div>
+      </div>
     }
 
     <div class="grid grid-2" style="margin-top: 16px">

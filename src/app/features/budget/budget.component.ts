@@ -22,15 +22,13 @@ import { toIsoDate } from '../../core/format';
 import { Budget, BudgetEnvelope, Goal } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { BudgetBarComponent, budgetLevel } from '../../shared/budget-bar.component';
+import { GOAL_COLORS, goalColors } from '../../shared/goal-colors';
 import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { EnvelopeDialogComponent } from './envelope-dialog.component';
 import { GoalAdjustDialogComponent } from './goal-adjust-dialog.component';
 import { GoalDialogComponent } from './goal-dialog.component';
 import { GoalUseDialogComponent } from './goal-use-dialog.component';
-
-// Couleurs des budgets spéciaux d'un même compte dans la barre de répartition
-const GOAL_COLORS = ['#b39ddb', '#f4b942', '#4fd1b5', '#ff8fa8', '#64b5f6', '#ffb74d'];
 
 interface GoalAccount {
   id: number;
@@ -778,8 +776,8 @@ export class BudgetComponent {
   protected readonly accountFilter = signal<number | null>(null);
   // Comptes qui portent des budgets spéciaux en cours, avec la part de chacun et le reste libre
   protected readonly goalAccounts = computed<GoalAccount[]>(() => {
-    // Une couleur par budget spécial, dans l’ordre de création, tous comptes confondus
-    const order = new Map(this.activeGoals().map((goal, index) => [goal.id, index]));
+    // Une couleur par budget spécial, la même que sur le tableau de bord
+    const colors = goalColors(this.activeGoals());
     const byAccount = new Map<number, Goal[]>();
     for (const goal of this.activeGoals()) {
       byAccount.set(goal.accountId, [...(byAccount.get(goal.accountId) ?? []), goal]);
@@ -800,7 +798,7 @@ export class BudgetComponent {
         allocatedPercent: balance > 0 ? Math.round((allocated / balance) * 100) : 0,
         parts: goals.map((goal) => ({
           goal,
-          color: GOAL_COLORS[(order.get(goal.id) ?? 0) % GOAL_COLORS.length],
+          color: colors.get(goal.id) ?? GOAL_COLORS[0],
           percent: base > 0 ? (goal.savedAmount / base) * 100 : 0,
         })),
       };

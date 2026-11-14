@@ -14,13 +14,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
 import { addDays, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { forkJoin } from 'rxjs';
-import { BudgetApi, RecurringApi, StatsApi, TransactionApi } from '../../core/api';
+import { BudgetApi, GoalApi, RecurringApi, StatsApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { toIsoDate, trimLeadingEmpty } from '../../core/format';
 import {
   Budget,
   BudgetEnvelope,
   CategoryStat,
+  Goal,
   MonthlyStat,
   StatsSummary,
   Transaction,
@@ -31,6 +32,7 @@ import { ChartComponent } from '../../shared/chart.component';
 import { donutChart, incomeExpenseChart } from '../../shared/charts';
 import { withFutureTransactions } from '../../shared/forecast';
 import { BudgetBarComponent } from '../../shared/budget-bar.component';
+import { GOAL_COLORS, goalColors } from '../../shared/goal-colors';
 import { MoneyPipe, PercentagePipe } from '../../shared/money.pipe';
 import { AccountFormDialogComponent } from '../accounts/account-form-dialog.component';
 import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
@@ -60,6 +62,7 @@ export class DashboardComponent {
   private readonly transactionApi = inject(TransactionApi);
   private readonly recurringApi = inject(RecurringApi);
   private readonly budgetApi = inject(BudgetApi);
+  private readonly goalApi = inject(GoalApi);
   private readonly notify = inject(NotifyService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
@@ -70,6 +73,12 @@ export class DashboardComponent {
   protected readonly recent = signal<Transaction[]>([]);
   protected readonly upcoming = signal<UpcomingOccurrence[]>([]);
   protected readonly budget = signal<Budget | null>(null);
+  // Budgets spéciaux en cours, dans l'ordre de création
+  protected readonly activeGoals = signal<Goal[]>([]);
+  private readonly goalColorMap = computed(() => goalColors(this.activeGoals()));
+  protected readonly hasBudgets = computed(
+    () => !!this.budget()?.envelopes.length || this.activeGoals().length > 0,
+  );
   // Les enveloppes les plus consommées du mois
   protected readonly topEnvelopes = computed<BudgetEnvelope[]>(() =>
     [...(this.budget()?.envelopes ?? [])].sort((a, b) => ratio(b) - ratio(a)).slice(0, 4),
@@ -136,6 +145,16 @@ export class DashboardComponent {
     TransactionFormDialogComponent.open(this.dialog, { transaction });
   }
 
+  protected goalColor(goal: Goal): string {
+    return this.goalColorMap().get(goal.id) ?? GOAL_COLORS[0];
+  }
+
+  protected goalPercent(goal: Goal): number {
+    return goal.targetAmount > 0
+      ? Math.min(100, Math.round((Math.max(0, goal.savedAmount) / goal.targetAmount) * 100))
+      : 0;
+  }
+
   protected operationColor(t: Transaction): string {
     return t.transfer ? '#78909c' : (this.store.categoryOption(t.category?.id)?.color ?? '#9e9e9e');
   }
@@ -184,6 +203,7 @@ export class DashboardComponent {
       ),
       upcoming: this.recurringApi.upcoming(30),
       budget: this.budgetApi.month(format(this.now, 'yyyy-MM')),
+      goals: this.goalApi.list(),
     }).subscribe({
       next: (r) => {
         this.dataLoaded.set(true);
@@ -199,6 +219,7 @@ export class DashboardComponent {
         this.hasTransactions.set(r.any.totalElements > 0);
         this.upcoming.set(withFutureTransactions(r.upcoming, r.future.content).slice(0, 8));
         this.budget.set(r.budget);
+        this.activeGoals.set(r.goals.filter((g) => !g.usedDate));
       },
       error: (error) => this.notify.error(error),
     });

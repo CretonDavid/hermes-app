@@ -187,7 +187,7 @@ interface GoalAccount {
       <!-- Budgets spéciaux : objectifs d'épargne mis de côté sur un compte, indépendants du mois -->
       <div class="section-header">
         <h2><mat-icon>flag</mat-icon> Budgets spéciaux</h2>
-        <button matButton="tonal" (click)="createGoal()">
+        <button matButton="filled" (click)="createGoal()">
           <mat-icon>add</mat-icon> Nouveau budget spécial
         </button>
       </div>

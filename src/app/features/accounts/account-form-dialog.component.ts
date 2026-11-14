@@ -153,29 +153,32 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
           opérations.
         </p>
 
-        <mat-form-field>
-          <mat-label>Plafond (facultatif)</mat-label>
-          <input matInput appAmount formControlName="ceiling" />
-          <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
-          <mat-hint>Livret A, LDDS… : laissez vide s'il n'y en a pas</mat-hint>
-          <mat-error>Le plafond doit être supérieur à 0</mat-error>
-        </mat-form-field>
+        <!-- Le plafond ne se règle qu'en modification : rien à en dire à la création du compte -->
+        @if (data) {
+          <mat-form-field>
+            <mat-label>Plafond (facultatif)</mat-label>
+            <input matInput appAmount formControlName="ceiling" />
+            <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
+            <mat-hint>Livret A, LDDS… : laissez vide s'il n'y en a pas</mat-hint>
+            <mat-error>Le plafond doit être supérieur à 0</mat-error>
+          </mat-form-field>
 
-        <!-- Plafonds réglementaires français, en euros -->
-        <div class="presets" role="group" aria-label="Plafonds réglementaires">
-          @if (currencyCode() === 'EUR') {
-            @for (preset of ceilingPresets; track preset.label) {
-              <button
-                type="button"
-                class="chip"
-                [class.selected]="form.controls.ceiling.value === preset.amount"
-                (click)="form.controls.ceiling.setValue(preset.amount); form.markAsDirty()"
-              >
-                {{ preset.label }} · {{ preset.amount | money: 'EUR' }}
-              </button>
+          <!-- Plafonds réglementaires français, en euros -->
+          <div class="presets" role="group" aria-label="Plafonds réglementaires">
+            @if (currencyCode() === 'EUR') {
+              @for (preset of ceilingPresets; track preset.label) {
+                <button
+                  type="button"
+                  class="chip"
+                  [class.selected]="form.controls.ceiling.value === preset.amount"
+                  (click)="form.controls.ceiling.setValue(preset.amount); form.markAsDirty()"
+                >
+                  {{ preset.label }} · {{ preset.amount | money: 'EUR' }}
+                </button>
+              }
             }
-          }
-        </div>
+          </div>
+        }
 
         <mat-form-field>
           <mat-label>Banque (facultatif)</mat-label>

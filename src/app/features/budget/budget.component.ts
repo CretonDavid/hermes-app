@@ -11,6 +11,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
@@ -21,11 +22,26 @@ import { toIsoDate } from '../../core/format';
 import { Budget, BudgetEnvelope, Goal } from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { BudgetBarComponent, budgetLevel } from '../../shared/budget-bar.component';
-import { MoneyPipe } from '../../shared/money.pipe';
+import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { EnvelopeDialogComponent } from './envelope-dialog.component';
 import { GoalDialogComponent } from './goal-dialog.component';
 import { GoalUseDialogComponent } from './goal-use-dialog.component';
+
+// Couleurs des budgets spéciaux d'un même compte dans la barre de répartition
+const GOAL_COLORS = ['#b39ddb', '#f4b942', '#4fd1b5', '#ff8fa8', '#64b5f6', '#ffb74d'];
+
+interface GoalAccount {
+  id: number;
+  name: string;
+  currencyCode: string;
+  balance: number;
+  // Total mis de côté dans les budgets spéciaux du compte
+  allocated: number;
+  free: number;
+  allocatedPercent: number;
+  parts: { goal: Goal; color: string; percent: number }[];
+}
 
 // Budget du mois : une enveloppe par catégorie de dépense, comparée aux dépenses du mois
 @Component({
@@ -35,6 +51,7 @@ import { GoalUseDialogComponent } from './goal-use-dialog.component';
     RouterLink,
     MatButtonModule,
     MatIconModule,
+    MatButtonToggleModule,
     MatMenuModule,
     MatTooltipModule,
     MoneyPipe,
@@ -173,8 +190,71 @@ import { GoalUseDialogComponent } from './goal-use-dialog.component';
         </button>
       </div>
       @if (activeGoals().length) {
+        @if (goalAccounts().length > 1) {
+          <mat-button-toggle-group
+            class="account-filter"
+            [value]="accountFilter()"
+            (change)="accountFilter.set($event.value)"
+            hideSingleSelectionIndicator
+            aria-label="Compte bancaire affiché"
+          >
+            <mat-button-toggle [value]="null">Tous les comptes</mat-button-toggle>
+            @for (a of goalAccounts(); track a.id) {
+              <mat-button-toggle [value]="a.id">{{ a.name }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        }
+
+        <!-- Part de chaque compte mise de côté dans ses budgets spéciaux -->
+        <div class="accounts-grid" [class.single]="shownAccounts().length === 1">
+          @for (a of shownAccounts(); track a.id) {
+            <div class="card account-split">
+              <div class="split-head">
+                <mat-icon>account_balance</mat-icon>
+                <a class="split-name" [routerLink]="['/accounts', a.id]">{{ a.name }}</a>
+                <span class="spacer"></span>
+                <span class="muted">Solde</span>
+                <span class="amount split-balance">{{ a.balance | money: a.currencyCode }}</span>
+              </div>
+              <div class="stack" role="img" [attr.aria-label]="stackLabel(a)">
+                @for (part of a.parts; track part.goal.id) {
+                  <div
+                    class="segment"
+                    [style.width.%]="part.percent"
+                    [style.background]="part.color"
+                    [matTooltip]="
+                      part.goal.name + ' : ' + (part.goal.savedAmount | money: a.currencyCode)
+                    "
+                  ></div>
+                }
+              </div>
+              <div class="legend">
+                @for (part of a.parts; track part.goal.id) {
+                  <span class="legend-item">
+                    <span class="dot" [style.background]="part.color"></span>
+                    {{ part.goal.name }}
+                    <span class="amount">{{ part.goal.savedAmount | money: a.currencyCode }}</span>
+                  </span>
+                }
+                <span class="legend-item">
+                  <span class="dot free"></span>
+                  Libre
+                  <span class="amount">{{ a.free | money: a.currencyCode }}</span>
+                </span>
+              </div>
+              <div class="split-total muted">
+                {{ a.allocated | money: a.currencyCode }} dans
+                {{
+                  a.parts.length > 1 ? a.parts.length + ' budgets spéciaux' : 'un budget spécial'
+                }}
+                · {{ a.allocatedPercent }} % du solde
+              </div>
+            </div>
+          }
+        </div>
+
         <div class="goals-grid">
-          @for (g of activeGoals(); track g.id) {
+          @for (g of shownGoals(); track g.id) {
             <div class="card goal" [class.reached]="g.reached">
               <div class="goal-head">
                 <mat-icon class="goal-icon">{{ g.reached ? 'lock' : 'flag' }}</mat-icon>
@@ -296,6 +376,93 @@ import { GoalUseDialogComponent } from './goal-use-dialog.component';
       }
     }
     // Trois cartes par ligne au plus
+    .account-filter {
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .accounts-grid.single {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .accounts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+
+      @media (max-width: 900px) {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    .account-split {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .split-head {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+
+      mat-icon {
+        align-self: center;
+        color: var(--mat-sys-primary);
+      }
+      .spacer {
+        flex: 1;
+      }
+    }
+    .split-name {
+      font: var(--mat-sys-title-medium);
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    .split-balance {
+      font: var(--mat-sys-title-medium);
+    }
+    // Barre empilée : un segment par budget spécial, le reste est libre
+    .stack {
+      display: flex;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--mat-sys-surface-container-highest);
+    }
+    .segment {
+      height: 100%;
+      min-width: 2px;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 16px;
+      font: var(--mat-sys-body-small);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+
+      .amount {
+        font-weight: 500;
+      }
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+
+      &.free {
+        background: var(--mat-sys-surface-container-highest);
+        outline: 1px solid var(--hermes-border);
+      }
+    }
+    .split-total {
+      font: var(--mat-sys-body-small);
+    }
     .goals-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -518,6 +685,54 @@ export class BudgetComponent {
   protected readonly budget = signal<Budget | null>(null);
   private readonly goals = signal<Goal[]>([]);
   protected readonly activeGoals = computed(() => this.goals().filter((g) => !g.usedDate));
+  // Compte affiché, null pour tous ; ignoré s'il n'a plus de budget spécial en cours
+  protected readonly accountFilter = signal<number | null>(null);
+  // Comptes qui portent des budgets spéciaux en cours, avec la part de chacun et le reste libre
+  protected readonly goalAccounts = computed<GoalAccount[]>(() => {
+    const byAccount = new Map<number, Goal[]>();
+    for (const goal of this.activeGoals()) {
+      byAccount.set(goal.accountId, [...(byAccount.get(goal.accountId) ?? []), goal]);
+    }
+    return [...byAccount.entries()].map(([id, goals]) => {
+      const account = this.store.account(id);
+      const balance = account?.balance ?? 0;
+      const allocated = goals.reduce((sum, g) => sum + g.savedAmount, 0);
+      const base = Math.max(balance, allocated, 0);
+      return {
+        id,
+        name: goals[0].accountName,
+        currencyCode: goals[0].currencyCode,
+        balance,
+        allocated,
+        free: Math.max(0, balance - allocated),
+        allocatedPercent: balance > 0 ? Math.round((allocated / balance) * 100) : 0,
+        parts: goals.map((goal, index) => ({
+          goal,
+          color: GOAL_COLORS[index % GOAL_COLORS.length],
+          percent: base > 0 ? (goal.savedAmount / base) * 100 : 0,
+        })),
+      };
+    });
+  });
+  private readonly selectedAccount = computed(() => {
+    const id = this.accountFilter();
+    return this.goalAccounts().some((a) => a.id === id) ? id : null;
+  });
+  protected readonly shownAccounts = computed(() => {
+    const id = this.selectedAccount();
+    return this.goalAccounts().filter((a) => id === null || a.id === id);
+  });
+  protected readonly shownGoals = computed(() => {
+    const id = this.selectedAccount();
+    return this.activeGoals().filter((g) => id === null || g.accountId === id);
+  });
+
+  protected stackLabel(account: GoalAccount): string {
+    const parts = account.parts.map(
+      (p) => p.goal.name + ' ' + formatMoney(p.goal.savedAmount, account.currencyCode),
+    );
+    return `${account.name} : ${parts.join(', ')}, libre ${formatMoney(account.free, account.currencyCode)}`;
+  }
   // Les plus récemment utilisés d'abord
   protected readonly usedGoals = computed(() =>
     this.goals()

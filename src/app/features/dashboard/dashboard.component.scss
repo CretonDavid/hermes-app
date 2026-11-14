@@ -207,23 +207,11 @@
   }
 }
 
-.budget-total {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-
-  .amount {
-    font: var(--mat-sys-title-large);
-  }
-}
-
 .budget-envelopes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px 24px;
-  margin-top: 16px;
+  margin-top: 4px;
 }
 
 .budget-line {

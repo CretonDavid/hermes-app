@@ -116,19 +116,6 @@
             <span class="spacer"></span>
             <a matButton routerLink="/budget">Gérer</a>
           </h2>
-          <div class="budget-total">
-            <span class="amount">
-              {{ b.spent | money: b.currencyCode }}
-              <span class="muted">/ {{ b.budgeted | money: b.currencyCode }}</span>
-            </span>
-            <span class="muted small">
-              @if (b.spent > b.budgeted) {
-                Dépassé de {{ b.spent - b.budgeted | money: b.currencyCode }}
-              } @else {
-                Reste {{ b.budgeted - b.spent | money: b.currencyCode }}
-              }
-            </span>
-          </div>
           <div class="budget-envelopes">
             @for (e of topEnvelopes(); track e.id) {
               <div class="budget-envelope">

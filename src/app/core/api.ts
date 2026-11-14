@@ -8,6 +8,9 @@ import {
   AccountType,
   AccountTypeRequest,
   BalanceHistory,
+  Budget,
+  BudgetAmountRequest,
+  BudgetEnvelopeRequest,
   BulkCategoryResult,
   Category,
   CategoryRequest,
@@ -425,5 +428,32 @@ export class StatsApi {
 
   savings(query: StatsQuery): Observable<SavingsStats> {
     return this.http.get<SavingsStats>(`${API}/stats/savings`, { params: toParams(query) });
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class BudgetApi {
+  private readonly http = inject(HttpClient);
+
+  // Mois au format aaaa-mm
+  month(month: string): Observable<Budget> {
+    return this.http.get<Budget>(`${API}/budget`, { params: { month } });
+  }
+
+  createEnvelope(request: BudgetEnvelopeRequest): Observable<void> {
+    return this.http.post<void>(`${API}/budget/envelopes`, request);
+  }
+
+  updateAmount(id: number, request: BudgetAmountRequest): Observable<void> {
+    return this.http.put<void>(`${API}/budget/envelopes/${id}/amount`, request);
+  }
+
+  // Le mois revient au montant habituel
+  clearMonthAmount(id: number, month: string): Observable<void> {
+    return this.http.delete<void>(`${API}/budget/envelopes/${id}/amount`, { params: { month } });
+  }
+
+  deleteEnvelope(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/budget/envelopes/${id}`);
   }
 }

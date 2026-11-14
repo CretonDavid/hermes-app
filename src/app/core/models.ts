@@ -511,3 +511,43 @@ export interface SavingsStats {
     savingsRate: number | null;
   }[];
 }
+
+// ---------- Budget ----------
+
+// Enveloppe mensuelle d'une catégorie de dépense, sous-catégories comprises
+export interface BudgetEnvelope {
+  id: number;
+  category: CategorySummary;
+  amount: number;
+  // Montant habituel, différent de amount quand le mois a son propre montant (null sinon possible)
+  usualAmount: number | null;
+  monthOnly: boolean;
+  spent: number;
+  // Négatif en cas de dépassement
+  remaining: number;
+}
+
+export interface Budget {
+  // aaaa-mm
+  month: string;
+  currencyCode: string;
+  missingRates: string[];
+  budgeted: number;
+  spent: number;
+  // Dépenses hors enveloppe, non catégorisées comprises
+  unbudgeted: number;
+  envelopes: BudgetEnvelope[];
+}
+
+export interface BudgetEnvelopeRequest {
+  categoryId: number;
+  amount: number;
+  month: string;
+}
+
+export interface BudgetAmountRequest {
+  amount: number;
+  month: string;
+  // Vrai pour ce mois seulement, faux à partir de ce mois
+  monthOnly: boolean;
+}

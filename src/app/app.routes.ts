@@ -68,6 +68,12 @@ export const routes: Routes = [
           import('./features/categories/categories.component').then((m) => m.CategoriesComponent),
       },
       {
+        path: 'budget',
+        title: 'Budget · Hermès',
+        loadComponent: () =>
+          import('./features/budget/budget.component').then((m) => m.BudgetComponent),
+      },
+      {
         path: 'stats',
         title: 'Statistiques · Hermès',
         loadComponent: () =>

@@ -193,3 +193,53 @@
     opacity: 0.5;
   }
 }
+
+// Carte du budget du mois : total puis les enveloppes les plus entamées
+.budget {
+  margin-bottom: 16px;
+
+  .small {
+    font: var(--mat-sys-body-small);
+  }
+
+  h2 .spacer {
+    flex: 1;
+  }
+}
+
+.budget-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  .amount {
+    font: var(--mat-sys-title-large);
+  }
+}
+
+.budget-envelopes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px 24px;
+  margin-top: 16px;
+}
+
+.budget-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font: var(--mat-sys-body-medium);
+
+  .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .amount {
+    white-space: nowrap;
+  }
+}

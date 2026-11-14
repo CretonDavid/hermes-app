@@ -12,12 +12,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
-import { addDays, endOfMonth, startOfMonth, subMonths } from 'date-fns';
+import { addDays, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { forkJoin } from 'rxjs';
-import { RecurringApi, StatsApi, TransactionApi } from '../../core/api';
+import { BudgetApi, RecurringApi, StatsApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { toIsoDate, trimLeadingEmpty } from '../../core/format';
 import {
+  Budget,
+  BudgetEnvelope,
   CategoryStat,
   MonthlyStat,
   StatsSummary,
@@ -28,9 +30,13 @@ import { NotifyService } from '../../core/notify.service';
 import { ChartComponent } from '../../shared/chart.component';
 import { donutChart, incomeExpenseChart } from '../../shared/charts';
 import { withFutureTransactions } from '../../shared/forecast';
+import { BudgetBarComponent } from '../../shared/budget-bar.component';
 import { MoneyPipe, PercentagePipe } from '../../shared/money.pipe';
 import { AccountFormDialogComponent } from '../accounts/account-form-dialog.component';
 import { TransactionFormDialogComponent } from '../transactions/transaction-form-dialog.component';
+
+// Part consommée d'une enveloppe, pour classer les plus entamées
+const ratio = (e: BudgetEnvelope) => (e.amount > 0 ? e.spent / e.amount : 0);
 
 @Component({
   selector: 'app-dashboard',
@@ -42,6 +48,7 @@ import { TransactionFormDialogComponent } from '../transactions/transaction-form
     MatIconModule,
     MoneyPipe,
     ChartComponent,
+    BudgetBarComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
@@ -52,6 +59,7 @@ export class DashboardComponent {
   private readonly statsApi = inject(StatsApi);
   private readonly transactionApi = inject(TransactionApi);
   private readonly recurringApi = inject(RecurringApi);
+  private readonly budgetApi = inject(BudgetApi);
   private readonly notify = inject(NotifyService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
@@ -61,6 +69,11 @@ export class DashboardComponent {
   protected readonly months = signal<MonthlyStat[]>([]);
   protected readonly recent = signal<Transaction[]>([]);
   protected readonly upcoming = signal<UpcomingOccurrence[]>([]);
+  protected readonly budget = signal<Budget | null>(null);
+  // Les enveloppes les plus consommées du mois
+  protected readonly topEnvelopes = computed<BudgetEnvelope[]>(() =>
+    [...(this.budget()?.envelopes ?? [])].sort((a, b) => ratio(b) - ratio(a)).slice(0, 4),
+  );
   protected readonly now = new Date();
   private readonly dataLoaded = signal(false);
 
@@ -170,6 +183,7 @@ export class DashboardComponent {
         100,
       ),
       upcoming: this.recurringApi.upcoming(30),
+      budget: this.budgetApi.month(format(this.now, 'yyyy-MM')),
     }).subscribe({
       next: (r) => {
         this.dataLoaded.set(true);
@@ -184,6 +198,7 @@ export class DashboardComponent {
         this.recent.set(r.recent.content);
         this.hasTransactions.set(r.any.totalElements > 0);
         this.upcoming.set(withFutureTransactions(r.upcoming, r.future.content).slice(0, 8));
+        this.budget.set(r.budget);
       },
       error: (error) => this.notify.error(error),
     });

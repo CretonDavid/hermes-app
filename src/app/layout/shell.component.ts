@@ -70,6 +70,7 @@ export class ShellComponent implements OnInit {
     { path: '/recurring', label: 'Récurrences', icon: 'event_repeat' },
     { path: '/import', label: 'Import', icon: 'upload_file' },
     { path: '/categories', label: 'Catégories', icon: 'sell' },
+    { path: '/budget', label: 'Budget', icon: 'donut_large' },
     { path: '/stats', label: 'Statistiques', icon: 'monitoring' },
     { path: '/settings', label: 'Paramètres', icon: 'settings' },
   ];

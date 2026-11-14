@@ -108,31 +108,6 @@
       </div>
     }
 
-    @if (budget(); as b) {
-      @if (b.envelopes.length) {
-        <div class="card budget">
-          <h2>
-            <mat-icon>donut_large</mat-icon> Budgets de {{ now | date: 'MMMM' }}
-            <span class="spacer"></span>
-            <a matButton routerLink="/budget">Gérer</a>
-          </h2>
-          <div class="budget-envelopes">
-            @for (e of topEnvelopes(); track e.id) {
-              <div class="budget-envelope">
-                <div class="budget-line">
-                  <span class="name">{{ e.category.name }}</span>
-                  <span class="amount small" [class.negative]="e.remaining < 0">
-                    {{ e.spent | money: b.currencyCode }} / {{ e.amount | money: b.currencyCode }}
-                  </span>
-                </div>
-                <app-budget-bar [spent]="e.spent" [amount]="e.amount" />
-              </div>
-            }
-          </div>
-        </div>
-      }
-    }
-
     <div class="grid grid-2">
       <div class="card">
         <h2><mat-icon>donut_large</mat-icon> Dépenses du mois</h2>
@@ -159,6 +134,31 @@
         }
       </div>
     </div>
+
+    @if (budget(); as b) {
+      @if (b.envelopes.length) {
+        <div class="card budget">
+          <h2>
+            <mat-icon>donut_large</mat-icon> Budgets de {{ now | date: 'MMMM' }}
+            <span class="spacer"></span>
+            <a matButton routerLink="/budget">Gérer</a>
+          </h2>
+          <div class="budget-envelopes">
+            @for (e of topEnvelopes(); track e.id) {
+              <div class="budget-envelope">
+                <div class="budget-line">
+                  <span class="name">{{ e.category.name }}</span>
+                  <span class="amount small" [class.negative]="e.remaining < 0">
+                    {{ e.spent | money: b.currencyCode }} / {{ e.amount | money: b.currencyCode }}
+                  </span>
+                </div>
+                <app-budget-bar [spent]="e.spent" [amount]="e.amount" />
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
 
     <div class="grid grid-2" style="margin-top: 16px">
       <div class="card">

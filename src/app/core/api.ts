@@ -482,6 +482,11 @@ export class GoalApi {
     return this.http.post<Goal>(`${API}/goals/${id}/use`, { date });
   }
 
+  // Montant positif : argent libre du compte affecté au budget ; négatif : rendu libre
+  adjust(id: number, amount: number): Observable<Goal> {
+    return this.http.post<Goal>(`${API}/goals/${id}/adjust`, { amount });
+  }
+
   restore(id: number): Observable<Goal> {
     return this.http.post<Goal>(`${API}/goals/${id}/restore`, {});
   }

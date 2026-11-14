@@ -25,6 +25,7 @@ import { BudgetBarComponent, budgetLevel } from '../../shared/budget-bar.compone
 import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { EnvelopeDialogComponent } from './envelope-dialog.component';
+import { GoalAdjustDialogComponent } from './goal-adjust-dialog.component';
 import { GoalDialogComponent } from './goal-dialog.component';
 import { GoalUseDialogComponent } from './goal-use-dialog.component';
 
@@ -39,6 +40,7 @@ interface GoalAccount {
   // Total mis de côté dans les budgets spéciaux du compte
   allocated: number;
   free: number;
+  freePercent: number;
   allocatedPercent: number;
   parts: { goal: Goal; color: string; percent: number }[];
 }
@@ -227,6 +229,13 @@ interface GoalAccount {
                     "
                   ></div>
                 }
+                @if (a.free > 0) {
+                  <div
+                    class="segment free"
+                    [style.width.%]="a.freePercent"
+                    [matTooltip]="'Libre : ' + (a.free | money: a.currencyCode)"
+                  ></div>
+                }
               </div>
               <div class="legend">
                 @for (part of a.parts; track part.goal.id) {
@@ -275,6 +284,9 @@ interface GoalAccount {
                   <button mat-menu-item (click)="editGoal(g)">
                     <mat-icon>edit</mat-icon> Modifier
                   </button>
+                  <button mat-menu-item (click)="adjustGoal(g)">
+                    <mat-icon>swap_vert</mat-icon> Affecter ou rendre libre
+                  </button>
                   <button mat-menu-item (click)="useGoal(g)">
                     <mat-icon>shopping_bag</mat-icon> Marquer comme utilisé
                   </button>
@@ -308,6 +320,12 @@ interface GoalAccount {
                   Il manque {{ g.remaining | money: g.currencyCode }}
                 }
               </div>
+              @if (!g.reached && accountFree(g) > 0) {
+                <button matButton="tonal" class="goal-adjust" (click)="adjustGoal(g)">
+                  <mat-icon>add</mat-icon> Affecter
+                  <span class="muted">· {{ accountFree(g) | money: g.currencyCode }} libres</span>
+                </button>
+              }
               @if (g.withdrawn > 0) {
                 <div
                   class="goal-withdrawn muted"
@@ -462,9 +480,19 @@ interface GoalAccount {
       border-radius: 50%;
 
       &.free {
-        background: var(--mat-sys-surface-container-highest);
-        outline: 1px solid var(--hermes-border);
+        background: var(--goal-free);
       }
+    }
+    // Argent libre : hachures neutres, bien visibles sans ressembler à un budget
+    .account-split {
+      --goal-free: repeating-linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent) 0 3px,
+        color-mix(in srgb, var(--mat-sys-on-surface) 18%, transparent) 3px 6px
+      );
+    }
+    .segment.free {
+      background: var(--goal-free);
     }
     .split-total {
       font: var(--mat-sys-body-small);
@@ -535,6 +563,9 @@ interface GoalAccount {
     }
     .goal-withdrawn {
       cursor: help;
+    }
+    .goal-adjust {
+      align-self: flex-start;
     }
     .goals-empty {
       margin: 0;
@@ -707,6 +738,7 @@ export class BudgetComponent {
         balance,
         allocated,
         free: Math.max(0, balance - allocated),
+        freePercent: base > 0 ? (Math.max(0, balance - allocated) / base) * 100 : 0,
         allocatedPercent: balance > 0 ? Math.round((allocated / balance) * 100) : 0,
         parts: goals.map((goal) => ({
           goal,
@@ -787,6 +819,17 @@ export class BudgetComponent {
 
   protected editGoal(goal: Goal): void {
     GoalDialogComponent.open(this.dialog, goal)
+      .afterClosed()
+      .subscribe((changed) => changed && this.loadGoals());
+  }
+
+  // Argent libre du compte du budget : solde moins ses budgets spéciaux
+  protected accountFree(goal: Goal): number {
+    return this.goalAccounts().find((a) => a.id === goal.accountId)?.free ?? 0;
+  }
+
+  protected adjustGoal(goal: Goal): void {
+    GoalAdjustDialogComponent.open(this.dialog, { goal, free: this.accountFree(goal) })
       .afterClosed()
       .subscribe((changed) => changed && this.loadGoals());
   }

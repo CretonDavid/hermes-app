@@ -65,8 +65,13 @@ interface GoalAccount {
       <div class="page-header">
         <div style="flex: 1">
           <h1>Budgets</h1>
-          <div class="subtitle">Enveloppes mensuelles par catégorie de dépense</div>
+          <div class="subtitle">Enveloppes mensuelles et budgets spéciaux</div>
         </div>
+      </div>
+
+      <!-- Enveloppes : budget mensuel par catégorie de dépense -->
+      <div class="section-header first">
+        <h2><mat-icon>donut_large</mat-icon> Enveloppes</h2>
         <div class="month-nav">
           <button matIconButton (click)="shift(-1)" aria-label="Mois précédent">
             <mat-icon>chevron_left</mat-icon>
@@ -125,7 +130,7 @@ interface GoalAccount {
           </div>
 
           <div class="card">
-            <h2><mat-icon>donut_large</mat-icon> Enveloppes</h2>
+            <h2><mat-icon>sell</mat-icon> Par catégorie</h2>
             @for (e of b.envelopes; track e.id) {
               <div class="envelope">
                 <span class="icon" [style.background]="color(e)">
@@ -183,6 +188,8 @@ interface GoalAccount {
           </div>
         }
       }
+
+      <hr class="section-separator" />
 
       <!-- Budgets spéciaux : objectifs d'épargne mis de côté sur un compte, indépendants du mois -->
       <div class="section-header">
@@ -391,6 +398,15 @@ interface GoalAccount {
         font: var(--mat-sys-title-medium);
         text-transform: capitalize;
       }
+    }
+    .section-separator {
+      margin: 32px 0 0;
+      border: none;
+      border-top: 1px solid var(--hermes-border);
+    }
+    .section-header.first {
+      margin-top: 0;
+      flex-wrap: wrap;
     }
     .section-header {
       display: flex;

@@ -24,6 +24,7 @@ import { Transaction, TransactionSort, TransactionSortField } from '../../core/m
 import { NotifyService } from '../../core/notify.service';
 import { MoneyPipe, formatMoney } from '../../shared/money.pipe';
 import { TransactionFormDialogComponent } from './transaction-form-dialog.component';
+import { splitName } from './transactions-csv';
 
 @Component({
   selector: 'app-transaction-table',
@@ -346,10 +347,7 @@ export class TransactionTableComponent {
 
   protected splitTooltip(t: Transaction): string {
     return t.splits
-      .map(
-        (s) =>
-          `${s.category?.name ?? 'Non catégorisée'} : ${formatMoney(s.amount, t.currencyCode)}`,
-      )
+      .map((s) => `${splitName(s)} : ${formatMoney(s.amount, t.currencyCode)}`)
       .join('\n');
   }
 

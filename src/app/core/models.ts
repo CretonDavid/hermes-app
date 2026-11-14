@@ -174,11 +174,13 @@ export interface Transaction {
 export interface TransactionSplit {
   // null si la catégorie a été supprimée
   category: CategorySummary | null;
+  label: string | null;
   amount: number;
 }
 
 export interface TransactionSplitRequest {
   categoryId: number;
+  label: string | null;
   amount: number;
 }
 

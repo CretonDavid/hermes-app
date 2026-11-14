@@ -89,7 +89,6 @@
 
   .split-start {
     margin-top: 4px;
-    color: var(--mat-sys-on-surface-variant);
   }
 }
 
@@ -104,7 +103,7 @@
 
 .split-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 170px auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px auto;
   align-items: start;
   gap: 8px;
 

@@ -67,6 +67,7 @@ type Mode = 'DEBIT' | 'CREDIT' | 'TRANSFER';
 // Ligne d'une ventilation : la dernière prend automatiquement le reste du montant
 type SplitRow = FormGroup<{
   categoryId: FormControl<number | null>;
+  label: FormControl<string>;
   amount: FormControl<number | null>;
 }>;
 
@@ -288,7 +289,9 @@ export class TransactionFormDialogComponent implements OnInit {
     });
     if (t.splits.length) {
       for (const split of t.splits) {
-        this.form.controls.splits.push(this.splitRow(split.category?.id ?? null, split.amount));
+        this.form.controls.splits.push(
+          this.splitRow(split.category?.id ?? null, split.amount, split.label ?? ''),
+        );
       }
       this.refreshSplitRows();
       this.splitting.set(true);
@@ -378,9 +381,10 @@ export class TransactionFormDialogComponent implements OnInit {
     this.refreshSplitRows();
   }
 
-  private splitRow(categoryId: number | null, amount: number | null): SplitRow {
+  private splitRow(categoryId: number | null, amount: number | null, label = ''): SplitRow {
     return new FormGroup({
       categoryId: new FormControl<number | null>(categoryId),
+      label: new FormControl(label, { nonNullable: true }),
       amount: new FormControl<number | null>(amount, [Validators.required, Validators.min(0.01)]),
     });
   }
@@ -414,6 +418,7 @@ export class TransactionFormDialogComponent implements OnInit {
     }
     return rows.map((row, index) => ({
       categoryId: row.categoryId!,
+      label: row.label.trim() || null,
       amount: index === rows.length - 1 ? remainder : row.amount!,
     }));
   }
@@ -572,7 +577,11 @@ export class TransactionFormDialogComponent implements OnInit {
           categoryId: t.category?.id ?? null,
           // Une ligne dont la catégorie a été supprimée ne peut pas être recréée telle quelle
           splits: t.splits.every((s) => s.category)
-            ? t.splits.map((s) => ({ categoryId: s.category!.id, amount: s.amount }))
+            ? t.splits.map((s) => ({
+                categoryId: s.category!.id,
+                label: s.label,
+                amount: s.amount,
+              }))
             : [],
           paymentMethod: t.paymentMethod,
           operationDate: t.operationDate,

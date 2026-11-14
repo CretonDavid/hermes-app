@@ -169,41 +169,16 @@
             label="Catégorie (facultatif)"
           />
           <button
-            matIconButton
+            matButton
             type="button"
             class="split-start"
             (click)="startSplit()"
-            matTooltip="Ventiler sur plusieurs catégories"
-            aria-label="Ventiler sur plusieurs catégories"
+            matTooltip="Répartir le montant sur plusieurs catégories"
           >
-            <mat-icon>call_split</mat-icon>
+            <mat-icon>call_split</mat-icon> Ventiler
           </button>
         }
       </div>
-
-      <mat-form-field>
-        <mat-label>Compte bancaire</mat-label>
-        <mat-select formControlName="accountId">
-          @for (account of accounts(); track account.id) {
-            <mat-option [value]="account.id"
-              >{{ account.name }} ({{ account.currency.code }})</mat-option
-            >
-          }
-        </mat-select>
-        <mat-error>Choisissez un compte bancaire</mat-error>
-      </mat-form-field>
-
-      <mat-form-field>
-        <mat-label>Moyen de paiement (facultatif)</mat-label>
-        <mat-select formControlName="paymentMethod">
-          <mat-option [value]="null">Non précisé</mat-option>
-          @for (method of paymentMethods; track method.value) {
-            <mat-option [value]="method.value">
-              <mat-icon>{{ method.icon }}</mat-icon> {{ method.label }}
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
 
       @if (splitting()) {
         <div class="full split" formArrayName="splits" role="group" aria-label="Ventilation">
@@ -214,6 +189,10 @@
                 [type]="categoryType()"
                 label="Catégorie"
               />
+              <mat-form-field>
+                <mat-label>Libellé</mat-label>
+                <input matInput formControlName="label" maxlength="255" placeholder="Facultatif" />
+              </mat-form-field>
               <mat-form-field>
                 <mat-label>{{ last ? 'Reste' : 'Montant' }}</mat-label>
                 <input matInput appAmount formControlName="amount" placeholder="0,00" />
@@ -250,6 +229,30 @@
           </div>
         </div>
       }
+
+      <mat-form-field>
+        <mat-label>Compte bancaire</mat-label>
+        <mat-select formControlName="accountId">
+          @for (account of accounts(); track account.id) {
+            <mat-option [value]="account.id"
+              >{{ account.name }} ({{ account.currency.code }})</mat-option
+            >
+          }
+        </mat-select>
+        <mat-error>Choisissez un compte bancaire</mat-error>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Moyen de paiement (facultatif)</mat-label>
+        <mat-select formControlName="paymentMethod">
+          <mat-option [value]="null">Non précisé</mat-option>
+          @for (method of paymentMethods; track method.value) {
+            <mat-option [value]="method.value">
+              <mat-icon>{{ method.icon }}</mat-icon> {{ method.label }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
     }
 
     <mat-form-field class="full">

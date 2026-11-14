@@ -69,12 +69,12 @@ describe('transactionsToCsv', () => {
       transaction({
         amount: 120,
         splits: [
-          { category: category(1, 'Courses'), amount: 85 },
-          { category: null, amount: 35 },
+          { category: category(1, 'Courses'), label: 'Lessive', amount: 85 },
+          { category: null, label: null, amount: 35 },
         ],
       }),
     );
 
-    expect(row).toContain(';Courses 85,00 / Non catégorisée 35,00;');
+    expect(row).toContain(';Courses (Lessive) 85,00 / Non catégorisée 35,00;');
   });
 });

@@ -157,3 +157,18 @@
     font: var(--mat-sys-body-small);
   }
 }
+
+.split-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font: var(--mat-sys-title-small);
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: var(--mat-sys-primary);
+  }
+}

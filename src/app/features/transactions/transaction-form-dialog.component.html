@@ -175,7 +175,8 @@
       </div>
 
       @if (splitting()) {
-        <div class="full split" formArrayName="splits" role="group" aria-label="Ventilation">
+        <div class="full split" formArrayName="splits" role="group" aria-labelledby="split-title">
+          <h3 class="split-title" id="split-title"><mat-icon>call_split</mat-icon> Ventilation</h3>
           @for (row of form.controls.splits.controls; track row; let i = $index, last = $last) {
             <div class="split-row" [formGroupName]="i">
               <app-category-picker

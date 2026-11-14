@@ -68,7 +68,7 @@ export class ShellComponent implements OnInit {
     { path: '/accounts', label: 'Comptes bancaires', icon: 'account_balance' },
     { path: '/transactions', label: 'Opérations', icon: 'receipt_long' },
     { path: '/recurring', label: 'Récurrences', icon: 'event_repeat' },
-    { path: '/budget', label: 'Budget', icon: 'donut_large' },
+    { path: '/budget', label: 'Budgets', icon: 'donut_large' },
     { path: '/import', label: 'Import', icon: 'upload_file' },
     { path: '/categories', label: 'Catégories', icon: 'sell' },
     { path: '/stats', label: 'Statistiques', icon: 'monitoring' },

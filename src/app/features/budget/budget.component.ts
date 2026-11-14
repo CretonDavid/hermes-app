@@ -64,7 +64,7 @@ interface GoalAccount {
     <div class="page">
       <div class="page-header">
         <div style="flex: 1">
-          <h1>Budget</h1>
+          <h1>Budgets</h1>
           <div class="subtitle">Enveloppes mensuelles par catégorie de dépense</div>
         </div>
         <div class="month-nav">

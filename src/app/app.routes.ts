@@ -69,7 +69,7 @@ export const routes: Routes = [
       },
       {
         path: 'budget',
-        title: 'Budget · Hermès',
+        title: 'Budgets · Hermès',
         loadComponent: () =>
           import('./features/budget/budget.component').then((m) => m.BudgetComponent),
       },

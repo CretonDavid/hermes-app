@@ -256,6 +256,46 @@
       </mat-form-field>
     }
 
+    @if (accountGoals().length) {
+      <div
+        class="full split goals"
+        formArrayName="goalAmounts"
+        role="group"
+        aria-labelledby="goals-title"
+      >
+        <h3 class="split-title" id="goals-title">
+          <mat-icon>flag</mat-icon> Budgets spéciaux de « {{ creditAccount()?.name }} »
+        </h3>
+        <p class="goals-hint muted">Mettez de côté tout ou partie du montant crédité.</p>
+        @for (goal of accountGoals(); track goal.id; let i = $index) {
+          <div class="goal-row">
+            <div class="goal-name">
+              <span>{{ goal.name }}</span>
+              <span class="muted">
+                @if (goalCapacity(goal) > 0) {
+                  Il manque {{ goalCapacity(goal) | money: goal.currencyCode }}
+                } @else {
+                  <mat-icon inline>lock</mat-icon> Objectif atteint
+                }
+              </span>
+            </div>
+            <mat-form-field>
+              <mat-label>Montant</mat-label>
+              <input matInput appAmount [formControlName]="i" placeholder="0,00" />
+              <span matTextSuffix>&nbsp;{{ goal.currencyCode }}</span>
+              <mat-error>Au plus {{ goalCapacity(goal) | money: goal.currencyCode }}</mat-error>
+            </mat-form-field>
+          </div>
+        }
+        @if (allocationExcess() > 0) {
+          <p class="split-error" role="alert">
+            Les montants affectés dépassent le montant crédité de
+            {{ allocationExcess() | money: creditAccount()?.currency?.code ?? 'EUR' }}.
+          </p>
+        }
+      </div>
+    }
+
     <mat-form-field class="full">
       <mat-label>Libellé (facultatif)</mat-label>
       <input

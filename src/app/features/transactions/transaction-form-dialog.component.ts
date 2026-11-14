@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -37,10 +38,12 @@ import {
   switchMap,
 } from 'rxjs';
 import { AFTER_SAVE_ERRORS, showFormErrors } from '../../shared/form-errors';
-import { TransactionApi } from '../../core/api';
+import { GoalApi, TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { PAYMENT_METHODS, fromIsoDate, toIsoDate } from '../../core/format';
 import {
+  Goal,
+  GoalAllocationRequest,
   PayeeSuggestion,
   PaymentMethod,
   Transaction,
@@ -72,6 +75,13 @@ type SplitRow = FormGroup<{
 }>;
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
+
+// Affectations d'une opération aux budgets spéciaux, par budget
+const allocationMap = (t: Transaction) =>
+  new Map(t.goalAllocations.map((a) => [a.goalId, a.amount]));
+
+const allocationRequests = (t: Transaction): GoalAllocationRequest[] =>
+  t.goalAllocations.map((a) => ({ goalId: a.goalId, amount: a.amount }));
 
 export interface TransactionFormData {
   transaction?: Transaction;
@@ -130,6 +140,7 @@ export class TransactionFormDialogComponent implements OnInit {
   protected readonly data = inject<TransactionFormData>(MAT_DIALOG_DATA);
   protected readonly store = inject(DataStore);
   private readonly api = inject(TransactionApi);
+  private readonly goalApi = inject(GoalApi);
   private readonly notify = inject(NotifyService);
   private readonly dialog = inject(MatDialog);
   private readonly dialogRef = inject(MatDialogRef<TransactionFormDialogComponent, boolean>);
@@ -157,6 +168,8 @@ export class TransactionFormDialogComponent implements OnInit {
     categoryId: new FormControl<number | null>(null),
     // Ventilation sur plusieurs catégories : vide tant que l'opération n'est pas ventilée
     splits: new FormArray<SplitRow>([]),
+    // Montant affecté à chaque budget spécial du compte crédité, dans l'ordre de accountGoals()
+    goalAmounts: new FormArray<FormControl<number | null>>([]),
     paymentMethod: new FormControl<PaymentMethod | null>(null),
     notes: new FormControl('', { nonNullable: true }),
     cleared: new FormControl(false, { nonNullable: true }),
@@ -207,6 +220,27 @@ export class TransactionFormDialogComponent implements OnInit {
         .at(-1)
         ?.controls.amount.setValue(remainder > 0 ? remainder : null, { emitEvent: false });
     });
+    // Un champ par budget spécial du compte crédité, rempli des affectations déjà enregistrées
+    effect(() => {
+      const goals = this.accountGoals();
+      const saved = this.savedAllocations();
+      untracked(() => {
+        const amounts = this.form.controls.goalAmounts;
+        amounts.clear({ emitEvent: false });
+        for (const goal of goals) {
+          const capacity = this.goalCapacity(goal);
+          const control = new FormControl<number | null>(saved.get(goal.id) ?? null, [
+            Validators.min(0.01),
+            Validators.max(capacity),
+          ]);
+          if (capacity <= 0) {
+            control.disable({ emitEvent: false });
+          }
+          amounts.push(control, { emitEvent: false });
+        }
+        amounts.updateValueAndValidity();
+      });
+    });
   }
 
   protected readonly accounts = computed(() =>
@@ -248,6 +282,55 @@ export class TransactionFormDialogComponent implements OnInit {
     const overflow = ceilingOverflow(base, account.ceiling, credit ?? 0);
     return overflow > 0 ? { account, overflow, currency: account.currency.code } : null;
   });
+  // ---------- Budgets spéciaux ----------
+
+  private readonly goals = signal<Goal[]>([]);
+  // Affectations déjà enregistrées de l'opération modifiée, par budget
+  private readonly savedAllocations = signal(new Map<number, number>());
+  // Compte crédité : celui d'un revenu, ou celui qui reçoit le virement
+  protected readonly creditAccount = computed(() => {
+    const mode = this.mode();
+    if (mode === 'DEBIT') {
+      return undefined;
+    }
+    return mode === 'TRANSFER' ? this.toAccount() : this.fromAccount();
+  });
+  protected readonly accountGoals = computed(() => {
+    const account = this.creditAccount();
+    return account ? this.goals().filter((g) => g.accountId === account.id && !g.usedDate) : [];
+  });
+  private readonly goalValues = toSignal(this.form.controls.goalAmounts.valueChanges, {
+    initialValue: [],
+  });
+  // Montant crédité, inconnu pour un virement entre devises converti automatiquement
+  private readonly creditedAmount = computed(() =>
+    this.needsTargetAmount() ? this.targetAmount() : this.amount(),
+  );
+  protected readonly allocationExcess = computed(() => {
+    this.goalValues();
+    const credited = this.creditedAmount();
+    const allocated = this.form.controls.goalAmounts
+      .getRawValue()
+      .reduce<number>((sum, value) => sum + (value ?? 0), 0);
+    return credited === null ? 0 : round2(allocated - credited);
+  });
+
+  // Ce qu'un budget peut encore recevoir de cette opération, ses affectations actuelles comprises
+  protected goalCapacity(goal: Goal): number {
+    return round2(goal.remaining + (this.savedAllocations().get(goal.id) ?? 0));
+  }
+
+  private allocationsToSave(): GoalAllocationRequest[] | null {
+    if (this.allocationExcess() > 0) {
+      this.notify.error('Les montants affectés aux budgets spéciaux dépassent le montant crédité');
+      return null;
+    }
+    const values = this.form.controls.goalAmounts.getRawValue();
+    return this.accountGoals()
+      .map((goal, index) => ({ goalId: goal.id, amount: values[index] ?? 0 }))
+      .filter((allocation) => allocation.amount > 0);
+  }
+
   protected readonly labelPlaceholder = computed(
     () => this.payee().trim() || 'Par défaut : le bénéficiaire',
   );
@@ -264,6 +347,10 @@ export class TransactionFormDialogComponent implements OnInit {
     );
 
   ngOnInit(): void {
+    this.goalApi.list().subscribe({
+      next: (goals) => this.goals.set(goals),
+      error: (error) => this.notify.error(error),
+    });
     const t = this.data.transaction;
     if (!t) {
       const accountId = this.data.accountId ?? this.store.openAccounts()[0]?.id ?? null;
@@ -289,6 +376,9 @@ export class TransactionFormDialogComponent implements OnInit {
       notes: t.notes ?? '',
       cleared: t.status !== 'PENDING',
     });
+    if (!t.transfer) {
+      this.savedAllocations.set(allocationMap(t));
+    }
     if (t.splits.length) {
       for (const split of t.splits) {
         this.form.controls.splits.push(
@@ -309,6 +399,7 @@ export class TransactionFormDialogComponent implements OnInit {
     if (t.transfer) {
       // On recharge le virement complet pour connaître les deux côtés
       this.api.getTransfer(t.id).subscribe((transfer) => {
+        this.savedAllocations.set(allocationMap(transfer.credit));
         this.transferId = transfer.debit.id;
         this.previousCredit.set({
           accountId: transfer.credit.accountId,
@@ -477,6 +568,10 @@ export class TransactionFormDialogComponent implements OnInit {
       this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
       return null;
     }
+    const goalAllocations = this.allocationsToSave();
+    if (!goalAllocations) {
+      return null;
+    }
     const request: TransferRequest = {
       fromAccountId: v.accountId!,
       toAccountId: v.toAccountId,
@@ -484,6 +579,7 @@ export class TransactionFormDialogComponent implements OnInit {
       targetAmount: this.needsTargetAmount() ? v.targetAmount : null,
       label: v.label.trim() || null,
       notes: v.notes.trim() || null,
+      goalAllocations,
       operationDate: toIsoDate(v.operationDate)!,
     };
     return this.transferId
@@ -500,7 +596,8 @@ export class TransactionFormDialogComponent implements OnInit {
       return null;
     }
     const splits = this.splitsToSave();
-    if (!splits) {
+    const goalAllocations = this.allocationsToSave();
+    if (!splits || !goalAllocations) {
       return null;
     }
     const request: TransactionRequest = {
@@ -512,6 +609,7 @@ export class TransactionFormDialogComponent implements OnInit {
       notes: v.notes.trim() || null,
       categoryId: splits.length ? null : v.categoryId,
       splits,
+      goalAllocations,
       paymentMethod: v.paymentMethod,
       operationDate: toIsoDate(v.operationDate)!,
       valueDate: toIsoDate(v.valueDate),
@@ -569,6 +667,7 @@ export class TransactionFormDialogComponent implements OnInit {
           targetAmount: transfer.credit.amount,
           label: customTransferLabel(transfer),
           notes: transfer.debit.notes,
+          goalAllocations: allocationRequests(transfer.credit),
           operationDate: transfer.debit.operationDate,
         })
       : this.api.create({
@@ -587,6 +686,7 @@ export class TransactionFormDialogComponent implements OnInit {
                 amount: s.amount,
               }))
             : [],
+          goalAllocations: allocationRequests(t),
           paymentMethod: t.paymentMethod,
           operationDate: t.operationDate,
           valueDate: t.valueDate,

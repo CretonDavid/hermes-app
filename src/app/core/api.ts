@@ -11,6 +11,9 @@ import {
   Budget,
   BudgetAmountRequest,
   BudgetEnvelopeRequest,
+  Goal,
+  GoalRequest,
+  GoalUpdateRequest,
   BulkCategoryResult,
   Category,
   CategoryRequest,
@@ -455,5 +458,35 @@ export class BudgetApi {
 
   deleteEnvelope(id: number): Observable<void> {
     return this.http.delete<void>(`${API}/budget/envelopes/${id}`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class GoalApi {
+  private readonly http = inject(HttpClient);
+
+  list(): Observable<Goal[]> {
+    return this.http.get<Goal[]>(`${API}/goals`);
+  }
+
+  create(request: GoalRequest): Observable<Goal> {
+    return this.http.post<Goal>(`${API}/goals`, request);
+  }
+
+  update(id: number, request: GoalUpdateRequest): Observable<Goal> {
+    return this.http.put<Goal>(`${API}/goals/${id}`, request);
+  }
+
+  // Le budget a servi : son montant est libéré à partir de ce jour (aaaa-mm-jj)
+  use(id: number, date: string): Observable<Goal> {
+    return this.http.post<Goal>(`${API}/goals/${id}/use`, { date });
+  }
+
+  restore(id: number): Observable<Goal> {
+    return this.http.post<Goal>(`${API}/goals/${id}/restore`, {});
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/goals/${id}`);
   }
 }

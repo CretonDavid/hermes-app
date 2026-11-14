@@ -153,6 +153,8 @@ export interface Transaction {
   splits: TransactionSplit[];
   // Liste filtrée par catégorie : part de l'opération ventilée qui correspond au filtre
   matchedAmount: number | null;
+  // Part du crédit affectée à des budgets spéciaux
+  goalAllocations: GoalAllocation[];
   paymentMethod: PaymentMethod | null;
   operationDate: string;
   valueDate: string | null;
@@ -194,6 +196,8 @@ export interface TransactionRequest {
   categoryId: number | null;
   // Au moins 2 lignes dont la somme est égale au montant, ou vide
   splits: TransactionSplitRequest[];
+  // Crédit affecté à des budgets spéciaux du compte (vide sinon)
+  goalAllocations: GoalAllocationRequest[];
   paymentMethod: PaymentMethod | null;
   operationDate: string;
   valueDate: string | null;
@@ -256,6 +260,8 @@ export interface TransferRequest {
   targetAmount: number | null;
   label: string | null;
   notes: string | null;
+  // Part du montant crédité affectée à des budgets spéciaux du compte crédité
+  goalAllocations: GoalAllocationRequest[];
   operationDate: string;
 }
 
@@ -550,4 +556,50 @@ export interface BudgetAmountRequest {
   month: string;
   // Vrai pour ce mois seulement, faux à partir de ce mois
   monthOnly: boolean;
+}
+
+// ---------- Budgets spéciaux ----------
+
+// Objectif d'épargne mis de côté sur un compte bancaire, dans la devise du compte
+export interface Goal {
+  id: number;
+  name: string;
+  accountId: number;
+  accountName: string;
+  currencyCode: string;
+  targetAmount: number;
+  initialAmount: number;
+  // Mis de côté aujourd'hui, ou au moment de l'utilisation
+  savedAmount: number;
+  remaining: number;
+  // Objectif atteint : verrouillé, plus d'affectation possible
+  reached: boolean;
+  // Repris par des retraits qui ont fait passer le solde du compte sous ses budgets
+  withdrawn: number;
+  startDate: string;
+  // Renseignée une fois le budget utilisé
+  usedDate: string | null;
+}
+
+export interface GoalRequest {
+  name: string;
+  accountId: number;
+  targetAmount: number;
+  initialAmount: number;
+}
+
+export interface GoalUpdateRequest {
+  name: string;
+  targetAmount: number;
+}
+
+export interface GoalAllocation {
+  goalId: number;
+  goalName: string;
+  amount: number;
+}
+
+export interface GoalAllocationRequest {
+  goalId: number;
+  amount: number;
 }

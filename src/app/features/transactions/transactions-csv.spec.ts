@@ -14,6 +14,7 @@ const transaction = (values: Partial<Transaction>): Transaction => ({
   category: null,
   splits: [],
   matchedAmount: null,
+  goalAllocations: [],
   paymentMethod: 'TRANSFER',
   operationDate: '2026-11-01',
   valueDate: null,

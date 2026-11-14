@@ -77,18 +77,39 @@
 }
 
 // Catégorie et bouton de ventilation côte à côte
+// Catégorie en pleine largeur, lien « Ventiler » discret juste en dessous
 .category-cell {
   display: flex;
-  align-items: flex-start;
-  gap: 4px;
-
-  > :first-child {
-    flex: 1;
-    min-width: 0;
-  }
+  flex-direction: column;
+  min-width: 0;
 
   .split-start {
-    margin-top: 4px;
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    padding: 2px 4px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--mat-sys-primary);
+    font: var(--mat-sys-label-medium);
+    cursor: pointer;
+
+    mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--mat-sys-primary) 10%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+    }
   }
 }
 

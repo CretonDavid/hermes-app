@@ -36,7 +36,7 @@ import {
   startWith,
   switchMap,
 } from 'rxjs';
-import { showFormErrors } from '../../shared/form-errors';
+import { AFTER_SAVE_ERRORS, showFormErrors } from '../../shared/form-errors';
 import { TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { PAYMENT_METHODS, fromIsoDate, toIsoDate } from '../../core/format';
@@ -163,6 +163,8 @@ export class TransactionFormDialogComponent implements OnInit {
   });
 
   protected readonly splitting = signal(false);
+  // Le message sous la ventilation guide la saisie : les montants ne passent en rouge qu'à l'enregistrement
+  protected readonly splitErrors = AFTER_SAVE_ERRORS;
   private readonly splitValues = toSignal(this.form.controls.splits.valueChanges, {
     initialValue: [],
   });
@@ -369,10 +371,12 @@ export class TransactionFormDialogComponent implements OnInit {
     this.form.markAsDirty();
   }
 
-  // La nouvelle ligne s'insère avant la dernière, qui garde le reste
+  // La nouvelle ligne s'ajoute à la fin et reçoit le reste : l'ancienne dernière ligne devient
+  // saisissable, vide, pour que l'utilisateur y indique son montant
   protected addSplitRow(): void {
     const rows = this.form.controls.splits;
-    rows.insert(rows.length - 1, this.splitRow(null, null));
+    rows.at(-1)?.controls.amount.setValue(null, { emitEvent: false });
+    rows.push(this.splitRow(null, null));
     this.refreshSplitRows();
   }
 

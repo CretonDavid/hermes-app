@@ -168,14 +168,8 @@
             [type]="categoryType()"
             label="Catégorie (facultatif)"
           />
-          <button
-            matButton
-            type="button"
-            class="split-start"
-            (click)="startSplit()"
-            matTooltip="Répartir le montant sur plusieurs catégories"
-          >
-            <mat-icon>call_split</mat-icon> Ventiler
+          <button type="button" class="split-start" (click)="startSplit()">
+            <mat-icon>call_split</mat-icon> Ventiler sur plusieurs catégories
           </button>
         }
       </div>
@@ -195,9 +189,15 @@
               </mat-form-field>
               <mat-form-field>
                 <mat-label>{{ last ? 'Reste' : 'Montant' }}</mat-label>
-                <input matInput appAmount formControlName="amount" placeholder="0,00" />
+                <input
+                  matInput
+                  appAmount
+                  formControlName="amount"
+                  placeholder="0,00"
+                  [errorStateMatcher]="splitErrors"
+                />
                 <span matTextSuffix>&nbsp;{{ currencyCode() }}</span>
-                <mat-error>Montant supérieur à 0</mat-error>
+                <mat-error>À indiquer</mat-error>
               </mat-form-field>
               <button
                 matIconButton

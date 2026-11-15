@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
+import { LogoComponent } from '../../shared/logo.component';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
@@ -21,7 +21,7 @@ import { AuthVisualComponent } from './auth-visual.component';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule,
+    LogoComponent,
     MatProgressBarModule,
     AuthVisualComponent,
   ],
@@ -30,9 +30,7 @@ import { AuthVisualComponent } from './auth-visual.component';
   template: `
     <main class="auth-side">
       <div class="auth-card">
-        <div class="brand">
-          <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span> Hermès
-        </div>
+        <div class="brand"><app-logo /> Hermès</div>
         <h1 style="margin-bottom: 24px">Connexion</h1>
 
         <form [formGroup]="form" (ngSubmit)="submit()">

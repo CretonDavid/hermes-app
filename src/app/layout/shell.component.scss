@@ -121,22 +121,6 @@ main:focus {
     Nunito,
     sans-serif;
   letter-spacing: -0.01em;
-
-  .logo {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 11px;
-    background: var(--hermes-saffron);
-    color: #2a1846;
-
-    mat-icon {
-      font-size: 22px;
-      width: 22px;
-      height: 22px;
-    }
-  }
 }
 
 .new-button-wrapper {

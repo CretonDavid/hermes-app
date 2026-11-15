@@ -3,6 +3,14 @@
 Toutes les évolutions notables du front d'Hermès sont listées ici. Les numéros de version suivent
 [SemVer](https://semver.org/lang/fr/).
 
+## [1.1.1] - 2026-11-15
+
+### Modifications
+
+- Nouveau logo : une aile aubergine sur une tuile safran, dans l'onglet du navigateur (favicon SVG,
+  avec une version .ico pour les anciens navigateurs), le menu et les écrans de connexion et
+  d'inscription.
+
 ## [1.1.0] - 2026-11-15
 
 ### Ajouts
@@ -60,5 +68,6 @@ Première version publiée.
 - Intégration continue GitHub Actions : ESLint (règles Angular et SonarJS), tests et compilation de
   production.
 
+[1.1.1]: https://github.com/CretonDavid/hermes-app/releases/tag/v1.1.1
 [1.1.0]: https://github.com/CretonDavid/hermes-app/releases/tag/v1.1.0
 [1.0.0]: https://github.com/CretonDavid/hermes-app/releases/tag/v1.0.0

@@ -68,6 +68,7 @@ export class ShellComponent implements OnInit {
     { path: '/accounts', label: 'Comptes bancaires', icon: 'account_balance' },
     { path: '/transactions', label: 'Opérations', icon: 'receipt_long' },
     { path: '/recurring', label: 'Récurrences', icon: 'event_repeat' },
+    { path: '/budget', label: 'Budgets', icon: 'donut_large' },
     { path: '/import', label: 'Import', icon: 'upload_file' },
     { path: '/categories', label: 'Catégories', icon: 'sell' },
     { path: '/stats', label: 'Statistiques', icon: 'monitoring' },
@@ -109,7 +110,13 @@ export class ShellComponent implements OnInit {
   }
 
   protected newTransaction(): void {
-    TransactionFormDialogComponent.open(this.dialog, {});
+    TransactionFormDialogComponent.open(this.dialog, { accountId: this.displayedAccountId() });
+  }
+
+  // Compte bancaire de la fiche affichée, pour le présélectionner (s'il est ouvert)
+  private displayedAccountId(): number | undefined {
+    const id = Number(/^\/accounts\/(\d+)/.exec(this.router.url)?.[1]);
+    return this.store.openAccounts().some((a) => a.id === id) ? id : undefined;
   }
 
   protected logout(): void {

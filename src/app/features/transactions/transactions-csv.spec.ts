@@ -12,6 +12,9 @@ const transaction = (values: Partial<Transaction>): Transaction => ({
   payee: null,
   notes: null,
   category: null,
+  splits: [],
+  matchedAmount: null,
+  goalAllocations: [],
   paymentMethod: 'TRANSFER',
   operationDate: '2026-11-01',
   valueDate: null,
@@ -59,5 +62,20 @@ describe('transactionsToCsv', () => {
 
   it('écrit les crédits sans signe', () => {
     expect(dataRow(transaction({ direction: 'CREDIT', amount: 100 }))).toContain(';100,00;');
+  });
+
+  it('détaille les catégories d’une opération ventilée', () => {
+    const category = (id: number, name: string) => ({ id, name, color: null, icon: null });
+    const row = dataRow(
+      transaction({
+        amount: 120,
+        splits: [
+          { category: category(1, 'Courses'), label: 'Lessive', amount: 85 },
+          { category: null, label: null, amount: 35 },
+        ],
+      }),
+    );
+
+    expect(row).toContain(';Courses (Lessive) 85,00 / Non catégorisée 35,00;');
   });
 });

@@ -82,6 +82,8 @@ export interface Account {
   balance: number;
   forecastBalance: number;
   clearedBalance: number;
+  /** Plafond de versements (Livret A, LDDS...), null sans plafond */
+  ceiling: number | null;
   openingDate: string;
   closed: boolean;
 }
@@ -93,6 +95,7 @@ export interface AccountRequest {
   accountTypeId: number;
   currencyId: number;
   initialBalance: number;
+  ceiling: number | null;
   openingDate: string;
   closed: boolean;
 }
@@ -146,6 +149,12 @@ export interface Transaction {
   payee: string | null;
   notes: string | null;
   category: CategorySummary | null;
+  // Ventilation sur plusieurs catégories (vide sinon) ; category est alors null
+  splits: TransactionSplit[];
+  // Liste filtrée par catégorie : part de l'opération ventilée qui correspond au filtre
+  matchedAmount: number | null;
+  // Part du crédit affectée à des budgets spéciaux
+  goalAllocations: GoalAllocation[];
   paymentMethod: PaymentMethod | null;
   operationDate: string;
   valueDate: string | null;
@@ -164,6 +173,19 @@ export interface Transaction {
   createdAt: string;
 }
 
+export interface TransactionSplit {
+  // null si la catégorie a été supprimée
+  category: CategorySummary | null;
+  label: string | null;
+  amount: number;
+}
+
+export interface TransactionSplitRequest {
+  categoryId: number;
+  label: string | null;
+  amount: number;
+}
+
 export interface TransactionRequest {
   accountId: number;
   direction: TransactionDirection;
@@ -172,6 +194,10 @@ export interface TransactionRequest {
   payee: string | null;
   notes: string | null;
   categoryId: number | null;
+  // Au moins 2 lignes dont la somme est égale au montant, ou vide
+  splits: TransactionSplitRequest[];
+  // Crédit affecté à des budgets spéciaux du compte (vide sinon)
+  goalAllocations: GoalAllocationRequest[];
   paymentMethod: PaymentMethod | null;
   operationDate: string;
   valueDate: string | null;
@@ -234,6 +260,8 @@ export interface TransferRequest {
   targetAmount: number | null;
   label: string | null;
   notes: string | null;
+  // Part du montant crédité affectée à des budgets spéciaux du compte crédité
+  goalAllocations: GoalAllocationRequest[];
   operationDate: string;
 }
 
@@ -488,4 +516,90 @@ export interface SavingsStats {
     balance: number;
     savingsRate: number | null;
   }[];
+}
+
+// ---------- Budget ----------
+
+// Enveloppe mensuelle d'une catégorie de dépense, sous-catégories comprises
+export interface BudgetEnvelope {
+  id: number;
+  category: CategorySummary;
+  amount: number;
+  // Montant habituel, différent de amount quand le mois a son propre montant (null sinon possible)
+  usualAmount: number | null;
+  monthOnly: boolean;
+  spent: number;
+  // Négatif en cas de dépassement
+  remaining: number;
+}
+
+export interface Budget {
+  // aaaa-mm
+  month: string;
+  currencyCode: string;
+  missingRates: string[];
+  budgeted: number;
+  spent: number;
+  // Dépenses hors enveloppe, non catégorisées comprises
+  unbudgeted: number;
+  envelopes: BudgetEnvelope[];
+}
+
+export interface BudgetEnvelopeRequest {
+  categoryId: number;
+  amount: number;
+  month: string;
+}
+
+export interface BudgetAmountRequest {
+  amount: number;
+  month: string;
+  // Vrai pour ce mois seulement, faux à partir de ce mois
+  monthOnly: boolean;
+}
+
+// ---------- Budgets spéciaux ----------
+
+// Objectif d'épargne mis de côté sur un compte bancaire, dans la devise du compte
+export interface Goal {
+  id: number;
+  name: string;
+  accountId: number;
+  accountName: string;
+  currencyCode: string;
+  targetAmount: number;
+  initialAmount: number;
+  // Mis de côté aujourd'hui, ou au moment de l'utilisation
+  savedAmount: number;
+  remaining: number;
+  // Objectif atteint : verrouillé, plus d'affectation possible
+  reached: boolean;
+  // Repris par des retraits qui ont fait passer le solde du compte sous ses budgets
+  withdrawn: number;
+  startDate: string;
+  // Renseignée une fois le budget utilisé
+  usedDate: string | null;
+}
+
+export interface GoalRequest {
+  name: string;
+  accountId: number;
+  targetAmount: number;
+  initialAmount: number;
+}
+
+export interface GoalUpdateRequest {
+  name: string;
+  targetAmount: number;
+}
+
+export interface GoalAllocation {
+  goalId: number;
+  goalName: string;
+  amount: number;
+}
+
+export interface GoalAllocationRequest {
+  goalId: number;
+  amount: number;
 }

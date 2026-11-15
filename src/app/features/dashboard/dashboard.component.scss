@@ -193,3 +193,104 @@
     opacity: 0.5;
   }
 }
+
+// Enveloppes du mois et budgets spéciaux en cours, côte à côte
+.budgets {
+  margin-top: 16px;
+
+  h2 .spacer {
+    flex: 1;
+  }
+
+  .small {
+    font: var(--mat-sys-body-small);
+  }
+}
+
+// Enveloppes : un anneau par enveloppe, jusqu'à quatre par ligne
+.rings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+
+  .empty {
+    grid-column: 1 / -1;
+  }
+}
+
+.ring-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 14px 8px 12px;
+  border: 1px solid var(--hermes-border);
+  border-radius: 14px;
+  background: var(--mat-sys-surface-container-low);
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+
+  app-budget-ring {
+    margin-bottom: 8px;
+  }
+}
+
+.ring-percent {
+  font: var(--mat-sys-title-medium);
+}
+
+.ring-name {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font: var(--mat-sys-body-small);
+}
+
+.ring-rest {
+  font: var(--mat-sys-label-small);
+  color: var(--hermes-muted);
+
+  &.negative {
+    color: var(--hermes-negative);
+  }
+}
+
+.budget-item + .budget-item {
+  margin-top: 14px;
+}
+
+.goal-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--mat-sys-surface-container-highest);
+  overflow: hidden;
+
+  .fill {
+    height: 100%;
+    border-radius: inherit;
+  }
+}
+
+.budget-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font: var(--mat-sys-body-medium);
+
+  .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .amount {
+    white-space: nowrap;
+  }
+}

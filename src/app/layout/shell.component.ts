@@ -11,6 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { LogoComponent } from '../shared/logo.component';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSidenav, MatSidenavContent, MatSidenavModule } from '@angular/material/sidenav';
@@ -43,6 +44,7 @@ interface NavItem {
     MatSidenavModule,
     MatListModule,
     MatIconModule,
+    LogoComponent,
     MatButtonModule,
     MatTooltipModule,
     MatProgressBarModule,

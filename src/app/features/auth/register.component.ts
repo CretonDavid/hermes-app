@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { LogoComponent } from '../../shared/logo.component';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -16,6 +17,7 @@ import { AuthVisualComponent } from './auth-visual.component';
     RouterLink,
     MatButtonModule,
     MatIconModule,
+    LogoComponent,
     MatCheckboxModule,
     MatProgressBarModule,
     AuthVisualComponent,
@@ -25,9 +27,7 @@ import { AuthVisualComponent } from './auth-visual.component';
   template: `
     <main class="auth-side">
       <div class="auth-card">
-        <div class="brand">
-          <span class="logo"><mat-icon>account_balance_wallet</mat-icon></span> Hermès
-        </div>
+        <div class="brand"><app-logo /> Hermès</div>
 
         @if (!accountNumber()) {
           <h1>Créer un compte</h1>

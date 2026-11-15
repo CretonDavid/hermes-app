@@ -3,6 +3,27 @@
 Toutes les évolutions notables du front d'Hermès sont listées ici. Les numéros de version suivent
 [SemVer](https://semver.org/lang/fr/).
 
+## [1.1.0] - 2026-11-15
+
+### Ajouts
+
+- Plafond des comptes d'épargne, réglé dans Paramètres → Plafonds avec des suggestions (Livret A,
+  LDDS, LEP, Livret jeune, PEL) : jauge sur les cartes des comptes, carte « Plafond » sur la fiche
+  (affichée à la demande) et avertissement sans blocage dans le formulaire d'opération.
+- Ventilation d'une opération sur plusieurs catégories, la dernière ligne recevant automatiquement
+  le reste, avec un libellé facultatif par ligne.
+- Page « Budgets », sous Récurrences dans le menu :
+  - enveloppes mensuelles par catégorie de dépense ;
+  - budgets spéciaux liés à un compte, avec la répartition de chaque compte (budgets et argent
+    libre), un filtre par compte et un bouton « Affecter ».
+- Tableau de bord : enveloppes du mois en anneaux de progression et budgets spéciaux côte à côte.
+
+### Modifications
+
+- Libellé de l'opération affiché directement dans la fenêtre, hors de « Plus de détails ».
+- Champs obligatoires signalés en erreur seulement après saisie ou tentative d'enregistrement.
+- Le formulaire d'opération ouvert depuis la fiche d'un compte présélectionne ce compte.
+
 ## [1.0.0] - 2026-11-09
 
 Première version publiée.
@@ -39,4 +60,5 @@ Première version publiée.
 - Intégration continue GitHub Actions : ESLint (règles Angular et SonarJS), tests et compilation de
   production.
 
+[1.1.0]: https://github.com/CretonDavid/hermes-app/releases/tag/v1.1.0
 [1.0.0]: https://github.com/CretonDavid/hermes-app/releases/tag/v1.0.0

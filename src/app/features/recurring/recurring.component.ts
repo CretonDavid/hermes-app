@@ -14,10 +14,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin } from 'rxjs';
-import { RecurringApi } from '../../core/api';
+import { RouterLink } from '@angular/router';
+import { RecurringApi, StatsApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
 import { frequencyLabel, reimbursementPeriodLabel } from '../../core/format';
-import { RecurringTransaction, ReimbursementTracking, UpcomingOccurrence } from '../../core/models';
+import {
+  RecurringMonthly,
+  RecurringTransaction,
+  ReimbursementTracking,
+  UpcomingOccurrence,
+} from '../../core/models';
 import { NotifyService } from '../../core/notify.service';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { untilEndOfMonth } from '../../shared/forecast';
@@ -39,6 +45,7 @@ import {
     MatTooltipModule,
     MoneyPipe,
     NoAccountComponent,
+    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -62,27 +69,35 @@ import {
           message="Les récurrences (loyer, salaire, abonnements…) sont rattachées à un compte bancaire."
         />
       } @else {
+        @if (monthly().missingRates.length) {
+          <div class="card warning-card">
+            <mat-icon>currency_exchange</mat-icon>
+            Taux de change manquants pour {{ monthly().missingRates.join(', ') }} : ces récurrences
+            ne sont pas comptées.
+            <a routerLink="/settings" [queryParams]="{ tab: 'rates' }">Ajouter des taux</a>
+          </div>
+        }
         <div class="grid grid-3" style="margin-bottom: 16px">
           <div class="card kpi">
             <div class="label">Dépenses récurrentes / mois</div>
             <div class="value amount">
-              {{ monthly().expenses | money: store.referenceCurrency() }}
+              {{ monthly().expenses | money: monthly().currencyCode }}
             </div>
-            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
+            <div class="delta muted">Estimation, au taux de change du jour</div>
           </div>
           <div class="card kpi">
             <div class="label">Revenus récurrents / mois</div>
             <div class="value amount" [class.positive]="monthly().income > 0">
-              {{ monthly().income | money: store.referenceCurrency() }}
+              {{ monthly().income | money: monthly().currencyCode }}
             </div>
-            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
+            <div class="delta muted">Estimation, au taux de change du jour</div>
           </div>
           <div class="card kpi">
             <div class="label">Virements programmés / mois</div>
             <div class="value amount">
-              {{ monthly().transfers | money: store.referenceCurrency() }}
+              {{ monthly().transfers | money: monthly().currencyCode }}
             </div>
-            <div class="delta muted">Estimation, dans la devise des comptes bancaires</div>
+            <div class="delta muted">Estimation, au taux de change du jour</div>
           </div>
         </div>
 
@@ -228,6 +243,20 @@ import {
     </div>
   `,
   styles: `
+    .warning-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      background: var(--mat-sys-tertiary-container);
+      color: var(--mat-sys-on-tertiary-container);
+      border: none;
+
+      a {
+        color: inherit;
+        font-weight: 500;
+      }
+    }
     // Chaque bloc garde sa propre hauteur au lieu de s'étirer sur le plus grand
     .layout {
       grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
@@ -285,6 +314,7 @@ import {
 export class RecurringComponent {
   protected readonly store = inject(DataStore);
   private readonly api = inject(RecurringApi);
+  private readonly stats = inject(StatsApi);
   private readonly notify = inject(NotifyService);
   private readonly dialog = inject(MatDialog);
 
@@ -316,24 +346,13 @@ export class RecurringComponent {
     return messages;
   });
 
-  // Equivalent mensuel des récurrences actives
-  protected readonly monthly = computed(() => {
-    const perMonth = { DAILY: 30.44, WEEKLY: 4.348, MONTHLY: 1, YEARLY: 1 / 12 };
-    const totals = { expenses: 0, income: 0, transfers: 0 };
-    for (const r of this.items()) {
-      if (!r.active || !r.nextDate) {
-        continue;
-      }
-      const amount = (r.amount * perMonth[r.frequency]) / r.interval;
-      if (r.transfer) {
-        totals.transfers += amount;
-      } else if (r.direction === 'DEBIT') {
-        totals.expenses += amount;
-      } else {
-        totals.income += amount;
-      }
-    }
-    return totals;
+  // Equivalent mensuel des récurrences actives, converti par l'API dans la devise de référence
+  protected readonly monthly = signal<RecurringMonthly>({
+    currencyCode: this.store.referenceCurrency(),
+    missingRates: [],
+    expenses: 0,
+    income: 0,
+    transfers: 0,
   });
 
   constructor() {
@@ -385,9 +404,11 @@ export class RecurringComponent {
       items: this.api.list(),
       upcoming: this.api.upcoming(31),
       reimbursements: this.api.reimbursements(),
+      monthly: this.stats.recurringMonthly(),
     }).subscribe({
-      next: ({ items, upcoming, reimbursements }) => {
+      next: ({ items, upcoming, reimbursements, monthly }) => {
         this.items.set(items);
+        this.monthly.set(monthly);
         this.reimbursements.set(reimbursements);
         this.upcoming.set(untilEndOfMonth(upcoming));
       },

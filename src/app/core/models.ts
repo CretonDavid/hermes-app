@@ -500,6 +500,15 @@ export interface BalanceHistory {
   }[];
 }
 
+/** Équivalent mensuel des récurrences actives, converti au taux du jour. */
+export interface RecurringMonthly {
+  currencyCode: string;
+  missingRates: string[];
+  expenses: number;
+  income: number;
+  transfers: number;
+}
+
 export interface SavingsStats {
   currencyCode: string;
   missingRates: string[];

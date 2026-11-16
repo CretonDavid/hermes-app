@@ -500,10 +500,13 @@ export interface BalanceHistory {
   }[];
 }
 
-/** Équivalent mensuel des récurrences actives, converti au taux du jour. */
+/** Récurrences converties dans la devise de référence. */
 export interface RecurringMonthly {
   currencyCode: string;
   missingRates: string[];
+  /** Dépenses récurrentes du mois en cours : échéances passées (montant réel) et à venir */
+  monthExpenses: number;
+  /** Coût mensuel moyen des dépenses récurrentes (une annuelle compte pour 1/12) */
   expenses: number;
   income: number;
   transfers: number;

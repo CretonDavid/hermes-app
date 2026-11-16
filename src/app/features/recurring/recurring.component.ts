@@ -77,13 +77,20 @@ import {
             <a routerLink="/settings" [queryParams]="{ tab: 'rates' }">Ajouter des taux</a>
           </div>
         }
-        <div class="grid grid-3" style="margin-bottom: 16px">
+        <div class="grid grid-4" style="margin-bottom: 16px">
           <div class="card kpi">
-            <div class="label">Dépenses récurrentes / mois</div>
+            <div class="label">Dépenses récurrentes de {{ currentMonth | date: 'MMMM' }}</div>
+            <div class="value amount">
+              {{ monthly().monthExpenses | money: monthly().currencyCode }}
+            </div>
+            <div class="delta muted">Échéances passées et à venir du mois</div>
+          </div>
+          <div class="card kpi">
+            <div class="label">Coût mensuel des dépenses récurrentes</div>
             <div class="value amount">
               {{ monthly().expenses | money: monthly().currencyCode }}
             </div>
-            <div class="delta muted">Estimation, au taux de change du jour</div>
+            <div class="delta muted">Moyenne, une annuelle compte pour 1/12</div>
           </div>
           <div class="card kpi">
             <div class="label">Revenus récurrents / mois</div>
@@ -346,10 +353,12 @@ export class RecurringComponent {
     return messages;
   });
 
-  // Equivalent mensuel des récurrences actives, converti par l'API dans la devise de référence
+  protected readonly currentMonth = new Date();
+  // Totaux des récurrences, convertis par l'API dans la devise de référence
   protected readonly monthly = signal<RecurringMonthly>({
     currencyCode: this.store.referenceCurrency(),
     missingRates: [],
+    monthExpenses: 0,
     expenses: 0,
     income: 0,
     transfers: 0,

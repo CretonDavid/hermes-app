@@ -213,11 +213,11 @@ import { TransactionTableComponent } from './transaction-table.component';
               <strong>
                 {{ selectedIds().size }} sélectionnée{{ selectedIds().size > 1 ? 's' : '' }}
               </strong>
-              <button matButton="tonal" [disabled]="deleting()" (click)="deleteSelected()">
-                <mat-icon>delete</mat-icon> Supprimer
-              </button>
               <button matButton (click)="selectedIds.set(emptySelection)">
                 Tout désélectionner
+              </button>
+              <button matButton="tonal" [disabled]="deleting()" (click)="deleteSelected()">
+                <mat-icon>delete</mat-icon> Supprimer
               </button>
             </div>
           }

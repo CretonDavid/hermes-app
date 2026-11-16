@@ -32,6 +32,7 @@ import {
   MonthlyStat,
   Page,
   PayeeStat,
+  LabelSuggestion,
   PayeeSuggestion,
   Reconciliation,
   ReconciliationStatus,
@@ -282,6 +283,12 @@ export class TransactionApi {
 
   payees(q: string, limit = 10): Observable<PayeeSuggestion[]> {
     return this.http.get<PayeeSuggestion[]>(`${API}/transactions/payees`, {
+      params: toParams({ q, limit }),
+    });
+  }
+
+  labels(q: string, limit = 10): Observable<LabelSuggestion[]> {
+    return this.http.get<LabelSuggestion[]>(`${API}/transactions/labels`, {
       params: toParams({ q, limit }),
     });
   }

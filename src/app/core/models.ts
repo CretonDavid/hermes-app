@@ -253,6 +253,13 @@ export interface PayeeSuggestion {
   lastCategoryId: number | null;
 }
 
+export interface LabelSuggestion {
+  label: string;
+  usage: number;
+  lastPayee: string | null;
+  lastCategoryId: number | null;
+}
+
 export interface TransferRequest {
   fromAccountId: number;
   toAccountId: number;

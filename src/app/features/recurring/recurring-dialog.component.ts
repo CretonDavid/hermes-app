@@ -6,8 +6,10 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -24,7 +26,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { showFormErrors } from '../../shared/form-errors';
-import { RecurringApi } from '../../core/api';
+import { RecurringApi, TransactionApi } from '../../core/api';
+import { Observable, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { DataStore } from '../../core/data.store';
 import { addYears, format } from 'date-fns';
 import {
@@ -39,6 +42,8 @@ import {
   toIsoDate,
 } from '../../core/format';
 import {
+  LabelSuggestion,
+  PayeeSuggestion,
   PaymentMethod,
   RecurrenceFrequency,
   RecurringTransaction,
@@ -82,7 +87,9 @@ function joinNames(names: string[]): string {
 @Component({
   selector: 'app-recurring-dialog',
   imports: [
+    AsyncPipe,
     ReactiveFormsModule,
+    MatAutocompleteModule,
     MatDialogModule,
     DialogCloseComponent,
     AmountInputDirective,
@@ -135,7 +142,19 @@ function joinNames(names: string[]): string {
 
         <mat-form-field>
           <mat-label>Libellé</mat-label>
-          <input matInput formControlName="label" placeholder="Ex. Loyer, Salaire, Netflix…" />
+          <input
+            matInput
+            formControlName="label"
+            placeholder="Ex. Loyer, Salaire, Netflix…"
+            [matAutocomplete]="labelAuto"
+          />
+          <mat-autocomplete #labelAuto="matAutocomplete">
+            @for (suggestion of labelSuggestions | async; track suggestion.label) {
+              <mat-option [value]="suggestion.label" (onSelectionChange)="selectLabel(suggestion)">
+                {{ suggestion.label }}
+              </mat-option>
+            }
+          </mat-autocomplete>
           <mat-error>Libellé obligatoire</mat-error>
         </mat-form-field>
 
@@ -179,7 +198,17 @@ function joinNames(names: string[]): string {
         } @else if (mode() !== 'TRANSFER') {
           <mat-form-field>
             <mat-label>{{ mode() === 'DEBIT' ? 'Payé à' : 'Reçu de' }} (facultatif)</mat-label>
-            <input matInput formControlName="payee" />
+            <input matInput formControlName="payee" [matAutocomplete]="payeeAuto" />
+            <mat-autocomplete #payeeAuto="matAutocomplete">
+              @for (suggestion of payeeSuggestions | async; track suggestion.payee) {
+                <mat-option
+                  [value]="suggestion.payee"
+                  (onSelectionChange)="selectPayee(suggestion)"
+                >
+                  {{ suggestion.payee }}
+                </mat-option>
+              }
+            </mat-autocomplete>
           </mat-form-field>
         }
 
@@ -251,11 +280,22 @@ function joinNames(names: string[]): string {
           </div>
           @if (reimbursed()) {
             <div class="full payers" formArrayName="payers">
+              <mat-autocomplete #payerAuto="matAutocomplete">
+                @for (name of payerSuggestions(); track name) {
+                  <mat-option [value]="name">{{ name }}</mat-option>
+                }
+              </mat-autocomplete>
               @for (payer of payers.controls; track payer; let i = $index) {
                 <div class="payer" [formGroupName]="i">
                   <mat-form-field subscriptSizing="dynamic">
                     <mat-label>Tiers</mat-label>
-                    <input matInput formControlName="name" placeholder="Ex. Alex" />
+                    <input
+                      matInput
+                      formControlName="name"
+                      placeholder="Ex. Alex"
+                      [matAutocomplete]="payerAuto"
+                      (input)="searchPayer($event)"
+                    />
                     <mat-error>Nom obligatoire</mat-error>
                   </mat-form-field>
                   <mat-form-field subscriptSizing="dynamic">
@@ -402,6 +442,7 @@ export class RecurringDialogComponent {
   protected readonly data = inject<RecurringTransaction | null>(MAT_DIALOG_DATA);
   protected readonly store = inject(DataStore);
   private readonly api = inject(RecurringApi);
+  private readonly transactions = inject(TransactionApi);
   private readonly notify = inject(NotifyService);
   private readonly dialogRef = inject(MatDialogRef<RecurringDialogComponent, boolean>);
 
@@ -592,9 +633,72 @@ export class RecurringDialogComponent {
     return !this.data && !!start && toIsoDate(start)! < toIsoDate(new Date())!;
   });
 
+  // Autocomplétion : libellés et tiers des opérations déjà saisies
+  protected readonly labelSuggestions: Observable<LabelSuggestion[]> =
+    this.form.controls.label.valueChanges.pipe(
+      debounceTime(200),
+      distinctUntilChanged(),
+      switchMap((q) => (q.length >= 1 ? this.transactions.labels(q, 8) : of([]))),
+    );
+  protected readonly payeeSuggestions: Observable<PayeeSuggestion[]> =
+    this.form.controls.payee.valueChanges.pipe(
+      debounceTime(200),
+      distinctUntilChanged(),
+      switchMap((q) => (q.length >= 1 ? this.transactions.payees(q, 8) : of([]))),
+    );
+
+  // Tiers qui remboursent déjà d'autres récurrences, filtrés sur la ligne en cours de saisie
+  private readonly payerNames = signal<string[]>([]);
+  private readonly payerQuery = signal('');
+  protected readonly payerSuggestions = computed(() => {
+    const query = this.payerQuery().trim().toLocaleLowerCase('fr-FR');
+    return this.payerNames().filter(
+      (name) => query && name.toLocaleLowerCase('fr-FR').includes(query),
+    );
+  });
+
   constructor() {
     protectDirtyForm(this.form);
     effect(() => setRequired(this.form.controls.targetAccountId, this.mode() === 'TRANSFER'));
+    this.api.list().subscribe({
+      next: (items) => {
+        const names = new Map<string, string>();
+        for (const name of items.flatMap((r) => r.reimbursementPayers.map((p) => p.name.trim()))) {
+          names.set(name.toLocaleLowerCase('fr-FR'), name);
+        }
+        this.payerNames.set([...names.values()].sort((a, b) => a.localeCompare(b, 'fr')));
+      },
+    });
+  }
+
+  protected searchPayer(event: Event): void {
+    this.payerQuery.set((event.target as HTMLInputElement).value);
+  }
+
+  // Un libellé connu pré-remplit le tiers et la catégorie restés vides
+  protected selectLabel(suggestion: LabelSuggestion): void {
+    if (this.mode() === 'TRANSFER') {
+      return;
+    }
+    if (!this.form.controls.payee.value.trim() && suggestion.lastPayee) {
+      this.form.controls.payee.setValue(suggestion.lastPayee, { emitEvent: false });
+    }
+    this.prefillCategory(suggestion.lastCategoryId);
+  }
+
+  protected selectPayee(suggestion: PayeeSuggestion): void {
+    this.prefillCategory(suggestion.lastCategoryId);
+  }
+
+  private prefillCategory(categoryId: number | null): void {
+    if (this.form.controls.categoryId.value || !categoryId) {
+      return;
+    }
+    const option = this.store.categoryOption(categoryId);
+    const type = this.mode() === 'CREDIT' ? 'INCOME' : 'EXPENSE';
+    if (option && option.category.type === type) {
+      this.form.controls.categoryId.setValue(categoryId);
+    }
   }
 
   protected formatShare(share: number): string {

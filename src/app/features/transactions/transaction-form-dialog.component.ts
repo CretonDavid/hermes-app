@@ -30,6 +30,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   Observable,
+  Subject,
   debounceTime,
   distinctUntilChanged,
   map,
@@ -44,6 +45,7 @@ import { PAYMENT_METHODS, fromIsoDate, toIsoDate } from '../../core/format';
 import {
   Goal,
   GoalAllocationRequest,
+  LabelSuggestion,
   PayeeSuggestion,
   PaymentMethod,
   Transaction,
@@ -338,6 +340,26 @@ export class TransactionFormDialogComponent implements OnInit {
   protected readonly transferLockedHint =
     'Une opération et un virement ne sont pas interchangeables : supprimez celle-ci et créez-en une nouvelle pour changer de nature.';
 
+  protected readonly labelSuggestions: Observable<LabelSuggestion[]> =
+    this.form.controls.label.valueChanges.pipe(
+      debounceTime(200),
+      distinctUntilChanged(),
+      switchMap((q) => (q.length >= 1 ? this.api.labels(q, 8) : of([]))),
+    );
+
+  // Une seule liste partagée par les lignes de ventilation, alimentée par la ligne en cours de saisie
+  private readonly splitLabelQuery = new Subject<string>();
+  protected readonly splitLabelSuggestions: Observable<LabelSuggestion[]> =
+    this.splitLabelQuery.pipe(
+      debounceTime(200),
+      distinctUntilChanged(),
+      switchMap((q) => (q.length >= 1 ? this.api.labels(q, 8) : of([]))),
+    );
+
+  protected searchSplitLabel(event: Event): void {
+    this.splitLabelQuery.next((event.target as HTMLInputElement).value);
+  }
+
   protected readonly payeeSuggestions: Observable<PayeeSuggestion[]> =
     this.form.controls.payee.valueChanges.pipe(
       startWith(''),
@@ -518,14 +540,26 @@ export class TransactionFormDialogComponent implements OnInit {
     }));
   }
 
+  // Un libellé connu pré-remplit le tiers et la catégorie restés vides
+  protected selectLabel(suggestion: LabelSuggestion): void {
+    if (!this.form.controls.payee.value.trim() && suggestion.lastPayee) {
+      this.form.controls.payee.setValue(suggestion.lastPayee, { emitEvent: false });
+    }
+    this.prefillCategory(suggestion.lastCategoryId);
+  }
+
   protected selectPayee(suggestion: PayeeSuggestion): void {
+    this.prefillCategory(suggestion.lastCategoryId);
+  }
+
+  private prefillCategory(categoryId: number | null): void {
     if (this.splitting()) {
       return;
     }
-    if (!this.form.controls.categoryId.value && suggestion.lastCategoryId) {
-      const option = this.store.categoryOption(suggestion.lastCategoryId);
+    if (!this.form.controls.categoryId.value && categoryId) {
+      const option = this.store.categoryOption(categoryId);
       if (option && option.category.type === this.categoryType()) {
-        this.form.controls.categoryId.setValue(suggestion.lastCategoryId);
+        this.form.controls.categoryId.setValue(categoryId);
       }
     }
   }

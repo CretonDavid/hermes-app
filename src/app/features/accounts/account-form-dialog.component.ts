@@ -153,7 +153,12 @@ const SAVINGS_PATTERN = /livret|[ée]pargne|assurance|pea|pel|cel|titres|placeme
 
         <mat-form-field>
           <mat-label>Banque (facultatif)</mat-label>
-          <input matInput formControlName="bankName" />
+          <input matInput formControlName="bankName" [matAutocomplete]="bankAuto" />
+          <mat-autocomplete #bankAuto="matAutocomplete">
+            @for (bank of bankSuggestions(); track bank) {
+              <mat-option [value]="bank">{{ bank }}</mat-option>
+            }
+          </mat-autocomplete>
         </mat-form-field>
 
         <mat-form-field>
@@ -256,6 +261,25 @@ export class AccountFormDialogComponent {
     ),
     description: new FormControl(this.data?.description ?? '', { nonNullable: true }),
     closed: new FormControl(this.data?.closed ?? false, { nonNullable: true }),
+  });
+
+  // Banques des autres comptes bancaires, filtrées sur la saisie
+  private readonly bankQuery = toSignal(this.form.controls.bankName.valueChanges, {
+    initialValue: this.form.controls.bankName.value,
+  });
+  protected readonly bankSuggestions = computed(() => {
+    const query = this.bankQuery().trim().toLocaleLowerCase('fr-FR');
+    const banks = new Map<string, string>();
+    for (const account of this.store.accounts()) {
+      const bank = account.bankName?.trim();
+      if (bank) {
+        banks.set(bank.toLocaleLowerCase('fr-FR'), bank);
+      }
+    }
+    return [...banks.entries()]
+      .filter(([key]) => key.includes(query) && key !== query)
+      .map(([, bank]) => bank)
+      .sort((a, b) => a.localeCompare(b, 'fr'));
   });
 
   private readonly typeName = toSignal(this.form.controls.typeName.valueChanges, {

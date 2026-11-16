@@ -73,7 +73,16 @@
         matInput
         formControlName="label"
         [placeholder]="mode() === 'TRANSFER' ? 'Par défaut : Virement vers …' : labelPlaceholder()"
+        [matAutocomplete]="labelAuto"
+        [matAutocompleteDisabled]="mode() === 'TRANSFER'"
       />
+      <mat-autocomplete #labelAuto="matAutocomplete">
+        @for (suggestion of labelSuggestions | async; track suggestion.label) {
+          <mat-option [value]="suggestion.label" (onSelectionChange)="selectLabel(suggestion)">
+            {{ suggestion.label }}
+          </mat-option>
+        }
+      </mat-autocomplete>
       @if (mode() !== 'TRANSFER') {
         <mat-hint
           >Texte affiché dans la liste. Laissez vide pour reprendre le bénéficiaire.</mat-hint
@@ -200,7 +209,13 @@
               />
               <mat-form-field class="split-label">
                 <mat-label>Libellé (facultatif)</mat-label>
-                <input matInput formControlName="label" maxlength="255" />
+                <input
+                  matInput
+                  formControlName="label"
+                  maxlength="255"
+                  [matAutocomplete]="splitLabelAuto"
+                  (input)="searchSplitLabel($event)"
+                />
               </mat-form-field>
               <mat-form-field>
                 <mat-label>{{ last ? 'Reste' : 'Montant' }}</mat-label>
@@ -236,6 +251,11 @@
               Il ne reste rien pour la dernière ligne : réduisez une autre ligne ou retirez-la.
             </p>
           }
+          <mat-autocomplete #splitLabelAuto="matAutocomplete">
+            @for (suggestion of splitLabelSuggestions | async; track suggestion.label) {
+              <mat-option [value]="suggestion.label">{{ suggestion.label }}</mat-option>
+            }
+          </mat-autocomplete>
           <div class="split-actions">
             <button matButton type="button" (click)="addSplitRow()">
               <mat-icon>add</mat-icon> Ajouter une catégorie

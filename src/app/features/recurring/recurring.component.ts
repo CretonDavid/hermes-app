@@ -79,14 +79,28 @@ import {
         }
         <div class="grid grid-4" style="margin-bottom: 16px">
           <div class="card kpi">
-            <div class="label">Dépenses récurrentes de {{ currentMonth | date: 'MMMM' }}</div>
+            <div class="label">
+              Dépenses récurrentes de {{ currentMonth | date: 'MMMM' }}
+              <mat-icon
+                class="info"
+                matTooltip="Ce qui sort réellement des comptes ce mois-ci : échéances déjà prélevées et à venir d’ici la fin du mois. Une dépense annuelle compte en entier le mois où elle tombe, et pas les autres mois. Les remboursements des tiers ne sont pas déduits."
+                >info</mat-icon
+              >
+            </div>
             <div class="value amount">
               {{ monthly().monthExpenses | money: monthly().currencyCode }}
             </div>
             <div class="delta muted">Échéances passées et à venir du mois</div>
           </div>
           <div class="card kpi">
-            <div class="label">Coût net / mois</div>
+            <div class="label">
+              Coût net / mois
+              <mat-icon
+                class="info"
+                matTooltip="Coût de toutes les dépenses récurrentes ramené à un mois moyen : une dépense annuelle compte pour 1/12 chaque mois, une trimestrielle pour 1/3. La part remboursée par des tiers est déduite : un abonnement de 20 € remboursé à 50 % compte pour 10 €."
+                >info</mat-icon
+              >
+            </div>
             <div class="value amount">
               {{ monthly().expenses | money: monthly().currencyCode }}
             </div>

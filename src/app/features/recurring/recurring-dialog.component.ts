@@ -676,6 +676,12 @@ export class RecurringDialogComponent {
       this.notify.error('Choisissez le compte bancaire qui reçoit le virement');
       return;
     }
+    let paymentMethod: PaymentMethod | null = null; // revenu : pas de moyen de paiement
+    if (transfer) {
+      paymentMethod = 'TRANSFER';
+    } else if (this.mode() === 'DEBIT') {
+      paymentMethod = v.paymentMethod;
+    }
     const request: RecurringTransactionRequest = {
       accountId: v.accountId!,
       targetAccountId: transfer ? v.targetAccountId : null,
@@ -685,7 +691,7 @@ export class RecurringDialogComponent {
       label: v.label.trim(),
       payee: transfer ? null : v.payee.trim() || null,
       categoryId: transfer ? null : v.categoryId,
-      paymentMethod: transfer ? 'TRANSFER' : this.mode() === 'DEBIT' ? v.paymentMethod : null,
+      paymentMethod,
       frequency: v.frequency,
       interval: v.interval,
       startDate: toIsoDate(v.startDate)!,

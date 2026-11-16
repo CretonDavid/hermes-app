@@ -243,17 +243,19 @@
         <mat-error>Choisissez un compte bancaire</mat-error>
       </mat-form-field>
 
-      <mat-form-field>
-        <mat-label>Moyen de paiement (facultatif)</mat-label>
-        <mat-select formControlName="paymentMethod">
-          <mat-option [value]="null">Non précisé</mat-option>
-          @for (method of paymentMethods; track method.value) {
-            <mat-option [value]="method.value">
-              <mat-icon>{{ method.icon }}</mat-icon> {{ method.label }}
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      @if (mode() === 'DEBIT') {
+        <mat-form-field>
+          <mat-label>Moyen de paiement (facultatif)</mat-label>
+          <mat-select formControlName="paymentMethod">
+            <mat-option [value]="null">Non précisé</mat-option>
+            @for (method of paymentMethods; track method.value) {
+              <mat-option [value]="method.value">
+                <mat-icon>{{ method.icon }}</mat-icon> {{ method.label }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
     }
 
     @if (accountGoals().length) {

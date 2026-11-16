@@ -610,7 +610,7 @@ export class TransactionFormDialogComponent implements OnInit {
       categoryId: splits.length ? null : v.categoryId,
       splits,
       goalAllocations,
-      paymentMethod: v.paymentMethod,
+      paymentMethod: this.mode() === 'DEBIT' ? v.paymentMethod : this.hiddenCreditPaymentMethod(),
       operationDate: toIsoDate(v.operationDate)!,
       valueDate: toIsoDate(v.valueDate),
       status: this.statusToSave(v.cleared),
@@ -618,6 +618,12 @@ export class TransactionFormDialogComponent implements OnInit {
     return this.data.transaction
       ? this.api.update(this.data.transaction.id, request)
       : this.api.create(request);
+  }
+
+  /** Champ masqué pour un revenu : on garde la valeur d'un revenu existant (import), sans en ajouter. */
+  private hiddenCreditPaymentMethod(): PaymentMethod | null {
+    const t = this.data.transaction;
+    return t && !t.transfer && t.direction === 'CREDIT' ? t.paymentMethod : null;
   }
 
   // Une opération rapprochée garde son statut : il n'est pas transmis

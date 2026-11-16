@@ -38,6 +38,7 @@ import {
   RecurringTransaction,
   RecurringTransactionRequest,
   ReimbursementTracking,
+  RecurringMonthly,
   SavingsStats,
   StatsList,
   StatsSummary,
@@ -431,6 +432,10 @@ export class StatsApi {
 
   savings(query: StatsQuery): Observable<SavingsStats> {
     return this.http.get<SavingsStats>(`${API}/stats/savings`, { params: toParams(query) });
+  }
+
+  recurringMonthly(): Observable<RecurringMonthly> {
+    return this.http.get<RecurringMonthly>(`${API}/stats/recurring`);
   }
 }
 

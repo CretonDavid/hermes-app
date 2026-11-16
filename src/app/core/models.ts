@@ -234,9 +234,9 @@ export interface TransactionSort {
   direction: 'asc' | 'desc';
 }
 
-export interface BulkCategoryResult {
-  updated: number;
-  skippedTransfers: number;
+export interface BulkDeleteResult {
+  /** Opérations supprimées, opérations liées des virements comprises */
+  deleted: number;
 }
 
 export interface Page<T> {

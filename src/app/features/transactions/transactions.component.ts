@@ -22,7 +22,7 @@ import { format } from 'date-fns';
 import { EMPTY, Subject, debounceTime, expand, map, reduce } from 'rxjs';
 import { TransactionApi } from '../../core/api';
 import { DataStore } from '../../core/data.store';
-import { fromIsoDate, toIsoDate } from '../../core/format';
+import { countLabel, fromIsoDate, pluralize, toIsoDate } from '../../core/format';
 import {
   Transaction,
   TransactionFilter,
@@ -34,7 +34,7 @@ import {
 import { NotifyService } from '../../core/notify.service';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { NoAccountComponent } from '../../shared/no-account.component';
-import { BulkCategoryDialogComponent } from './bulk-category-dialog.component';
+import { confirm } from '../../shared/confirm-dialog.component';
 import { transactionsToCsv } from './transactions-csv';
 import { TransactionFormDialogComponent } from './transaction-form-dialog.component';
 import { TransactionTableComponent } from './transaction-table.component';
@@ -213,8 +213,8 @@ import { TransactionTableComponent } from './transaction-table.component';
               <strong>
                 {{ selectedIds().size }} sélectionnée{{ selectedIds().size > 1 ? 's' : '' }}
               </strong>
-              <button matButton="tonal" (click)="categorize()">
-                <mat-icon>sell</mat-icon> Catégoriser
+              <button matButton="tonal" [disabled]="deleting()" (click)="deleteSelected()">
+                <mat-icon>delete</mat-icon> Supprimer
               </button>
               <button matButton (click)="selectedIds.set(emptySelection)">
                 Tout désélectionner
@@ -334,6 +334,7 @@ export class TransactionsComponent {
   protected readonly selectedIds = signal<ReadonlySet<number>>(this.emptySelection);
   protected readonly totals = signal<TransactionTotals[]>([]);
   protected readonly exporting = signal(false);
+  protected readonly deleting = signal(false);
 
   protected readonly transactions = signal<Transaction[]>([]);
   protected readonly total = signal(0);
@@ -411,8 +412,36 @@ export class TransactionsComponent {
     this.loadPage();
   }
 
-  protected categorize(): void {
-    BulkCategoryDialogComponent.open(this.dialog, [...this.selectedIds()]);
+  protected deleteSelected(): void {
+    const ids = [...this.selectedIds()];
+    const transfers = this.transactions().filter((t) => t.transfer && this.selectedIds().has(t.id));
+    const count = countLabel(ids.length, 'opération');
+    confirm(this.dialog, {
+      title: ids.length > 1 ? `Supprimer ${count}` : "Supprimer l'opération",
+      message:
+        `${ids.length > 1 ? 'Ces opérations seront définitivement supprimées' : 'Cette opération sera définitivement supprimée'}.` +
+        (transfers.length ? ' Pour un virement, les deux côtés sont supprimés.' : ''),
+      confirmLabel: 'Supprimer',
+      danger: true,
+    }).subscribe((ok) => {
+      if (!ok) {
+        return;
+      }
+      this.deleting.set(true);
+      this.api.deleteAll(ids).subscribe({
+        next: ({ deleted }) => {
+          this.deleting.set(false);
+          this.notify.success(
+            `${countLabel(deleted, 'opération')} ${pluralize(deleted, 'supprimée')}`,
+          );
+          this.store.transactionsChanged();
+        },
+        error: (error) => {
+          this.deleting.set(false);
+          this.notify.error(error);
+        },
+      });
+    });
   }
 
   // Exporte toutes les opérations correspondant aux filtres, page après page

@@ -14,7 +14,7 @@ import {
   Goal,
   GoalRequest,
   GoalUpdateRequest,
-  BulkCategoryResult,
+  BulkDeleteResult,
   Category,
   CategoryRequest,
   CategoryStat,
@@ -255,14 +255,9 @@ export class TransactionApi {
     });
   }
 
-  updateCategory(
-    transactionIds: number[],
-    categoryId: number | null,
-  ): Observable<BulkCategoryResult> {
-    return this.http.patch<BulkCategoryResult>(`${API}/transactions/category`, {
-      transactionIds,
-      categoryId,
-    });
+  /** Suppression groupée, tout ou rien ; un virement emporte son opération liée. */
+  deleteAll(transactionIds: number[]): Observable<BulkDeleteResult> {
+    return this.http.post<BulkDeleteResult>(`${API}/transactions/delete`, { transactionIds });
   }
 
   get(id: number): Observable<Transaction> {

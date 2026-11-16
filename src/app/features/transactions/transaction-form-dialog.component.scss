@@ -127,7 +127,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 150px auto;
   align-items: start;
-  gap: 8px;
+  gap: 16px 8px; // plus d'air entre la catégorie et le libellé en dessous
   padding-bottom: 12px;
   border-bottom: 1px solid var(--hermes-border);
 

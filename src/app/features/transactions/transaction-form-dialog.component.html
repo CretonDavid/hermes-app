@@ -67,6 +67,20 @@
       <mat-error>Date obligatoire (jj/mm/aaaa)</mat-error>
     </mat-form-field>
 
+    <mat-form-field class="full">
+      <mat-label>Libellé (facultatif)</mat-label>
+      <input
+        matInput
+        formControlName="label"
+        [placeholder]="mode() === 'TRANSFER' ? 'Par défaut : Virement vers …' : labelPlaceholder()"
+      />
+      @if (mode() !== 'TRANSFER') {
+        <mat-hint
+          >Texte affiché dans la liste. Laissez vide pour reprendre le bénéficiaire.</mat-hint
+        >
+      }
+    </mat-form-field>
+
     @if (mode() === 'TRANSFER') {
       <div class="full transfer-accounts">
         <mat-form-field>
@@ -297,20 +311,6 @@
         }
       </div>
     }
-
-    <mat-form-field class="full">
-      <mat-label>Libellé (facultatif)</mat-label>
-      <input
-        matInput
-        formControlName="label"
-        [placeholder]="mode() === 'TRANSFER' ? 'Par défaut : Virement vers …' : labelPlaceholder()"
-      />
-      @if (mode() !== 'TRANSFER') {
-        <mat-hint
-          >Texte affiché dans la liste. Laissez vide pour reprendre le bénéficiaire.</mat-hint
-        >
-      }
-    </mat-form-field>
 
     @if (ceilingWarning(); as w) {
       <p class="full ceiling-warning" role="status">

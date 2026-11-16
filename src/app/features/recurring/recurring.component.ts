@@ -86,11 +86,13 @@ import {
             <div class="delta muted">Échéances passées et à venir du mois</div>
           </div>
           <div class="card kpi">
-            <div class="label">Coût mensuel des dépenses récurrentes</div>
+            <div class="label">Ce que me coûtent mes récurrences / mois</div>
             <div class="value amount">
               {{ monthly().expenses | money: monthly().currencyCode }}
             </div>
-            <div class="delta muted">Moyenne, une annuelle compte pour 1/12</div>
+            <div class="delta muted">
+              Moyenne sur l’année, part remboursée par des tiers déduite
+            </div>
           </div>
           <div class="card kpi">
             <div class="label">Revenus récurrents / mois</div>

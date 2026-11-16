@@ -506,7 +506,7 @@ export interface RecurringMonthly {
   missingRates: string[];
   /** Dépenses récurrentes du mois en cours : échéances passées (montant réel) et à venir */
   monthExpenses: number;
-  /** Coût mensuel moyen des dépenses récurrentes (une annuelle compte pour 1/12) */
+  /** Coût mensuel moyen des dépenses récurrentes (une annuelle compte pour 1/12), part des tiers déduite */
   expenses: number;
   income: number;
   transfers: number;

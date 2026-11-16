@@ -86,7 +86,7 @@ import {
             <div class="delta muted">Échéances passées et à venir du mois</div>
           </div>
           <div class="card kpi">
-            <div class="label">Ce que me coûtent mes récurrences / mois</div>
+            <div class="label">Coût net / mois</div>
             <div class="value amount">
               {{ monthly().expenses | money: monthly().currencyCode }}
             </div>

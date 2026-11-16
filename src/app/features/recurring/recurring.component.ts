@@ -113,14 +113,14 @@ import {
             <div class="value amount" [class.positive]="monthly().income > 0">
               {{ monthly().income | money: monthly().currencyCode }}
             </div>
-            <div class="delta muted">Estimation, au taux de change du jour</div>
+            <div class="delta muted">Moyenne sur l’année</div>
           </div>
           <div class="card kpi">
             <div class="label">Virements programmés / mois</div>
             <div class="value amount">
               {{ monthly().transfers | money: monthly().currencyCode }}
             </div>
-            <div class="delta muted">Estimation, au taux de change du jour</div>
+            <div class="delta muted">Moyenne sur l’année, entre vos comptes</div>
           </div>
         </div>
 

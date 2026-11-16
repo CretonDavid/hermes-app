@@ -80,7 +80,7 @@ import {
         <div class="grid grid-4" style="margin-bottom: 16px">
           <div class="card kpi">
             <div class="label">
-              Dépenses récurrentes de {{ currentMonth | date: 'MMMM' }}
+              Ce mois-ci
               <mat-icon
                 class="info"
                 matTooltip="Ce qui sort réellement des comptes ce mois-ci : échéances déjà prélevées et à venir d’ici la fin du mois. Une dépense annuelle compte en entier le mois où elle tombe, et pas les autres mois. Les remboursements des tiers ne sont pas déduits."
@@ -369,7 +369,6 @@ export class RecurringComponent {
     return messages;
   });
 
-  protected readonly currentMonth = new Date();
   // Totaux des récurrences, convertis par l'API dans la devise de référence
   protected readonly monthly = signal<RecurringMonthly>({
     currencyCode: this.store.referenceCurrency(),
